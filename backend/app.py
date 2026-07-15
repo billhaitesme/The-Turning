@@ -5,6 +5,7 @@ from awareness_engine import awareness_prompt, build_awareness_snapshot, constit
 from journal_engine import write_journal_entry
 from identity_engine import classify_identity_intent, identity_prompt_fragment
 from personality_engine import get_active_personality, build_personality_prompt
+from routes.system import router as system_router
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
@@ -700,6 +701,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(system_router)
 
 
 @app.on_event("startup")
