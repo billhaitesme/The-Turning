@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "goals": [
+    {
+      "id": "goal-omega-arc",
+      "title": "OMEGA-ARC",
+      "description": "OMEGA-ARC",
+      "status": "active",
+      "priority": "high",
+      "progress": 0.0,
+      "source": "explicit_user_statement",
+      "confidence": 0.95,
+      "created_at": "2026-07-15T06:30:39.270836+00:00",
+      "updated_at": "2026-07-15T06:54:48.378656+00:00"
+    },
+    {
+      "id": "goal-add-vision-routing",
+      "title": "add vision routing",
+      "description": "add vision routing",
+      "status": "active",
+      "priority": "high",
+      "progress": 0.0,
+      "source": "explicit_user_statement",
+      "confidence": 1.0,
+      "created_at": "2026-07-15T06:33:57.323767+00:00",
+      "updated_at": "2026-07-15T06:33:57.323767+00:00"
+    }
+  ]
+}

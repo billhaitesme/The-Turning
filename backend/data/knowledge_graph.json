@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "project:omega-arc",
+      "type": "project",
+      "label": "OMEGA-ARC",
+      "attributes": {}
+    },
+    {
+      "id": "system:omega-arc-backend",
+      "type": "system",
+      "label": "OMEGA-ARC backend",
+      "attributes": {
+        "port": 8001
+      }
+    }
+  ],
+  "edges": []
+}
