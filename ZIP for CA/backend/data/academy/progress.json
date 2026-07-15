@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "subjects": {
+    "identity": {
+      "confidence": 0.7,
+      "status": "active"
+    },
+    "conversation": {
+      "confidence": 0.6,
+      "status": "active"
+    },
+    "reasoning": {
+      "confidence": 0.55,
+      "status": "active"
+    },
+    "programming": {
+      "confidence": 0.58,
+      "status": "active"
+    },
+    "networking": {
+      "confidence": 0.35,
+      "status": "planned"
+    },
+    "research": {
+      "confidence": 0.3,
+      "status": "planned"
+    },
+    "vision": {
+      "confidence": 0.2,
+      "status": "planned"
+    },
+    "writing": {
+      "confidence": 0.5,
+      "status": "active"
+    }
+  }
+}
