@@ -208,6 +208,7 @@ def build_user_identity_prompt(
                 "- Reported age: unknown",
                 "- Derived age group: unknown",
                 "- Do not guess the user's age.",
+                "- Never describe the user as young, old, adult, or any other age group without explicit age facts.",
             ]
         )
 

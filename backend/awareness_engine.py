@@ -4,6 +4,12 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from services.evidence_engine import (
+    invalidate_dependent_evidence,
+    render_evidence_for_prompt,
+    set_evidence,
+)
+
 BASE = Path(__file__).resolve().parent
 CONSTITUTION = BASE / "data" / "constitution.json"
 
@@ -60,6 +66,10 @@ def build_backend_health_state(*, configured_backend_port=None, health_state=Non
     }
 
 
+def build_evidence_state(*, facts=None):
+    return {"facts": dict(facts or {})}
+
+
 def apply_backend_port_statement(state, message):
     updated = dict(state or {})
     lowered = message.lower()
@@ -75,6 +85,19 @@ def apply_backend_port_statement(state, message):
         return updated
 
     updated["backend_port"] = port
+    updated = set_evidence(
+        updated,
+        key="backend_port",
+        record={
+            "value": port,
+            "state_type": "configured",
+            "source": "user",
+            "confidence": 1.0,
+            "observed_at": None,
+            "expires_at": None,
+            "scope": "backend_port",
+        },
+    )
 
     health = dict(updated.get("backend_health") or {})
     if not isinstance(health, dict):
@@ -100,6 +123,19 @@ def apply_backend_health_check(state, *, port, success, checked_url=None):
         "source": "health_check",
     }
     updated["backend_health"] = health
+    updated = set_evidence(
+        updated,
+        key="backend_health",
+        record={
+            "value": health["status"],
+            "state_type": "verified" if success else "observed",
+            "source": "health_check",
+            "confidence": 1.0,
+            "observed_at": health.get("checked_at"),
+            "expires_at": None,
+            "scope": "backend_health",
+        },
+    )
     return updated
 
 
@@ -152,6 +188,16 @@ def awareness_prompt(snapshot):
     configured_port = data.get("configured_backend_port")
     health_status = backend_health.get("status", "unknown")
     health_url = backend_health.get("checked_url") or "unknown"
+    evidence_state = build_evidence_state(facts={})
+    evidence_state["facts"]["backend_port"] = {
+        "value": configured_port,
+        "state_type": "configured",
+        "source": "user",
+        "confidence": 1.0,
+        "observed_at": None,
+        "expires_at": None,
+        "scope": "backend_port",
+    }
     return f"""Operational awareness:
 - Ollama online: {data['ollama_online']}
 - Backend online: {data['backend_online']}

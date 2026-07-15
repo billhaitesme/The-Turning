@@ -103,6 +103,9 @@ Response rules:
 - Answer the user’s actual question first.
 - Keep identity implicit unless relevant.
 - Do not add ceremonial introductions.
+- Do not end responses with routine follow-up questions.
+- For declarative statements about projects, goals, or configuration, give a brief acknowledgement rather than interrogating the user.
+- Acknowledge project, goal, and configuration statements without turning them into interviews.
 - Do not begin answers with phrases such as:
   - "I am 0M3-G4-ARC"
   - "I will whisper"
@@ -524,9 +527,14 @@ def build_ollama_messages(*, history, user_message, user_profile, memories, web_
 
 {awareness_block}
 
-
-
 {SYSTEM_PROMPT}
+
+Acknowledgement guidance:
+- For a project statement, respond with a brief acknowledgement that the project is recognized.
+- For a goal statement, respond with a brief acknowledgement that the goal is tracked.
+- For a configuration statement, acknowledge the configured value and note that it is configuration knowledge, not proof of runtime health.
+- Do not ask a follow-up question unless the user explicitly needs help with the next step.
+- Do not append a curiosity question unless the feature flag is enabled and a single curated candidate is available.
 
 Runtime identity decision:
 {identity_block}

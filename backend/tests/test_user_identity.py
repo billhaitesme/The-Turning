@@ -2,6 +2,7 @@ import unittest
 
 from services.user_identity import (
     age_group_from_age,
+    build_user_identity_prompt,
     empty_identity_profile,
     extract_explicit_age,
     normalize_identity_profile,
@@ -91,6 +92,25 @@ class UserIdentityTests(unittest.TestCase):
             profile["facts"]["age"]["value"],
             40,
         )
+
+    def test_unknown_age_is_never_described_as_young(self):
+        prompt = build_user_identity_prompt({"facts": {}})
+        self.assertIn("Do not guess the user's age", prompt)
+        self.assertIn("Never describe the user as young", prompt)
+
+    def test_explicit_age_remains_authoritative(self):
+        prompt = build_user_identity_prompt(
+            {
+                "facts": {
+                    "age": {
+                        "value": 40,
+                        "source": "explicit_user_statement",
+                    }
+                }
+            }
+        )
+        self.assertIn("Reported age: 40", prompt)
+        self.assertIn("Derived age group: adult", prompt)
 
 
 if __name__ == "__main__":
