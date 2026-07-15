@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from services.user_identity import build_user_identity_prompt
 
 @dataclass(frozen=True)
 class IdentityDecision:

@@ -5,6 +5,13 @@ from awareness_engine import awareness_prompt, build_awareness_snapshot, constit
 from journal_engine import write_journal_entry
 from identity_engine import classify_identity_intent, identity_prompt_fragment
 from personality_engine import get_active_personality, build_personality_prompt
+from services.user_identity import (
+    apply_explicit_identity_updates,
+    extract_explicit_age,
+    age_group_from_age,
+    build_user_identity_prompt,
+    normalize_identity_profile,
+)
 from routes.system import router as system_router
 from dotenv import load_dotenv
 load_dotenv(override=True)
@@ -345,19 +352,7 @@ def search_web(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> List[Di
     except Exception:
         return []
 
-def infer_age_group(message: str) -> str:
-    m = message.lower()
 
-    if any(w in m for w in ["homework", "school", "teacher", "class"]):
-        return "teen"
-
-    if any(w in m for w in ["retirement", "career", "mortgage"]):
-        return "adult"
-
-    if len(message) < 30:
-        return "young"
-
-    return "adult"
 
 
 class TurningEngine:
@@ -597,9 +592,9 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
     # --- AGE GROUP (hybrid logic) ---
     existing_profile = get_user_profile(user_id or "anonymous")
     age_group = existing_profile.get("preferences", {}).get("age_group")
+    
 
-    if not age_group:
-        age_group = infer_age_group(user_message)
+
 
     # Save updated profile
     save_user_profile(

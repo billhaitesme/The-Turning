@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function App() {
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = "http://127.0.0.1:8001";
   const ASSISTANT_NAME = "0M3-G4-ARC";
 
   const [message, setMessage] = useState("");
