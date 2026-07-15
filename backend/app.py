@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from awareness_engine import awareness_prompt, build_awareness_snapshot, constitution_prompt
+from awareness_engine import (
+    apply_backend_port_statement,
+    awareness_prompt,
+    build_awareness_snapshot,
+    constitution_prompt,
+)
 # Journal only meaningful events
 from journal_engine import write_journal_entry
 from identity_engine import classify_identity_intent, identity_prompt_fragment
@@ -12,6 +17,8 @@ from services.user_identity import (
     build_user_identity_prompt,
     normalize_identity_profile,
 )
+from services.cognition_pipeline import process_completed_turn
+from services.curiosity_engine import apply_curiosity_to_response
 from routes.system import router as system_router
 from dotenv import load_dotenv
 load_dotenv(override=True)
@@ -40,6 +47,10 @@ OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
 
 ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "false").lower() == "true"
 WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "5"))
+
+ENABLE_COGNITION_PIPELINE = os.getenv("ENABLE_COGNITION_PIPELINE", "true").lower() == "true"
+ENABLE_COGNITION_CONTEXT = os.getenv("ENABLE_COGNITION_CONTEXT", "false").lower() == "true"
+ENABLE_CURIOSITY_SUGGESTIONS = os.getenv("ENABLE_CURIOSITY_SUGGESTIONS", "false").lower() == "true"
 
 ACTIVE_PERSONALITY_MODE = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
 
@@ -269,6 +280,16 @@ def get_user_profile(user_id: Optional[str]) -> Dict[str, Any]:
     return {"style": row["style"] or "balanced", "preferences": prefs}
 
 
+def get_identity_profile(user_profile: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(user_profile, dict):
+        return normalize_identity_profile(None)
+
+    if isinstance(user_profile.get("identity_profile"), dict):
+        return normalize_identity_profile(user_profile["identity_profile"])
+
+    return normalize_identity_profile(None)
+
+
 def get_embedding(text: str) -> List[float]:
     try:
         with httpx.Client(timeout=60.0) as client:
@@ -437,6 +458,23 @@ def build_adaptive_guidance(*, user_message: str, memories: List[Dict[str, Any]]
     return guidance
 
 
+def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_message: str) -> Dict[str, Any]:
+    preferences = dict(user_profile.get("preferences", {}) or {})
+    state = {
+        "backend_port": preferences.get("backend_port"),
+        "backend_health": preferences.get("backend_health"),
+    }
+    updated_state = apply_backend_port_statement(state, user_message)
+
+    if updated_state.get("backend_port") is not None:
+        preferences["backend_port"] = updated_state["backend_port"]
+
+    if updated_state.get("backend_health") is not None:
+        preferences["backend_health"] = updated_state["backend_health"]
+
+    return preferences
+
+
 def build_ollama_messages(*, history, user_message, user_profile, memories, web_results):
     adaptive = build_adaptive_guidance(
         user_message=user_message,
@@ -444,12 +482,19 @@ def build_ollama_messages(*, history, user_message, user_profile, memories, web_
         user_profile=user_profile,
     )
 
+    backend_health_state = {
+        "backend_port": user_profile.get("preferences", {}).get("backend_port"),
+        "backend_health": user_profile.get("preferences", {}).get("backend_health"),
+    }
+
     snapshot = build_awareness_snapshot(
         network_mode=os.getenv("NETWORK_MODE", "offline"),
         active_model=OLLAMA_CHAT_MODEL,
         vision_model=os.getenv("OLLAMA_VISION_MODEL", "llava:7b"),
         embedding_model=OLLAMA_EMBED_MODEL,
         router_model=os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b"),
+        configured_backend_port=user_profile.get("preferences", {}).get("backend_port"),
+        backend_health_state=backend_health_state,
     )
 
     awareness_block = awareness_prompt(snapshot)
@@ -756,13 +801,33 @@ def chat(req: ChatRequest) -> ChatResponse:
     meta = get_conversation_meta(conversation_id) or {}
     effective_user_id = req.user_id or meta.get("user_id")
     user_profile = get_user_profile(effective_user_id)
+    user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
     memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
     try:
         reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if ENABLE_COGNITION_PIPELINE:
+        try:
+            cognition_output = process_completed_turn(
+                user_message=req.message,
+                assistant_response=reply,
+                identity_profile=get_identity_profile(user_profile),
+                persist=True,
+            )
+            curiosity = cognition_output.get("curiosity") if cognition_output else None
+            reply = apply_curiosity_to_response(
+                response=reply,
+                curiosity_candidate=curiosity,
+                enabled=ENABLE_CURIOSITY_SUGGESTIONS,
+            )
+        except Exception as exc:
+            print("Cognition pipeline warning:", repr(exc))
+            cognition_output = None
+
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)
+
     return ChatResponse(conversation_id=conversation_id, reply=reply, learning=learning)
 
 
@@ -781,6 +846,7 @@ def chat_stream(req: ChatRequest):
     effective_user_id = req.user_id or meta.get("user_id")
     history = get_messages(conversation_id, limit=MAX_HISTORY_MESSAGES)
     user_profile = get_user_profile(effective_user_id)
+    user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
     memories = search_memories(
         query=req.message,
         conversation_id=conversation_id,
@@ -811,6 +877,24 @@ def chat_stream(req: ChatRequest):
         full_text = "".join(chunks).strip()
 
         if full_text:
+            if ENABLE_COGNITION_PIPELINE:
+                try:
+                    cognition_output = process_completed_turn(
+                        user_message=req.message,
+                        assistant_response=full_text,
+                        identity_profile=get_identity_profile(user_profile),
+                        persist=True,
+                    )
+                    curiosity = cognition_output.get("curiosity") if cognition_output else None
+                    full_text = apply_curiosity_to_response(
+                        response=full_text,
+                        curiosity_candidate=curiosity,
+                        enabled=ENABLE_CURIOSITY_SUGGESTIONS,
+                    )
+                except Exception as exc:
+                    print("Cognition pipeline warning:", repr(exc))
+                    cognition_output = None
+
             add_message(conversation_id, "assistant", full_text)
 
             learning = persist_learning(
