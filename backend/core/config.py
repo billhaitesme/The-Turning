@@ -15,5 +15,8 @@ class Settings:
     enable_cognition_pipeline: bool = os.getenv("ENABLE_COGNITION_PIPELINE", "true").lower() == "true"
     enable_cognition_context: bool = os.getenv("ENABLE_COGNITION_CONTEXT", "false").lower() == "true"
     enable_curiosity_suggestions: bool = os.getenv("ENABLE_CURIOSITY_SUGGESTIONS", "false").lower() == "true"
+    enable_reasoning_pipeline: bool = os.getenv("ENABLE_REASONING_PIPELINE", "true").lower() == "true"
+    enable_reasoning_context: bool = os.getenv("ENABLE_REASONING_CONTEXT", "false").lower() == "true"
+    enable_action_recommendations: bool = os.getenv("ENABLE_ACTION_RECOMMENDATIONS", "true").lower() == "true"
 
 settings = Settings()

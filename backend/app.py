@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 from awareness_engine import (
     apply_backend_port_statement,
     awareness_prompt,
@@ -10,6 +12,15 @@ from awareness_engine import (
 from journal_engine import write_journal_entry
 from identity_engine import classify_identity_intent, identity_prompt_fragment
 from personality_engine import get_active_personality, build_personality_prompt
+from services.evidence_engine import (
+    invalidate_dependents,
+    load_evidence_store,
+    normalize_evidence_record,
+    save_evidence_store,
+    set_evidence,
+)
+from services.goal_engine import load_goal_store
+from services.reasoning_pipeline import run_reasoning_pipeline
 from services.user_identity import (
     apply_explicit_identity_updates,
     extract_explicit_age,
@@ -51,6 +62,9 @@ WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "5"))
 ENABLE_COGNITION_PIPELINE = os.getenv("ENABLE_COGNITION_PIPELINE", "true").lower() == "true"
 ENABLE_COGNITION_CONTEXT = os.getenv("ENABLE_COGNITION_CONTEXT", "false").lower() == "true"
 ENABLE_CURIOSITY_SUGGESTIONS = os.getenv("ENABLE_CURIOSITY_SUGGESTIONS", "false").lower() == "true"
+ENABLE_REASONING_PIPELINE = os.getenv("ENABLE_REASONING_PIPELINE", "true").lower() == "true"
+ENABLE_REASONING_CONTEXT = os.getenv("ENABLE_REASONING_CONTEXT", "false").lower() == "true"
+ENABLE_ACTION_RECOMMENDATIONS = os.getenv("ENABLE_ACTION_RECOMMENDATIONS", "true").lower() == "true"
 
 ACTIVE_PERSONALITY_MODE = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
 
@@ -478,6 +492,93 @@ def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_messa
     return preferences
 
 
+latest_reasoning_result: Optional[Dict[str, Any]] = None
+
+
+def _build_dependency_map(evidence_store: Dict[str, Any]) -> Dict[str, List[str]]:
+    records = evidence_store.get("records") if isinstance(evidence_store, dict) else None
+    if not isinstance(records, dict):
+        records = evidence_store.get("facts") if isinstance(evidence_store, dict) else {}
+    if not isinstance(records, dict):
+        return {}
+
+    dependency_map: Dict[str, List[str]] = {}
+    for key, record in records.items():
+        normalized = normalize_evidence_record(record)
+        dependencies = normalized.get("dependencies") or []
+        for dependency in dependencies:
+            dependency_map.setdefault(dependency, []).append(key)
+    return dependency_map
+
+
+def _build_runtime_evidence_store(
+    *,
+    previous_evidence_store: Optional[Dict[str, Any]],
+    preferences: Dict[str, Any],
+) -> Dict[str, Any]:
+    evidence_store = deepcopy(previous_evidence_store or load_evidence_store())
+    if not isinstance(evidence_store, dict):
+        evidence_store = {"version": 1, "facts": {}}
+
+    evidence_store.setdefault("version", 1)
+    evidence_store.setdefault("facts", {})
+
+    previous_port = normalize_evidence_record(evidence_store["facts"].get("backend_port")).get("value")
+    backend_port = preferences.get("backend_port")
+    backend_health = preferences.get("backend_health")
+
+    if backend_port is not None:
+        evidence_store = set_evidence(
+            evidence_store,
+            key="backend_port",
+            record={
+                "key": "backend_port",
+                "value": backend_port,
+                "state_type": "configured",
+                "source": "user",
+                "confidence": 1.0,
+                "dependencies": [],
+                "scope": "runtime",
+                "notes": "Configured backend port.",
+            },
+        )
+
+    if isinstance(backend_health, dict):
+        status = backend_health.get("status") or "unknown"
+        if status == "online":
+            state_type = "verified"
+            value = True
+            confidence = 1.0
+        elif status == "offline":
+            state_type = "observed"
+            value = False
+            confidence = 1.0
+        else:
+            state_type = "unknown"
+            value = None
+            confidence = 0.0
+
+        evidence_store = set_evidence(
+            evidence_store,
+            key="backend_health",
+            record={
+                "key": "backend_health",
+                "value": value,
+                "state_type": state_type,
+                "source": backend_health.get("source", "health_check"),
+                "confidence": confidence,
+                "dependencies": ["backend_port"],
+                "scope": "runtime",
+                "notes": backend_health.get("notes", ""),
+            },
+        )
+
+    if previous_port is not None and backend_port is not None and previous_port != backend_port:
+        evidence_store = invalidate_dependents(evidence_store, dependency_key="backend_port")
+
+    return evidence_store
+
+
 def build_ollama_messages(*, history, user_message, user_profile, memories, web_results):
     adaptive = build_adaptive_guidance(
         user_message=user_message,
@@ -774,6 +875,11 @@ def get_vow() -> Dict[str, str]:
     return {"name": APP_NAME, "vow": VOW_OF_THE_TURNING}
 
 
+@app.get("/system/reasoning")
+def get_system_reasoning() -> Dict[str, Any]:
+    return {"reasoning": latest_reasoning_result}
+
+
 @app.post("/conversations", response_model=CreateConversationResponse)
 def new_conversation(req: CreateConversationRequest) -> CreateConversationResponse:
     cid = create_conversation(user_id=req.user_id, title=req.title)
@@ -832,6 +938,25 @@ def chat(req: ChatRequest) -> ChatResponse:
         except Exception as exc:
             print("Cognition pipeline warning:", repr(exc))
             cognition_output = None
+
+    if ENABLE_REASONING_PIPELINE:
+        try:
+            evidence_store = _build_runtime_evidence_store(
+                previous_evidence_store=load_evidence_store(),
+                preferences=user_profile.get("preferences", {}),
+            )
+            goal_store = load_goal_store()
+            reasoning_output = run_reasoning_pipeline(
+                evidence_store=evidence_store,
+                goal_store=goal_store,
+                previous_evidence_store=load_evidence_store(),
+                dependency_map=_build_dependency_map(evidence_store),
+            )
+            global latest_reasoning_result
+            latest_reasoning_result = reasoning_output
+        except Exception as exc:
+            print("Reasoning pipeline warning:", repr(exc))
+            reasoning_output = None
 
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)
@@ -902,6 +1027,25 @@ def chat_stream(req: ChatRequest):
                 except Exception as exc:
                     print("Cognition pipeline warning:", repr(exc))
                     cognition_output = None
+
+            if ENABLE_REASONING_PIPELINE:
+                try:
+                    evidence_store = _build_runtime_evidence_store(
+                        previous_evidence_store=load_evidence_store(),
+                        preferences=user_profile.get("preferences", {}),
+                    )
+                    goal_store = load_goal_store()
+                    reasoning_output = run_reasoning_pipeline(
+                        evidence_store=evidence_store,
+                        goal_store=goal_store,
+                        previous_evidence_store=load_evidence_store(),
+                        dependency_map=_build_dependency_map(evidence_store),
+                    )
+                    global latest_reasoning_result
+                    latest_reasoning_result = reasoning_output
+                except Exception as exc:
+                    print("Reasoning pipeline warning:", repr(exc))
+                    reasoning_output = None
 
             add_message(conversation_id, "assistant", full_text)
 
