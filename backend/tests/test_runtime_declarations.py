@@ -26,6 +26,13 @@ class RuntimeDeclarationTests(unittest.TestCase):
         self.assertFalse(any(item["key"] == "vision_model_loaded" for item in records))
         self.assertFalse(any(item["key"] == "vision_model_healthy" for item in records))
 
+    def test_user_says_vision_model_selected_maps_to_selection_key(self):
+        records = extract_runtime_declarations("The vision model is selected.")
+        record = next(item for item in records if item["key"] == "vision_model_selected")
+        self.assertEqual(record["state_type"], "declared")
+        self.assertEqual(record["source"], "user")
+        self.assertTrue(record["value"])
+
     def test_user_says_service_online_declared_not_verified(self):
         records = extract_runtime_declarations("The backend is online.")
         backend = next(item for item in records if item["key"] == "backend_health")

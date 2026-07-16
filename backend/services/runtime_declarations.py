@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 RUNTIME_DECLARATION_PATTERN = re.compile(
     r"\b(?:the\s+)?(?P<subject>[a-z0-9][a-z0-9_\- ]{0,60})\s+"
     r"(?:is|was|seems)\s+"
-    r"(?P<status>online|offline|connected|ready|readable|installed|available|loaded|healthy|configured|verified)\b",
+    r"(?P<status>online|offline|connected|ready|readable|installed|available|loaded|healthy|configured|verified|selected)\b",
     re.IGNORECASE,
 )
 
@@ -41,6 +41,10 @@ def _runtime_key(subject_slug: str, status: str) -> str:
         return f"{subject_slug}_configured"
     if status == "verified":
         return f"{subject_slug}_verified"
+    if status == "selected":
+        if subject_slug in {"vision_model", "selected_vision_model", "vision_ai_model", "model"}:
+            return "vision_model_selected"
+        return f"{subject_slug}_selected"
 
     return f"{subject_slug}_state"
 
@@ -52,6 +56,7 @@ BOOLEAN_STATUSES = {
     "healthy",
     "configured",
     "verified",
+    "selected",
 }
 
 HEALTH_CHECK_REPORT_PATTERN = re.compile(

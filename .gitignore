@@ -32,5 +32,8 @@ training/**/checkpoint-*
 training/**/trainer_state.json
 # OMEGA-ARC runtime state
 backend/data/evidence_sessions/
+backend/data/planning_focus_sessions/
 backend/data/*.db
 backend/*.db
+diagnostics_report.txt
+runtime-backup/

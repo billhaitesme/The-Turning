@@ -1236,6 +1236,15 @@ def chat(req: ChatRequest) -> ChatResponse:
                         reply = f"Archived plan {active_plan.get('id')}."
                     else:
                         reply = "No active plan is available to archive."
+            else:
+                active_plan = planning_output.get("selected_plan") or planning_output.get("active_plan")
+                declaration_keys = {
+                    str(item.get("key") or "")
+                    for item in extract_runtime_declarations(req.message)
+                    if isinstance(item, dict)
+                }
+                if active_plan and "vision_model_selected" in declaration_keys:
+                    reply = render_plan(active_plan)
         except Exception as exc:
             print("Planning pipeline warning:", repr(exc))
             planning_output = None
