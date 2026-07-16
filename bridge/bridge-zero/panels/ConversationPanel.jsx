@@ -6,7 +6,7 @@ export default function ConversationPanel({ accent, data }) {
   const lines = items.slice(-6);
 
   return (
-    <PanelShell title="Conversation" accent={accent} lamp={<StatusLamp label="Conversation" state={data.state} />}>
+    <PanelShell title="Conversation" accent={accent} lamp={<StatusLamp label="Conversation" state={data.state} />} activityAt={data.activity_at}>
       <div className="conversation-lines">
         {lines.length === 0 ? <div className="muted">No dialogue loaded.</div> : null}
         {lines.map((entry, idx) => (

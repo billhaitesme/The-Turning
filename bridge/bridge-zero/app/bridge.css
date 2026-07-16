@@ -137,6 +137,19 @@ body,
   font-size: 0.77rem;
 }
 
+.panel-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-activity {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #7f8f9d;
+  letter-spacing: 0.05em;
+}
+
 .panel-content {
   padding: 10px;
   display: flex;

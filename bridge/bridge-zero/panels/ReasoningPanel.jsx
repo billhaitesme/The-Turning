@@ -4,7 +4,7 @@ import CircularGauge from "../instruments/CircularGauge";
 
 export default function ReasoningPanel({ accent, data }) {
   return (
-    <PanelShell title="Reasoning" accent={accent} lamp={<StatusLamp label="Reasoning" state={data.state} />}>
+    <PanelShell title="Reasoning" accent={accent} lamp={<StatusLamp label="Reasoning" state={data.state} />} activityAt={data.activity_at}>
       <CircularGauge label="Inference Confidence" value={data.confidence || 0} color={accent} />
       <ul className="instrument-list">
         {(data.inferences || []).map((item) => <li key={item}>{item}</li>)}

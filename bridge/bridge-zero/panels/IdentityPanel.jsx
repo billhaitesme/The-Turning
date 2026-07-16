@@ -4,7 +4,7 @@ import SystemBadge from "../instruments/SystemBadge";
 
 export default function IdentityPanel({ accent, data }) {
   return (
-    <PanelShell title="Identity" accent={accent} lamp={<StatusLamp label="Identity" state={data.state} />}>
+    <PanelShell title="Identity" accent={accent} lamp={<StatusLamp label="Identity" state={data.state} />} activityAt={data.activity_at}>
       <div className="badge-grid">
         <SystemBadge label="User" value={data.user || "Unknown"} />
         <SystemBadge label="Project" value={data.project || "Unspecified"} />

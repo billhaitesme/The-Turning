@@ -17,6 +17,8 @@ const subsystems = ["identity", "evidence", "reasoning", "planning", "deliberati
 export default function BridgeZeroApp() {
   const metadata = getReleaseMetadata();
   const bridge = useBridgeData();
+  const connectionState = bridge.connection?.state || "INITIALIZING";
+  const stale = bridge.connection?.stale;
 
   return (
     <div className="bridge-root">
@@ -25,7 +27,9 @@ export default function BridgeZeroApp() {
           <div className="brand-title">OMEGA-ARC</div>
           <div className="brand-sub">Bridge Zero</div>
         </div>
-        <div className="bridge-status">Epoch VIII | STATUS: OPERATIONAL</div>
+        <div className="bridge-status">
+          Epoch VIII | LINK: {connectionState}{stale ? " | DATA: STALE" : " | DATA: LIVE"}
+        </div>
       </header>
 
       <SignalBus subsystems={subsystems} activeSubsystem={bridge.busActive} />
@@ -39,7 +43,11 @@ export default function BridgeZeroApp() {
             <ReasoningPanel accent={subsystemColors.reasoning} data={bridge.reasoning} />
             <PlanningPanel accent={subsystemColors.planning} data={bridge.planning} />
             <DeliberationPanel accent={subsystemColors.deliberation} data={bridge.deliberation} />
-            <ToolsPanel accent={subsystemColors.tools} data={bridge.tools} />
+            <ToolsPanel
+              accent={subsystemColors.tools}
+              data={bridge.tools}
+              connection={bridge.connection}
+            />
           </div>
         </section>
 

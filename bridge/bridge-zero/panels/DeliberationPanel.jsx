@@ -11,7 +11,7 @@ export default function DeliberationPanel({ accent, data }) {
   ];
 
   return (
-    <PanelShell title="Deliberation" accent={accent} lamp={<StatusLamp label="Deliberation" state={data.state} />}>
+    <PanelShell title="Deliberation" accent={accent} lamp={<StatusLamp label="Deliberation" state={data.state} />} activityAt={data.activity_at}>
       <div className="planning-headline">Recommendation: {data.recommendation || "none"}</div>
       <div className="planning-headline">Approval: {data.approvalState || "pending"}</div>
       <ul className="instrument-list">
