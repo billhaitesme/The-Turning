@@ -5,7 +5,7 @@
   "training_dir": "C:\\Users\\BillH\\Desktop\\NERD\\Turning\\training",
   "backend_python": "C:\\Users\\BillH\\Desktop\\NERD\\Turning\\omega_arc_ollama\\backend\\.venv\\Scripts\\python.exe",
   "training_python": "C:\\Users\\BillH\\Desktop\\NERD\\Turning\\training\\.venv\\Scripts\\python.exe",
-  "backend_url": "http://127.0.0.1:8000/",
+  "backend_url": "http://127.0.0.1:8001/",
   "frontend_url": "http://localhost:5173/",
   "ollama_url": "http://127.0.0.1:11434/api/tags",
   "ollama_model": "llama2-uncensored:7b"

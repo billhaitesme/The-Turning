@@ -1,0 +1,352 @@
+Set-StrictMode -Version Latest
+
+function Test-OmegaRequiredStructure {
+    $paths = Get-OmegaPaths
+    $checks = @(
+        @{ Name = "backend/"; Path = $paths.Backend; Required = $true },
+        @{ Name = "frontend/"; Path = $paths.Frontend; Required = $true },
+        @{ Name = "scripts/"; Path = $paths.Scripts; Required = $true },
+        @{ Name = "backend/.venv"; Path = $paths.BackendVenv; Required = $true },
+        @{ Name = "backend/app.py"; Path = $paths.BackendApp; Required = $true },
+        @{ Name = "frontend/package.json"; Path = $paths.FrontendPackage; Required = $true }
+    )
+
+    foreach ($check in $checks) {
+        if (Test-Path $check.Path) {
+            Write-OmegaPass "$($check.Name) found"
+        }
+        elseif ($check.Required) {
+            Write-OmegaFail "$($check.Name) missing"
+            return $false
+        }
+    }
+
+    return $true
+}
+
+function Test-OmegaToolchain {
+    $paths = Get-OmegaPaths
+    $ok = $true
+
+    if (Test-Path $paths.BackendPython) {
+        Write-OmegaPass "Python venv executable found"
+    }
+    else {
+        Write-OmegaFail "Python venv executable missing at $($paths.BackendPython)"
+        $ok = $false
+    }
+
+    if (Test-OmegaCommandExists -Name "node") {
+        Write-OmegaPass "Node available"
+    }
+    else {
+        Write-OmegaFail "Node is not installed or unavailable in PATH"
+        $ok = $false
+    }
+
+    if (Test-OmegaCommandExists -Name "npm") {
+        Write-OmegaPass "npm available"
+    }
+    else {
+        Write-OmegaFail "npm is not installed or unavailable in PATH"
+        $ok = $false
+    }
+
+    if (Test-Path $paths.BackendPython) {
+        & $paths.BackendPython -m uvicorn --version 1>$null 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-OmegaPass "uvicorn available in backend venv"
+        }
+        else {
+            Write-OmegaFail "uvicorn missing in backend venv"
+            $ok = $false
+        }
+    }
+
+    return $ok
+}
+
+function Test-OmegaPortConflicts {
+    param(
+        [int]$BackendPort = 8001,
+        [int]$FrontendPort = 5173
+    )
+
+    $ok = $true
+    foreach ($port in @($BackendPort, $FrontendPort)) {
+        $owner = Get-OmegaProcessByPort -Port $port
+        if ($owner) {
+            Write-OmegaWarning "Port $port is occupied by PID $($owner.Pid) ($($owner.ProcessName))."
+            $ok = $false
+        }
+        else {
+            Write-OmegaPass "Port $port is available"
+        }
+    }
+
+    return $ok
+}
+
+function Invoke-OmegaLaunch {
+    $paths = Get-OmegaPaths
+
+    Write-Host ""
+    Write-OmegaInfo "OMEGA-ARC developer launch starting..."
+
+    if (-not (Test-OmegaRequiredStructure)) {
+        throw "Required repository structure is incomplete."
+    }
+
+    if (-not (Test-OmegaToolchain)) {
+        throw "Toolchain checks failed."
+    }
+
+    $backendStatus = Get-OmegaBackendStatus -Port 8001
+    if ($backendStatus.PortOwner -and (-not ($backendStatus.Record -and [int]$backendStatus.Record.pid -eq [int]$backendStatus.PortOwner.Pid))) {
+        throw "Port 8001 is occupied by PID $($backendStatus.PortOwner.Pid) ($($backendStatus.PortOwner.ProcessName))."
+    }
+
+    $frontendStatus = Get-OmegaFrontendStatus -Port 5173
+    if ($frontendStatus.PortOwner -and (-not ($frontendStatus.Record -and [int]$frontendStatus.Record.pid -eq [int]$frontendStatus.PortOwner.Pid))) {
+        throw "Port 5173 is occupied by PID $($frontendStatus.PortOwner.Pid) ($($frontendStatus.PortOwner.ProcessName))."
+    }
+
+    Start-OmegaBackend -Port 8001 | Out-Null
+    if (Wait-OmegaBackendReady -Port 8001 -TimeoutSeconds 45) {
+        Write-OmegaPass "Backend health endpoint responded"
+    }
+    else {
+        Write-OmegaWarning "Backend did not respond within timeout window"
+    }
+
+    Start-OmegaFrontend -Port 5173 -BackendPort 8001 | Out-Null
+
+    Start-Process "http://localhost:5173"
+
+    $git = Get-OmegaGitInfo
+    $backend = Get-OmegaBackendStatus -Port 8001
+    $frontend = Get-OmegaFrontendStatus -Port 5173
+    $testCount = Get-OmegaBackendTestCount
+    $acceptanceCount = Get-OmegaAcceptanceCount
+
+    Write-Host ""
+    Write-Host "-------------------------------------"
+    Write-Host "OMEGA-ARC"
+    Write-Host ""
+    Write-Host "Branch:"
+    Write-Host $git.Branch
+    Write-Host ""
+    Write-Host "Commit:"
+    Write-Host $git.Commit
+    Write-Host ""
+    Write-Host "Latest Tag:"
+    Write-Host $git.LatestTag
+    Write-Host ""
+    Write-Host "Backend:"
+    if ($backend.Online) { Write-Host "ONLINE" -ForegroundColor Green } else { Write-Host "OFFLINE" -ForegroundColor Red }
+    Write-Host ""
+    Write-Host "Frontend:"
+    if ($frontend.Online) { Write-Host "ONLINE" -ForegroundColor Green } else { Write-Host "OFFLINE" -ForegroundColor Red }
+    Write-Host ""
+    Write-Host "Backend URL:"
+    Write-Host $backend.Url
+    Write-Host ""
+    Write-Host "Frontend URL:"
+    Write-Host $frontend.Url
+    Write-Host ""
+    Write-Host "Backend Tests:"
+    Write-Host "$testCount Passing"
+    Write-Host ""
+    Write-Host "Acceptance Scenarios:"
+    Write-Host $acceptanceCount
+    Write-Host "-------------------------------------"
+}
+
+function Stop-OmegaStack {
+    Write-OmegaInfo "Stopping OMEGA-ARC processes tracked by PID files..."
+    Stop-OmegaFrontend
+    Stop-OmegaBackend
+}
+
+function Restart-OmegaStack {
+    Stop-OmegaStack
+    Invoke-OmegaLaunch
+}
+
+function Show-OmegaStatus {
+    $paths = Get-OmegaPaths
+    $git = Get-OmegaGitInfo
+    $tools = Get-OmegaToolVersions
+    $backend = Get-OmegaBackendStatus -Port 8001
+    $frontend = Get-OmegaFrontendStatus -Port 5173
+    $testCount = Get-OmegaBackendTestCount
+    $acceptanceCount = Get-OmegaAcceptanceCount
+
+    Write-Host ""
+    Write-Host "OMEGA-ARC Status"
+    Write-Host "-------------------------------------"
+    Write-Host "Repository: $($paths.RepoRoot)"
+    Write-Host "Branch: $($git.Branch)"
+    Write-Host "Commit: $($git.Commit)"
+    Write-Host "Dirty/Clean: $($git.Status)"
+    Write-Host "Latest Tag: $($git.LatestTag)"
+    Write-Host "Backend Online: $($backend.Online)"
+    Write-Host "Frontend Online: $($frontend.Online)"
+    Write-Host "Backend URL: $($backend.Url)"
+    Write-Host "Frontend URL: $($frontend.Url)"
+    Write-Host "Python Version: $($tools.Python)"
+    Write-Host "Node Version: $($tools.Node)"
+    Write-Host "Uvicorn Version: $($tools.Uvicorn)"
+    Write-Host "Venv Location: $($paths.BackendVenv)"
+    Write-Host "Test Count: $testCount"
+    Write-Host "Acceptance Count: $acceptanceCount"
+    Write-Host "-------------------------------------"
+}
+
+function Invoke-OmegaDoctor {
+    $paths = Get-OmegaPaths
+    $checks = @()
+
+    $checks += [pscustomobject]@{ Name = "Python"; Status = if (Test-Path $paths.BackendPython) { "PASS" } else { "FAIL" }; Detail = $paths.BackendPython }
+    $checks += [pscustomobject]@{ Name = "Node"; Status = if (Test-OmegaCommandExists -Name "node") { "PASS" } else { "FAIL" }; Detail = "node in PATH" }
+    $checks += [pscustomobject]@{ Name = "npm"; Status = if (Test-OmegaCommandExists -Name "npm") { "PASS" } else { "FAIL" }; Detail = "npm in PATH" }
+
+    $uvicornStatus = "FAIL"
+    if (Test-Path $paths.BackendPython) {
+        & $paths.BackendPython -m uvicorn --version 1>$null 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $uvicornStatus = "PASS"
+        }
+    }
+    $checks += [pscustomobject]@{ Name = "uvicorn"; Status = $uvicornStatus; Detail = "backend venv" }
+
+    $checks += [pscustomobject]@{ Name = "backend/.venv"; Status = if (Test-Path $paths.BackendVenv) { "PASS" } else { "FAIL" }; Detail = $paths.BackendVenv }
+    $checks += [pscustomobject]@{ Name = "frontend/node_modules"; Status = if (Test-Path (Join-Path $paths.Frontend "node_modules")) { "PASS" } else { "WARNING" }; Detail = "Install with npm install if missing" }
+    $checks += [pscustomobject]@{ Name = "backend/app.py"; Status = if (Test-Path $paths.BackendApp) { "PASS" } else { "FAIL" }; Detail = $paths.BackendApp }
+    $checks += [pscustomobject]@{ Name = "frontend/package.json"; Status = if (Test-Path $paths.FrontendPackage) { "PASS" } else { "FAIL" }; Detail = $paths.FrontendPackage }
+    $checks += [pscustomobject]@{ Name = "backend/.env"; Status = if (Test-Path $paths.BackendEnv) { "PASS" } else { "WARNING" }; Detail = "Optional but recommended for local configuration" }
+
+    $viteExists = (Test-Path $paths.FrontendViteConfigJs) -or (Test-Path $paths.FrontendViteConfigTs)
+    $checks += [pscustomobject]@{ Name = "frontend vite config"; Status = if ($viteExists) { "PASS" } else { "FAIL" }; Detail = "vite.config.js or vite.config.ts" }
+
+    $port8001 = Get-OmegaProcessByPort -Port 8001
+    $port5173 = Get-OmegaProcessByPort -Port 5173
+    $checks += [pscustomobject]@{ Name = "Port 8001"; Status = if ($port8001) { "WARNING" } else { "PASS" }; Detail = if ($port8001) { "occupied by PID $($port8001.Pid) ($($port8001.ProcessName))" } else { "available" } }
+    $checks += [pscustomobject]@{ Name = "Port 5173"; Status = if ($port5173) { "WARNING" } else { "PASS" }; Detail = if ($port5173) { "occupied by PID $($port5173.Pid) ($($port5173.ProcessName))" } else { "available" } }
+
+    Write-Host ""
+    Write-Host "OMEGA-ARC Doctor"
+    Write-Host "-------------------------------------"
+    foreach ($check in $checks) {
+        switch ($check.Status) {
+            "PASS" { Write-Host "PASS    $($check.Name): $($check.Detail)" -ForegroundColor Green }
+            "WARNING" { Write-Host "WARNING $($check.Name): $($check.Detail)" -ForegroundColor Yellow }
+            default { Write-Host "FAIL    $($check.Name): $($check.Detail)" -ForegroundColor Red }
+        }
+    }
+    Write-Host "-------------------------------------"
+
+    if (@($checks | Where-Object Status -eq "FAIL").Count -gt 0) {
+        exit 1
+    }
+}
+
+function Open-OmegaDocs {
+    $paths = Get-OmegaPaths
+    $targets = @(
+        (Join-Path $paths.RepoRoot "SYSTEM_OVERVIEW.md"),
+        (Join-Path $paths.RepoRoot "VERSION_HISTORY.md"),
+        (Join-Path $paths.RepoRoot "docs/decisions"),
+        (Join-Path $paths.RepoRoot "docs/acceptance"),
+        (Join-Path $paths.RepoRoot "docs/architecture")
+    )
+
+    foreach ($target in $targets) {
+        if (Test-Path $target) {
+            Start-Process $target
+            Write-OmegaInfo "Opened $target"
+        }
+        else {
+            Write-OmegaWarning "Missing documentation target: $target"
+        }
+    }
+}
+
+function Invoke-OmegaClean {
+    $paths = Get-OmegaPaths
+
+    $targets = @()
+    $targets += Get-ChildItem -Path $paths.RepoRoot -Recurse -Directory -Filter "__pycache__" -ErrorAction SilentlyContinue
+    $targets += Get-ChildItem -Path $paths.RepoRoot -Recurse -File -Filter "*.pyc" -ErrorAction SilentlyContinue
+
+    $pytestCache = Join-Path $paths.Backend ".pytest_cache"
+    if (Test-Path $pytestCache) {
+        $targets += Get-Item $pytestCache
+    }
+
+    $nodeCaches = @(
+        (Join-Path $paths.Frontend "node_modules/.cache"),
+        (Join-Path $paths.Frontend "node_modules/.vite")
+    )
+    foreach ($cache in $nodeCaches) {
+        if (Test-Path $cache) {
+            $targets += Get-Item $cache
+        }
+    }
+
+    if ($targets.Count -eq 0) {
+        Write-OmegaInfo "Nothing to clean."
+        return
+    }
+
+    Write-OmegaInfo "The following cache artifacts can be removed:"
+    foreach ($target in $targets) {
+        Write-Host "- $($target.FullName)"
+    }
+
+    $confirmation = Read-Host "Proceed with deletion? (y/N)"
+    if ($confirmation -notin @("y", "Y", "yes", "YES")) {
+        Write-OmegaWarning "Clean canceled."
+        return
+    }
+
+    foreach ($target in $targets) {
+        Remove-Item -Path $target.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-OmegaPass "Clean operation completed."
+}
+
+function Show-OmegaFutureHook {
+    param([Parameter(Mandatory = $true)][string]$Name)
+    Write-OmegaWarning "Future hook '$Name' is reserved but not yet implemented."
+}
+
+function Show-OmegaCommandHelp {
+    Write-Host "OMEGA-ARC Developer Console (Epoch V)"
+    Write-Host "Usage: .\scripts\omega.ps1 <command> [argument]"
+    Write-Host ""
+    Write-Host "Commands:"
+    Write-Host "  launch"
+    Write-Host "  stop"
+    Write-Host "  restart"
+    Write-Host "  status"
+    Write-Host "  doctor"
+    Write-Host "  test"
+    Write-Host "  acceptance [id]"
+    Write-Host "  docs"
+    Write-Host "  git"
+    Write-Host "  clean"
+}
+
+Export-ModuleMember -Function @(
+    "Invoke-OmegaLaunch",
+    "Stop-OmegaStack",
+    "Restart-OmegaStack",
+    "Show-OmegaStatus",
+    "Invoke-OmegaDoctor",
+    "Open-OmegaDocs",
+    "Invoke-OmegaClean",
+    "Show-OmegaFutureHook",
+    "Show-OmegaCommandHelp"
+)
