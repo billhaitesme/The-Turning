@@ -24,6 +24,15 @@ Evidence Architecture.
 
 Reasoning Foundation.
 
+## Epoch VI — Persistent Planning and Decision Architecture
+
+- Persistent plan lifecycle and deterministic plan templates
+- Session-focused active goal and plan selection
+- Evidence-driven step advancement and deterministic next-action guidance
+- Decision provenance tracking with explicit model-choice capture
+- Read-only plans/decisions system endpoints and console inspection workflow
+- 250 passing backend tests
+
 ### Highlights
 
 - Evidence-based reasoning

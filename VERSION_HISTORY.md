@@ -44,15 +44,17 @@ This is not a changelog. It is a historical map of how OMEGA-ARC evolved.
 - Runtime-aware deterministic summaries
 - Developer console foundation
 
-## Epoch VI — Planning
+## Epoch VI — Persistent Planning and Decision Architecture
 
 - Persistent plan lifecycle
-- Deterministic plan templates
-- Evidence-driven step evaluation
-- Deterministic plan revision
-- Decision provenance records
+- Deterministic plan templates and canonical goal normalization
+- Session-focused active goal and plan selection
+- Evidence-driven step evaluation and deterministic next-action selection
+- Deterministic plan revision and duplicate-plan normalization
+- Decision provenance records with explicit choice handling
 - Read-only system endpoints for plans and decisions
 - Console inspection commands: plan, plans, decisions
+- 250 passing backend tests
 
 ## Epoch VII — Perception
 
