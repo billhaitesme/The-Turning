@@ -52,6 +52,7 @@ def build_backend_health_response(evidence_store: Dict[str, Any]) -> str:
     source = str(backend_health.get("source") or "")
     checked_at = backend_health.get("checked_at") or backend_health.get("observed_at")
     checked_url = backend_health.get("checked_url")
+    notes = str(backend_health.get("notes") or "").lower()
 
     configured_endpoint = f"http://127.0.0.1:{backend_port}" if backend_port is not None else None
     endpoint_matches = bool(configured_endpoint and checked_url and str(checked_url).strip() == configured_endpoint)
@@ -72,6 +73,11 @@ def build_backend_health_response(evidence_store: Dict[str, Any]) -> str:
         return (
             "A trusted health check reported the backend offline, but the checked endpoint does not match "
             "the currently configured backend endpoint."
+        )
+
+    if source == "health_check" and state_type == "unknown" and "endpoint mismatch" in notes:
+        return (
+            "The health-check result did not match the currently configured endpoint, so backend health remains unknown."
         )
 
     if state_type == "declared" and source == "user" and value in {"online", "offline"}:

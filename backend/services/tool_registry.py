@@ -3,61 +3,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
 from services.tool_contracts import ToolAdapter, validate_tool_definition
 
 TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
-
-
-class BackendHealthCheckAdapter(ToolAdapter):
-    def describe(self) -> Dict[str, Any]:
-        return {
-            "name": "backend_health_check",
-            "version": 1,
-            "description": "Checks the configured local backend endpoint.",
-        }
-
-    def validate_arguments(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        if arguments:
-            raise ValueError("backend_health_check does not accept arguments in Epoch VIII.")
-        return {}
-
-    def dry_run(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        self.validate_arguments(arguments)
-        return {
-            "would_check": "http://127.0.0.1:8001/health",
-            "side_effects": [],
-            "safe": True,
-        }
-
-    def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        self.validate_arguments(arguments)
-        return {
-            "status": "not_implemented",
-            "success": False,
-            "output": {
-                "checked_url": "http://127.0.0.1:8001/health",
-                "message": "backend_health_check execution is stubbed in Epoch VIII.",
-            },
-            "side_effects_observed": [],
-        }
-
-
-BACKEND_HEALTH_CHECK_DESCRIPTOR = validate_tool_definition(
-    {
-        "name": "backend_health_check",
-        "version": 1,
-        "description": "Checks the configured local backend endpoint.",
-        "category": "diagnostic",
-        "risk_level": "low",
-        "requires_approval": True,
-        "supports_dry_run": True,
-        "input_schema": {},
-        "output_schema": {},
-        "side_effects": [],
-        "allowed_scopes": ["localhost"],
-        "enabled": True,
-    }
-)
 
 
 def register_tool(tool_definition: Dict[str, Any], adapter: Optional[ToolAdapter] = None) -> Dict[str, Any]:

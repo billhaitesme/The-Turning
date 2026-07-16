@@ -6,10 +6,22 @@ from pydantic import BaseModel, Field
 from core.config import settings
 from services.goal_engine import load_goal_store
 from services.knowledge_graph import load_graph
-from services.tool_approval import approve_request, create_approval_request, list_tool_requests, reject_request
+from services.evidence_engine import (
+    extract_durable_evidence_store,
+    extract_session_scoped_evidence_store,
+    load_evidence_store,
+    load_session_evidence_store,
+    merge_evidence_stores,
+    save_evidence_store,
+    save_session_evidence_store,
+)
+from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
+from services.tool_evidence_bridge import execute_backend_health_check_request
 from services.tool_registry import get_tool, list_tools
-from services.tool_results import load_tool_result_store
+from services.tool_request_store import get_tool_request, list_tool_requests, load_tool_request_store, upsert_tool_request
+from services.tool_result_store import load_tool_result_store
+from services.adapters.backend_health_check import BackendHealthCheckAdapter
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -27,6 +39,9 @@ def get_runtime_config():
         "enable_tool_execution": settings.enable_tool_execution,
         "enable_tool_dry_run": settings.enable_tool_dry_run,
         "enable_critical_tools": settings.enable_critical_tools,
+        "enable_backend_health_check": settings.enable_backend_health_check,
+        "backend_health_check_timeout_seconds": settings.backend_health_check_timeout_seconds,
+        "backend_health_check_paths": settings.backend_health_check_paths,
         "tool_approval_ttl_seconds": settings.tool_approval_ttl_seconds,
     }
 
@@ -52,6 +67,10 @@ class ToolRequestCreateRequest(BaseModel):
 
 class ToolApprovalActorRequest(BaseModel):
     approved_by: Optional[str] = "user"
+
+
+class BackendHealthExecuteRequest(BaseModel):
+    request_id: str
 
 
 def _tool_framework_payload() -> Dict[str, Any]:
@@ -96,6 +115,19 @@ def get_tool_results() -> Dict[str, Any]:
     return payload
 
 
+def _load_scoped_evidence_store(session_id: str) -> Dict[str, Any]:
+    durable_store = load_evidence_store()
+    session_store = load_session_evidence_store(session_id=session_id)
+    return merge_evidence_stores(durable_store, session_store)
+
+
+def _persist_scoped_evidence_store(session_id: str, evidence_store: Dict[str, Any]) -> None:
+    durable_store = extract_durable_evidence_store(evidence_store)
+    session_store = extract_session_scoped_evidence_store(evidence_store)
+    save_evidence_store(durable_store)
+    save_session_evidence_store(session_id=session_id, store=session_store)
+
+
 @router.post("/tool-requests")
 def create_tool_request(req: ToolRequestCreateRequest) -> Dict[str, Any]:
     if not settings.enable_tool_framework:
@@ -128,3 +160,35 @@ def reject_tool_request(request_id: str, req: ToolApprovalActorRequest) -> Dict[
     if not settings.enable_tool_framework:
         raise HTTPException(status_code=503, detail="Tool framework is disabled.")
     return {"approval": reject_request(request_id, rejected_by=req.approved_by)}
+
+
+@router.post("/tool-requests/{request_id}/execute")
+def execute_tool_request(request_id: str, req: BackendHealthExecuteRequest) -> Dict[str, Any]:
+    if not settings.enable_tool_framework or not settings.enable_tool_execution or not settings.enable_backend_health_check:
+        raise HTTPException(status_code=503, detail="Tool execution is disabled.")
+    if request_id != req.request_id:
+        raise HTTPException(status_code=400, detail="Request id mismatch.")
+
+    request_store = load_tool_request_store()
+    request_record = get_tool_request(request_id, request_store)
+    if request_record is None:
+        raise HTTPException(status_code=404, detail="Tool request not found.")
+    if str(request_record.get("tool_name") or "") != "backend_health_check":
+        raise HTTPException(status_code=400, detail="Only backend_health_check can be executed here.")
+
+    evidence_store = _load_scoped_evidence_store(str(request_record.get("session_id") or ""))
+    approval_store = load_tool_approval_store()
+    result_store = load_tool_result_store()
+    adapter = BackendHealthCheckAdapter()
+
+    outcome = execute_backend_health_check_request(
+        request_record=request_record,
+        adapter=adapter,
+        evidence_store=evidence_store,
+        approval_store=approval_store,
+        request_store=request_store,
+        result_store=result_store,
+        previous_evidence_store=evidence_store,
+    )
+    _persist_scoped_evidence_store(str(request_record.get("session_id") or ""), outcome["evidence_store"])
+    return outcome

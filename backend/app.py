@@ -60,6 +60,10 @@ from services.decision_store import (
 )
 from services.assumption_engine import load_assumption_store
 from services.approval_engine import load_approval_store
+from services.tool_approval import approve_request as approve_tool_request, create_approval_request, find_latest_pending_request, load_tool_approval_store, save_tool_approval_store
+from services.tool_evidence_bridge import execute_backend_health_check_request
+from services.tool_request_store import load_tool_request_store, save_tool_request_store
+from services.tool_result_store import load_tool_result_store
 from services.plan_renderer import (
     render_decision,
     render_next_action,
@@ -73,6 +77,8 @@ from services.state_summary import (
     render_current_state_summary,
     select_summary_for_intent,
 )
+from services.tool_contracts import build_tool_request
+from services.adapters.backend_health_check import BackendHealthCheckAdapter
 from services.user_identity import (
     apply_explicit_identity_updates,
     extract_explicit_age,
@@ -572,6 +578,113 @@ latest_reasoning_result: Optional[Dict[str, Any]] = None
 latest_planning_result: Optional[Dict[str, Any]] = None
 latest_decision_result: Optional[Dict[str, Any]] = None
 latest_deliberation_result: Optional[Dict[str, Any]] = None
+
+
+BACKEND_HEALTH_CHECK_REQUEST_RE = re.compile(r"\bcan\s+you\s+perform\s+the\s+backend\s+health\s+check\b", re.IGNORECASE)
+BACKEND_HEALTH_CHECK_CONFIRMATION_RE = re.compile(r"^\s*(run\s+the\s+backend\s+health\s+check|confirm\s+backend\s+health\s+check)\.?\s*$", re.IGNORECASE)
+BACKEND_HEALTH_CHECK_VAGUE_RE = re.compile(r"^\s*(yes|okay|ok|sure|go\s+ahead)\.?\s*$", re.IGNORECASE)
+
+
+def _backend_health_port_from_preferences(user_profile: Dict[str, Any]) -> int:
+    preferences = user_profile.get("preferences", {}) or {}
+    try:
+        return int(preferences.get("backend_port") or 8001)
+    except Exception:
+        return 8001
+
+
+def _create_backend_health_request(*, conversation_id: str, user_profile: Dict[str, Any]) -> Dict[str, Any]:
+    request_store = load_tool_request_store()
+    approval_store = load_tool_approval_store()
+    request = build_tool_request(
+        tool_name="backend_health_check",
+        arguments={"port": _backend_health_port_from_preferences(user_profile)},
+        requested_by="user",
+        session_id=conversation_id,
+    )
+    approval = create_approval_request(
+        request,
+        request_store=request_store,
+        approval_store=approval_store,
+        ttl_seconds=TOOL_APPROVAL_TTL_SECONDS,
+    )
+    save_tool_request_store(request_store)
+    save_tool_approval_store(approval_store)
+    request["approval_id"] = approval["approval_id"]
+    request["status"] = "awaiting_approval"
+    return request
+
+
+def _execute_backend_health_request(*, conversation_id: str, user_profile: Dict[str, Any]) -> Tuple[str, Optional[Dict[str, Any]]]:
+    if not ENABLE_TOOL_EXECUTION:
+        return (
+            "Tool execution remains disabled in Epoch VIII. Use the bounded tool request endpoints for inspection and approval.",
+            None,
+        )
+
+    request_store = load_tool_request_store()
+    approval_store = load_tool_approval_store()
+    result_store = load_tool_result_store()
+    pending_request = find_latest_pending_request(
+        session_id=conversation_id,
+        tool_name="backend_health_check",
+        request_store=request_store,
+        approval_store=approval_store,
+    )
+    if pending_request is None:
+        return "No pending backend health-check request is waiting for confirmation.", None
+
+    approve_tool_request(
+        pending_request["request_id"],
+        approved_by="user",
+        request_store=request_store,
+        approval_store=approval_store,
+    )
+
+    previous_evidence_store = _load_scoped_evidence_store(conversation_id)
+    outcome = execute_backend_health_check_request(
+        request_record=pending_request,
+        adapter=BackendHealthCheckAdapter(),
+        evidence_store=previous_evidence_store,
+        approval_store=approval_store,
+        request_store=request_store,
+        result_store=result_store,
+        previous_evidence_store=previous_evidence_store,
+    )
+
+    _persist_scoped_evidence_store(conversation_id, outcome["evidence_store"])
+
+    global latest_reasoning_result
+    latest_reasoning_result = outcome.get("reasoning_result")
+
+    result = outcome["result"]
+    output = result.get("output") if isinstance(result.get("output"), dict) else {}
+    checked_url = output.get("checked_url") or f"http://127.0.0.1:{_backend_health_port_from_preferences(user_profile)}"
+
+    if result.get("status") == "endpoint_mismatch":
+        return (
+            "The health-check result did not match the currently configured endpoint, so backend health remains unknown.",
+            outcome,
+        )
+
+    if result.get("success"):
+        return (
+            f"The backend is verified online at {checked_url}. The health check returned HTTP {output.get('status_code') or 200}.",
+            outcome,
+        )
+
+    error_text = str(output.get("error") or "connection refused")
+    status_code = output.get("status_code")
+    if status_code:
+        return (
+            f"The backend is verified offline at {checked_url}. The health check returned HTTP {status_code}.",
+            outcome,
+        )
+
+    return (
+        f"The backend is verified offline at {checked_url} because the connection was refused.",
+        outcome,
+    )
 
 
 def _build_dependency_map(evidence_store: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -1151,12 +1264,13 @@ def chat(req: ChatRequest) -> ChatResponse:
                 user_profile=user_profile,
                 intent=summary_intent,
             )
-        elif is_backend_health_query(req.message):
-            scoped_evidence = _load_scoped_evidence_store(conversation_id)
-            reply = build_backend_health_response(scoped_evidence)
-        elif is_health_check_execution_request(req.message):
-            scoped_evidence = _load_scoped_evidence_store(conversation_id)
-            reply = build_health_check_execution_response(scoped_evidence)
+        elif BACKEND_HEALTH_CHECK_CONFIRMATION_RE.match(req.message or ""):
+            reply, execution_outcome = _execute_backend_health_request(conversation_id=conversation_id, user_profile=user_profile)
+            if execution_outcome is not None:
+                reasoning_output = execution_outcome.get("reasoning_result")
+        elif BACKEND_HEALTH_CHECK_REQUEST_RE.search(req.message or ""):
+            _create_backend_health_request(conversation_id=conversation_id, user_profile=user_profile)
+            reply = "I can run a bounded localhost health check against the configured backend endpoint. Confirm by saying: Run the backend health check."
         else:
             deterministic_ack = build_declarative_acknowledgement(req.message)
             if deterministic_ack:
@@ -1357,7 +1471,12 @@ def chat(req: ChatRequest) -> ChatResponse:
 
     if ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION:
         tool_request_pattern = re.compile(r"\b(tool|backend\s+health\s+check|system\s+tools|tool\s+request)\b", re.IGNORECASE)
-        if tool_request_pattern.search(req.message) and not is_backend_health_query(req.message):
+        if (
+            tool_request_pattern.search(req.message)
+            and not is_backend_health_query(req.message)
+            and not BACKEND_HEALTH_CHECK_REQUEST_RE.search(req.message or "")
+            and not BACKEND_HEALTH_CHECK_CONFIRMATION_RE.match(req.message or "")
+        ):
             reply = "Tool execution remains disabled in Epoch VIII. Use the bounded tool request endpoints for inspection and approval."
 
     add_message(conversation_id, "assistant", reply)
@@ -1431,9 +1550,10 @@ def chat_stream(req: ChatRequest):
             yield f"data: {json.dumps({'type': 'end'})}\n\n"
             return
 
-        if is_backend_health_query(req.message):
-            scoped_evidence = _load_scoped_evidence_store(conversation_id)
-            full_text = build_backend_health_response(scoped_evidence)
+        if BACKEND_HEALTH_CHECK_CONFIRMATION_RE.match(req.message or ""):
+            full_text, execution_outcome = _execute_backend_health_request(conversation_id=conversation_id, user_profile=user_profile)
+            if execution_outcome is not None:
+                latest_reasoning_result = execution_outcome.get("reasoning_result")
             yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
             yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
 
@@ -1459,9 +1579,9 @@ def chat_stream(req: ChatRequest):
             yield f"data: {json.dumps({'type': 'end'})}\n\n"
             return
 
-        if is_health_check_execution_request(req.message):
-            scoped_evidence = _load_scoped_evidence_store(conversation_id)
-            full_text = build_health_check_execution_response(scoped_evidence)
+        if BACKEND_HEALTH_CHECK_REQUEST_RE.search(req.message or ""):
+            _create_backend_health_request(conversation_id=conversation_id, user_profile=user_profile)
+            full_text = "I can run a bounded localhost health check against the configured backend endpoint. Confirm by saying: Run the backend health check."
             yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
             yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
 
