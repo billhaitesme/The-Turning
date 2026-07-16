@@ -1,6 +1,6 @@
 import unittest
 
-from services.planning_graph import build_plan_graph
+from services.plan_graph import build_plan_graph
 
 
 class PlanningGraphTests(unittest.TestCase):

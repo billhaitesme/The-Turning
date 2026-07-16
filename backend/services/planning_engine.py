@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 
 from services.goal_engine import infer_goal_requirements
-from services.planning_graph import build_plan_graph
+from services.plan_graph import build_plan_graph
 from services.planning_models import Plan, PlanDependency, PlanStep
 
 
