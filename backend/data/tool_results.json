@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "results": [
+    {
+      "request_id": "toolreq-8c32288081a8477cb75d5c5ffafd819a",
+      {
+        "version": 1,
+        "results": []
+      }
+      "duration_ms": 0.017,
+      "output": {},
+      "error": {
+        "code": "tool_disabled",
+        "message": "Tool is disabled: disabled_tool"
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-8292a9b6322d49278479e4f6288f4267",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-07-16T09:53:55.930355+00:00",
+      "completed_at": "2026-07-16T09:53:55.930402+00:00",
+      "duration_ms": 0.047,
+      "output": {
+        "would_check": [
+          "http://127.0.0.1:8001/health",
+          "http://127.0.0.1:8001/system/status",
+          "http://127.0.0.1:8001/"
+        ],
+        "safe": true,
+        "side_effects": []
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "dry_run"
+    },
+    {
+      "request_id": "toolreq-baed22c529ad4bad955bff8e11a56833",
+      "tool_name": "failing_tool",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:29.198238+00:00",
+      "completed_at": "2026-07-16T09:57:29.198259+00:00",
+      "duration_ms": 0.020999999999999998,
+      "output": {},
+      "error": {
+        "code": "adapter_exception",
+        "message": "adapter exploded"
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-735ff7ea3e234c9eafdf54fd4e0adb02",
+      "tool_name": "backend_health_check",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:29.199139+00:00",
+      "completed_at": "2026-07-16T09:57:29.199191+00:00",
+      "duration_ms": 0.052,
+      "output": {},
+      "error": {
+        "code": "approval_required",
+        "message": "Approval does not exist for request."
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-04053d496e6a467db737b715675a2ac6",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-07-16T09:57:29.200189+00:00",
+      "completed_at": "2026-07-16T09:57:29.200282+00:00",
+      "duration_ms": 0.093,
+      "output": {
+        "target": "backend",
+        "checked_url": "http://127.0.0.1:8001/health",
+        "success": true,
+        "status_code": 200,
+        "latency_ms": 12.5,
+        "checked_at": "2026-07-16T00:00:00+00:00",
+        "error": null
+      },
+      "error": null,
+      "evidence_candidates": [
+        {
+          "key": "backend_health",
+          "value": "online",
+          "state_type": "verified",
+          "source": "health_check",
+          "confidence": 1.0,
+          "observed_at": "2026-07-16T00:00:00+00:00",
+          "scope": "runtime",
+          "dependencies": [
+            "backend_port"
+          ],
+          "metadata": {
+            "request_id": "toolreq-04053d496e6a467db737b715675a2ac6",
+            "tool_name": "backend_health_check",
+            "checked_url": "http://127.0.0.1:8001/health",
+            "status_code": 200,
+            "latency_ms": 12.5
+          }
+        }
+      ],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-ac406fcf97f64afba0b3646bd882334b",
+      "tool_name": "disabled_tool",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:29.201589+00:00",
+      "completed_at": "2026-07-16T09:57:29.201620+00:00",
+      "duration_ms": 0.031,
+      "output": {},
+      "error": {
+        "code": "tool_disabled",
+        "message": "Tool is disabled: disabled_tool"
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-da0e81fe746246a1aa78153fbcdeefcc",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-07-16T09:57:29.202433+00:00",
+      "completed_at": "2026-07-16T09:57:29.202471+00:00",
+      "duration_ms": 0.038,
+      "output": {
+        "would_check": [
+          "http://127.0.0.1:8001/health",
+          "http://127.0.0.1:8001/system/status",
+          "http://127.0.0.1:8001/"
+        ],
+        "safe": true,
+        "side_effects": []
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "dry_run"
+    },
+    {
+      "request_id": "toolreq-c0bfbb00151a4cb290d54907c236a1b7",
+      "tool_name": "failing_tool",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:55.617175+00:00",
+      "completed_at": "2026-07-16T09:57:55.617196+00:00",
+      "duration_ms": 0.020999999999999998,
+      "output": {},
+      "error": {
+        "code": "adapter_exception",
+        "message": "adapter exploded"
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-b874e804b30748de9b374ef0eace500b",
+      "tool_name": "backend_health_check",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:55.619169+00:00",
+      "completed_at": "2026-07-16T09:57:55.619219+00:00",
+      "duration_ms": 0.05,
+      "output": {},
+      "error": {
+        "code": "approval_required",
+        "message": "Approval does not exist for request."
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-feeb9a9f15514b0fa6ec67fe09c1ac3d",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-07-16T09:57:55.620285+00:00",
+      "completed_at": "2026-07-16T09:57:55.620375+00:00",
+      "duration_ms": 0.09000000000000001,
+      "output": {
+        "target": "backend",
+        "checked_url": "http://127.0.0.1:8001/health",
+        "success": true,
+        "status_code": 200,
+        "latency_ms": 12.5,
+        "checked_at": "2026-07-16T00:00:00+00:00",
+        "error": null
+      },
+      "error": null,
+      "evidence_candidates": [
+        {
+          "key": "backend_health",
+          "value": "online",
+          "state_type": "verified",
+          "source": "health_check",
+          "confidence": 1.0,
+          "observed_at": "2026-07-16T00:00:00+00:00",
+          "scope": "runtime",
+          "dependencies": [
+            "backend_port"
+          ],
+          "metadata": {
+            "request_id": "toolreq-feeb9a9f15514b0fa6ec67fe09c1ac3d",
+            "tool_name": "backend_health_check",
+            "checked_url": "http://127.0.0.1:8001/health",
+            "status_code": 200,
+            "latency_ms": 12.5
+          }
+        }
+      ],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-81e51d8b2c2b419c81deb15c4f7412eb",
+      "tool_name": "disabled_tool",
+      "status": "failed",
+      "success": false,
+      "started_at": "2026-07-16T09:57:55.621634+00:00",
+      "completed_at": "2026-07-16T09:57:55.621652+00:00",
+      "duration_ms": 0.018000000000000002,
+      "output": {},
+      "error": {
+        "code": "tool_disabled",
+        "message": "Tool is disabled: disabled_tool"
+      },
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-3aab6ca9b4c1464aa870e7ecf6694721",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-07-16T09:57:55.622485+00:00",
+      "completed_at": "2026-07-16T09:57:55.622524+00:00",
+      "duration_ms": 0.039,
+      "output": {
+        "would_check": [
+          "http://127.0.0.1:8001/health",
+          "http://127.0.0.1:8001/system/status",
+          "http://127.0.0.1:8001/"
+        ],
+        "safe": true,
+        "side_effects": []
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "dry_run"
+    }
+  ]
+}
