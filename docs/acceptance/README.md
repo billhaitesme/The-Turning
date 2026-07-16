@@ -17,6 +17,7 @@ They validate:
 - curiosity gating
 - general question isolation
 - reasoning summaries
+- reasoning explanation transparency
 
 ## How to Use
 
@@ -69,3 +70,4 @@ Use this checklist for each run:
 - [008 — Unknown Versus Verified](docs/acceptance/008_unknown_vs_verified.md)
 - [009 — Curiosity Gating](docs/acceptance/009_curiosity_gating.md)
 - [010 — General Question Isolation](docs/acceptance/010_general_qa_isolation.md)
+- [011 — Reasoning Explanation Transparency](docs/acceptance/011_reasoning_explanation.md)
