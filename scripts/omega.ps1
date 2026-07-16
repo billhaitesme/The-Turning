@@ -96,6 +96,14 @@ switch ($normalized) {
         Show-OmegaCompare
         break
     }
+    "tools" {
+        Show-OmegaTools
+        break
+    }
+    "tool-status" {
+        Show-OmegaToolStatus
+        break
+    }
     "benchmark" {
         Show-OmegaFutureHook -Name "benchmark"
         break

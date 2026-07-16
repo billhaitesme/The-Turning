@@ -126,6 +126,11 @@ ENABLE_AUTOMATIC_PLAN_REVISION = os.getenv("ENABLE_AUTOMATIC_PLAN_REVISION", "tr
 ENABLE_DELIBERATION_PIPELINE = os.getenv("ENABLE_DELIBERATION_PIPELINE", "true").lower() == "true"
 ENABLE_DELIBERATION_CONTEXT = os.getenv("ENABLE_DELIBERATION_CONTEXT", "false").lower() == "true"
 ENABLE_PLAN_EXECUTION = os.getenv("ENABLE_PLAN_EXECUTION", "false").lower() == "true"
+ENABLE_TOOL_FRAMEWORK = os.getenv("ENABLE_TOOL_FRAMEWORK", "true").lower() == "true"
+ENABLE_TOOL_EXECUTION = os.getenv("ENABLE_TOOL_EXECUTION", "false").lower() == "true"
+ENABLE_TOOL_DRY_RUN = os.getenv("ENABLE_TOOL_DRY_RUN", "true").lower() == "true"
+ENABLE_CRITICAL_TOOLS = os.getenv("ENABLE_CRITICAL_TOOLS", "false").lower() == "true"
+TOOL_APPROVAL_TTL_SECONDS = int(os.getenv("TOOL_APPROVAL_TTL_SECONDS", "300"))
 
 ACTIVE_PERSONALITY_MODE = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
 
@@ -1349,6 +1354,11 @@ def chat(req: ChatRequest) -> ChatResponse:
         execution_request_pattern = re.compile(r"\b(execute|run\s+it\s+now|implement\s+now|apply\s+now|deploy\s+now)\b", re.IGNORECASE)
         if execution_request_pattern.search(req.message):
             reply = "Execution remains disabled in Epoch VII. Approval and decision recording are available, but actions are not executed automatically."
+
+    if ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION:
+        tool_request_pattern = re.compile(r"\b(tool|backend\s+health\s+check|system\s+tools|tool\s+request)\b", re.IGNORECASE)
+        if tool_request_pattern.search(req.message) and not is_backend_health_query(req.message):
+            reply = "Tool execution remains disabled in Epoch VIII. Use the bounded tool request endpoints for inspection and approval."
 
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)

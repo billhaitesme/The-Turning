@@ -650,6 +650,65 @@ function Show-OmegaCompare {
     }
 }
 
+function Get-OmegaToolApiBase {
+    $backend = Get-OmegaBackendStatus -Port 8001
+    return $backend.Url
+}
+
+function Show-OmegaTools {
+    $apiBase = Get-OmegaToolApiBase
+    Write-Host ""
+    Write-Host "Registered Tools"
+    Write-Host "-------------------------------------"
+
+    try {
+        $response = Invoke-RestMethod -Method Get -Uri "$apiBase/system/tools"
+    }
+    catch {
+        Write-OmegaWarning "Could not query tool registry from backend."
+        return
+    }
+
+    Write-Host "Framework Enabled: $($response.enabled)"
+    Write-Host "Execution Enabled: $($response.execution_enabled)"
+    Write-Host "Dry-Run Enabled: $($response.dry_run_enabled)"
+    Write-Host "Critical Tools Enabled: $($response.critical_tools_enabled)"
+    Write-Host "Approval TTL: $($response.approval_ttl_seconds) seconds"
+    Write-Host ""
+
+    foreach ($tool in @($response.tools)) {
+        Write-Host "Name: $($tool.name)"
+        Write-Host "- Category: $($tool.category)"
+        Write-Host "- Risk: $($tool.risk_level)"
+        Write-Host "- Approval Required: $($tool.requires_approval)"
+        Write-Host "- Dry-Run Support: $($tool.supports_dry_run)"
+        Write-Host "- Enabled: $($tool.enabled)"
+        Write-Host ""
+    }
+}
+
+function Show-OmegaToolStatus {
+    $apiBase = Get-OmegaToolApiBase
+    Write-Host ""
+    Write-Host "Tool Framework Status"
+    Write-Host "-------------------------------------"
+
+    try {
+        $response = Invoke-RestMethod -Method Get -Uri "$apiBase/system/tools"
+    }
+    catch {
+        Write-OmegaWarning "Could not query tool framework status from backend."
+        return
+    }
+
+    Write-Host "Framework Enabled: $($response.enabled)"
+    Write-Host "Execution Enabled: $($response.execution_enabled)"
+    Write-Host "Dry-Run Enabled: $($response.dry_run_enabled)"
+    Write-Host "Critical Tools Enabled: $($response.critical_tools_enabled)"
+    Write-Host "Registered Tools: $(@($response.tools).Count)"
+    Write-Host "Approval TTL Seconds: $($response.approval_ttl_seconds)"
+}
+
 function Show-OmegaFutureHook {
     param([Parameter(Mandatory = $true)][string]$Name)
     Write-OmegaWarning "Future hook '$Name' is reserved but not yet implemented."
@@ -677,6 +736,8 @@ function Show-OmegaCommandHelp {
     Write-Host "  risks"
     Write-Host "  assumptions"
     Write-Host "  compare"
+    Write-Host "  tools"
+    Write-Host "  tool-status"
 }
 
 Export-ModuleMember -Function @(
@@ -694,6 +755,8 @@ Export-ModuleMember -Function @(
     "Show-OmegaRisks",
     "Show-OmegaAssumptions",
     "Show-OmegaCompare",
+    "Show-OmegaTools",
+    "Show-OmegaToolStatus",
     "Show-OmegaFutureHook",
     "Show-OmegaCommandHelp"
 )
