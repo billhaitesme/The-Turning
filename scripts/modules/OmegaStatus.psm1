@@ -479,13 +479,184 @@ function Show-OmegaDecisions {
     }
 }
 
+function Show-OmegaDeliberation {
+    $paths = Get-OmegaPaths
+    $deliberationPath = Join-Path $paths.Backend "data/deliberations.json"
+    $approvalPath = Join-Path $paths.Backend "data/approvals.json"
+
+    Write-Host ""
+    Write-Host "Deliberation"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $deliberationPath)) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    try {
+        $store = Get-Content -Path $deliberationPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse deliberation store at $deliberationPath"
+        return
+    }
+
+    $records = @($store.records)
+    if ($records.Count -eq 0) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    $latest = $records | Sort-Object -Property updated_at -Descending | Select-Object -First 1
+    $recommended = $latest.recommendation.plan_id
+    Write-Host "Current recommendation: $(if ($recommended) { $recommended } else { 'none' })"
+
+    if (Test-Path $approvalPath) {
+        try {
+            $approvalStore = Get-Content -Path $approvalPath -Raw | ConvertFrom-Json
+            $latestApproval = @($approvalStore.approvals | Sort-Object -Property updated_at -Descending | Select-Object -First 1)
+            if ($latestApproval.Count -gt 0) {
+                Write-Host "Approval state: $($latestApproval[0].status)"
+            }
+            else {
+                Write-Host "Approval state: none"
+            }
+        }
+        catch {
+            Write-OmegaWarning "Could not parse approval store at $approvalPath"
+        }
+    }
+}
+
+function Show-OmegaRisks {
+    $paths = Get-OmegaPaths
+    $deliberationPath = Join-Path $paths.Backend "data/deliberations.json"
+
+    Write-Host ""
+    Write-Host "Active Risks"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $deliberationPath)) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    try {
+        $store = Get-Content -Path $deliberationPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse deliberation store at $deliberationPath"
+        return
+    }
+
+    $latest = @($store.records | Sort-Object -Property updated_at -Descending | Select-Object -First 1)
+    if ($latest.Count -eq 0) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    $risks = @($latest[0].deliberation.risk_assessments)
+    if ($risks.Count -eq 0) {
+        Write-Host "No active risks."
+        return
+    }
+
+    foreach ($entry in $risks) {
+        Write-Host "Plan: $($entry.plan_id) (overall: $($entry.overall_risk))"
+        foreach ($risk in @($entry.risks)) {
+            Write-Host "- $($risk.risk) [probability=$($risk.probability), impact=$($risk.impact)]"
+        }
+        Write-Host ""
+    }
+}
+
+function Show-OmegaAssumptions {
+    $paths = Get-OmegaPaths
+    $assumptionPath = Join-Path $paths.Backend "data/assumptions.json"
+
+    Write-Host ""
+    Write-Host "Assumptions"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $assumptionPath)) {
+        Write-Host "No assumptions store found."
+        return
+    }
+
+    try {
+        $store = Get-Content -Path $assumptionPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse assumptions store at $assumptionPath"
+        return
+    }
+
+    $items = @($store.assumptions)
+    if ($items.Count -eq 0) {
+        Write-Host "No assumptions recorded."
+        return
+    }
+
+    foreach ($item in $items) {
+        Write-Host "- $($item.statement)"
+        Write-Host "  Status: $($item.status)"
+        Write-Host "  Confidence: $($item.confidence)"
+    }
+}
+
+function Show-OmegaCompare {
+    $paths = Get-OmegaPaths
+    $deliberationPath = Join-Path $paths.Backend "data/deliberations.json"
+
+    Write-Host ""
+    Write-Host "Plan Comparison"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $deliberationPath)) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    try {
+        $store = Get-Content -Path $deliberationPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse deliberation store at $deliberationPath"
+        return
+    }
+
+    $latest = @($store.records | Sort-Object -Property updated_at -Descending | Select-Object -First 1)
+    if ($latest.Count -eq 0) {
+        Write-Host "No deliberation records found."
+        return
+    }
+
+    $comparison = @($latest[0].deliberation.comparison.comparison)
+    if ($comparison.Count -eq 0) {
+        Write-Host "No comparison data recorded."
+        return
+    }
+
+    foreach ($item in $comparison) {
+        Write-Host "Plan: $($item.title)"
+        $criteria = $item.criteria
+        Write-Host "- Installation: $($criteria.installation_state)"
+        Write-Host "- Dependencies: $($criteria.dependency_count)"
+        Write-Host "- Evidence Completeness: $($criteria.evidence_completeness)"
+        Write-Host "- Complexity: $($criteria.implementation_complexity)"
+        Write-Host "- Estimated Risk: $($criteria.estimated_risk)"
+        Write-Host "- Confidence: $($criteria.confidence)"
+        Write-Host ""
+    }
+}
+
 function Show-OmegaFutureHook {
     param([Parameter(Mandatory = $true)][string]$Name)
     Write-OmegaWarning "Future hook '$Name' is reserved but not yet implemented."
 }
 
 function Show-OmegaCommandHelp {
-    Write-Host "OMEGA-ARC Developer Console (Epoch V)"
+    Write-Host "OMEGA-ARC Developer Console (Epoch VII)"
     Write-Host "Usage: .\scripts\omega.ps1 <command> [argument]"
     Write-Host ""
     Write-Host "Commands:"
@@ -502,6 +673,10 @@ function Show-OmegaCommandHelp {
     Write-Host "  plan"
     Write-Host "  plans"
     Write-Host "  decisions"
+    Write-Host "  deliberation"
+    Write-Host "  risks"
+    Write-Host "  assumptions"
+    Write-Host "  compare"
 }
 
 Export-ModuleMember -Function @(
@@ -515,6 +690,10 @@ Export-ModuleMember -Function @(
     "Show-OmegaPlan",
     "Show-OmegaPlans",
     "Show-OmegaDecisions",
+    "Show-OmegaDeliberation",
+    "Show-OmegaRisks",
+    "Show-OmegaAssumptions",
+    "Show-OmegaCompare",
     "Show-OmegaFutureHook",
     "Show-OmegaCommandHelp"
 )

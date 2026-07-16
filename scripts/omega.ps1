@@ -80,6 +80,22 @@ switch ($normalized) {
         Show-OmegaDecisions
         break
     }
+    "deliberation" {
+        Show-OmegaDeliberation
+        break
+    }
+    "risks" {
+        Show-OmegaRisks
+        break
+    }
+    "assumptions" {
+        Show-OmegaAssumptions
+        break
+    }
+    "compare" {
+        Show-OmegaCompare
+        break
+    }
     "benchmark" {
         Show-OmegaFutureHook -Name "benchmark"
         break

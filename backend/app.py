@@ -40,6 +40,11 @@ from services.planning_pipeline import (
     detect_planning_intent,
     run_planning_pipeline,
 )
+from services.deliberation_pipeline import (
+    detect_deliberation_intent,
+    load_deliberation_store,
+    run_deliberation_pipeline,
+)
 from services.plan_store import (
     archive_plan,
     find_active_plan_for_goal,
@@ -53,6 +58,8 @@ from services.decision_store import (
     list_decisions,
     load_decision_store,
 )
+from services.assumption_engine import load_assumption_store
+from services.approval_engine import load_approval_store
 from services.plan_renderer import (
     render_decision,
     render_next_action,
@@ -83,6 +90,7 @@ load_dotenv(override=True)
 import json
 import math
 import os
+import re
 import sqlite3
 import uuid
 from datetime import datetime
@@ -115,6 +123,8 @@ ENABLE_PLANNING_PIPELINE = os.getenv("ENABLE_PLANNING_PIPELINE", "true").lower()
 ENABLE_PLANNING_CONTEXT = os.getenv("ENABLE_PLANNING_CONTEXT", "false").lower() == "true"
 ENABLE_DECISION_RECORDS = os.getenv("ENABLE_DECISION_RECORDS", "true").lower() == "true"
 ENABLE_AUTOMATIC_PLAN_REVISION = os.getenv("ENABLE_AUTOMATIC_PLAN_REVISION", "true").lower() == "true"
+ENABLE_DELIBERATION_PIPELINE = os.getenv("ENABLE_DELIBERATION_PIPELINE", "true").lower() == "true"
+ENABLE_DELIBERATION_CONTEXT = os.getenv("ENABLE_DELIBERATION_CONTEXT", "false").lower() == "true"
 ENABLE_PLAN_EXECUTION = os.getenv("ENABLE_PLAN_EXECUTION", "false").lower() == "true"
 
 ACTIVE_PERSONALITY_MODE = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
@@ -556,6 +566,7 @@ def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_messa
 latest_reasoning_result: Optional[Dict[str, Any]] = None
 latest_planning_result: Optional[Dict[str, Any]] = None
 latest_decision_result: Optional[Dict[str, Any]] = None
+latest_deliberation_result: Optional[Dict[str, Any]] = None
 
 
 def _build_dependency_map(evidence_store: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -1070,6 +1081,21 @@ def get_system_decision(decision_id: str) -> Dict[str, Any]:
     return {"decision": decision}
 
 
+@app.get("/system/deliberation")
+def get_system_deliberation() -> Dict[str, Any]:
+    store = load_deliberation_store()
+    approvals = load_approval_store()
+    return {
+        "deliberation": store,
+        "approvals": approvals,
+    }
+
+
+@app.get("/system/assumptions")
+def get_system_assumptions() -> Dict[str, Any]:
+    return {"assumptions": load_assumption_store()}
+
+
 @app.post("/conversations", response_model=CreateConversationResponse)
 def new_conversation(req: CreateConversationRequest) -> CreateConversationResponse:
     cid = create_conversation(user_id=req.user_id, title=req.title)
@@ -1095,7 +1121,7 @@ def get_conversation_memories(conversation_id: str, q: str) -> MemorySearchRespo
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
-    global latest_reasoning_result, latest_planning_result, latest_decision_result
+    global latest_reasoning_result, latest_planning_result, latest_decision_result, latest_deliberation_result
     conversation_id = req.conversation_id
     if not conversation_id:
         conversation_id = create_conversation(user_id=req.user_id)
@@ -1110,6 +1136,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
     summary_intent = detect_summary_intent(req.message)
     planning_intent = detect_planning_intent(req.message)
+    deliberation_intent = detect_deliberation_intent(req.message)
     try:
         reasoning_output = None
         if summary_intent in {"state_summary", "uncertainty_summary"}:
@@ -1248,6 +1275,80 @@ def chat(req: ChatRequest) -> ChatResponse:
         except Exception as exc:
             print("Planning pipeline warning:", repr(exc))
             planning_output = None
+
+    if ENABLE_DELIBERATION_PIPELINE and not ENABLE_PLAN_EXECUTION:
+        try:
+            deliberation_output = run_deliberation_pipeline(
+                goal_store=load_goal_store(),
+                planning_result=planning_output or {},
+                evidence_store=_load_scoped_evidence_store(conversation_id),
+                user_message=req.message,
+                decision_store=load_decision_store(),
+                persist=True,
+            )
+            latest_deliberation_result = deliberation_output
+
+            if deliberation_intent:
+                recommendation = deliberation_output.get("recommendation") or {}
+                candidate_plans = deliberation_output.get("candidate_plans") or []
+                matrix = ((deliberation_output.get("deliberation") or {}).get("decision_matrix") or {}).get("rows") or []
+                risks = (deliberation_output.get("deliberation") or {}).get("risk_assessments") or []
+                approval = deliberation_output.get("approval") or {}
+                assumptions_block = ((deliberation_output.get("deliberation") or {}).get("assumptions") or {}).get("active") or []
+
+                if deliberation_intent == "deliberation_summary":
+                    best = recommendation.get("plan_id")
+                    reply = f"Recommendation: {best or 'none'}.\nReason: {recommendation.get('explanation') or 'No recommendation explanation recorded.'}"
+                    if matrix:
+                        first = matrix[0]
+                        reply += f"\nTop criterion: {first.get('criterion')} (weight: {first.get('weight')})."
+                elif deliberation_intent == "alternative_plan":
+                    lines = [
+                        f"Current recommendation: {recommendation.get('plan_id') or 'none'}",
+                        "Alternatives:",
+                    ]
+                    alternatives = [item for item in candidate_plans if str(item.get("id") or "") != str(recommendation.get("plan_id") or "")]
+                    for item in alternatives[:2]:
+                        lines.append(f"- {item.get('title')} ({item.get('id')})")
+                    if not alternatives:
+                        lines.append("- None")
+                    if risks:
+                        first_risk = risks[0]
+                        lines.append("Trade-offs and risks:")
+                        lines.append(f"- Overall risk: {first_risk.get('overall_risk')}")
+                    reply = "\n".join(lines)
+                elif deliberation_intent == "assumptions":
+                    if assumptions_block:
+                        lines = ["Active assumptions:"]
+                        for item in assumptions_block:
+                            lines.append(f"- {item.get('statement')} (status: {item.get('status')}, confidence: {item.get('confidence')})")
+                        reply = "\n".join(lines)
+                    else:
+                        reply = "Active assumptions: none."
+                elif deliberation_intent == "risks":
+                    if risks:
+                        lines = ["Active risks:"]
+                        for entry in risks[:3]:
+                            for risk in entry.get("risks") or []:
+                                lines.append(f"- {risk.get('risk')} (probability: {risk.get('probability')}, impact: {risk.get('impact')})")
+                        reply = "\n".join(lines)
+                    else:
+                        reply = "Active risks: none."
+                elif deliberation_intent == "approval":
+                    if approval and str(approval.get("status") or "") == "approved":
+                        reply = f"Approval recorded for plan {approval.get('plan_id')}. Execution remains disabled in Epoch VII."
+                    else:
+                        reply = "No recommendation is currently available to approve."
+                elif deliberation_intent == "assumption_invalidation":
+                    reply = "Recorded assumption invalidation and updated deliberation state. Execution remains disabled in Epoch VII."
+        except Exception as exc:
+            print("Deliberation pipeline warning:", repr(exc))
+            deliberation_output = None
+
+    if not ENABLE_PLAN_EXECUTION:
+        execution_request_pattern = re.compile(r"\b(execute|run\s+it\s+now|implement\s+now|apply\s+now|deploy\s+now)\b", re.IGNORECASE)
+        if execution_request_pattern.search(req.message):
+            reply = "Execution remains disabled in Epoch VII. Approval and decision recording are available, but actions are not executed automatically."
 
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)

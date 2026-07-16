@@ -21,6 +21,7 @@ They validate:
 - plan persistence and lifecycle updates
 - deterministic next-action selection
 - decision provenance and explanation
+- deliberative recommendation and approval workflow
 
 ## How to Use
 
@@ -86,3 +87,13 @@ Use this checklist for each run:
 - [021 — Reasoning to Plan](docs/acceptance/021_reasoning_to_plan.md)
 - [022 — Plan Isolation](docs/acceptance/022_plan_isolation.md)
 - [023 — Decision Provenance](docs/acceptance/023_decision_provenance.md)
+- [024 — Plan Comparison](docs/acceptance/024_plan_comparison.md)
+- [025 — Plan Approval](docs/acceptance/025_plan_approval.md)
+- [026 — Assumption Tracking](docs/acceptance/026_assumption_tracking.md)
+- [027 — Risk Analysis](docs/acceptance/027_risk_analysis.md)
+- [028 — Alternative Plan](docs/acceptance/028_alternative_plan.md)
+- [029 — Trade-Off Explanation](docs/acceptance/029_tradeoff_explanation.md)
+- [030 — Decision Matrix](docs/acceptance/030_decision_matrix.md)
+- [031 — Decision Superseded](docs/acceptance/031_decision_superseded.md)
+- [032 — Assumption Invalidated](docs/acceptance/032_assumption_invalidated.md)
+- [033 — Planning Without Execution](docs/acceptance/033_planning_without_execution.md)
