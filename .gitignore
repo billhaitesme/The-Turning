@@ -30,3 +30,7 @@ backups/
 .idea/
 training/**/checkpoint-*
 training/**/trainer_state.json
+# OMEGA-ARC runtime state
+backend/data/evidence_sessions/
+backend/data/*.db
+backend/*.db
