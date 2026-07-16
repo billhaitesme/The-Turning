@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import re
 from typing import Any, Dict, List, Tuple
 
 from services.goal_engine import infer_goal_requirements
@@ -214,3 +216,237 @@ def build_plan(
         )
 
     return sorted(plans, key=lambda plan: (plan.goal.lower(), plan.goal_id.lower()))
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _slug(value: str) -> str:
+    token = re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().lower()).strip("-")
+    return token or "goal"
+
+
+def _build_step(
+    *,
+    step_id: str,
+    title: str,
+    description: str,
+    order: int,
+    dependencies: List[str],
+    evidence_key: str,
+    required_state_types: List[str],
+    required_value: Any = True,
+    recommended_action: str,
+    required: bool = True,
+) -> Dict[str, Any]:
+    now = _utc_now_iso()
+    return {
+        "id": step_id,
+        "title": title,
+        "description": description,
+        "status": "pending",
+        "order": order,
+        "required": required,
+        "dependencies": list(dependencies),
+        "evidence_requirements": [
+            {
+                "key": evidence_key,
+                "required_state_types": list(required_state_types),
+                "required_value": required_value,
+            }
+        ],
+        "completion_evidence": [],
+        "blockers": [],
+        "recommended_action": recommended_action,
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+    }
+
+
+def _vision_routing_steps() -> List[Dict[str, Any]]:
+    return [
+        _build_step(
+            step_id="select-vision-model",
+            title="Select the vision model",
+            description="Choose the model that will receive image-based requests.",
+            order=1,
+            dependencies=[],
+            evidence_key="vision_model_selected",
+            required_state_types=["declared", "configured", "observed", "verified"],
+            recommended_action="Confirm which vision model will be used.",
+        ),
+        _build_step(
+            step_id="verify-vision-model-load",
+            title="Verify that the model loads successfully",
+            description="Confirm the selected model can load in the runtime environment.",
+            order=2,
+            dependencies=["select-vision-model"],
+            evidence_key="vision_model_loaded",
+            required_state_types=["observed", "verified"],
+            recommended_action="Run a trusted load verification for the selected model.",
+        ),
+        _build_step(
+            step_id="verify-vision-model-response",
+            title="Verify the model responds to a basic vision request",
+            description="Validate a minimal vision inference path using the selected model.",
+            order=3,
+            dependencies=["verify-vision-model-load"],
+            evidence_key="vision_model_responding",
+            required_state_types=["observed", "verified"],
+            recommended_action="Run a basic vision request and capture verification evidence.",
+        ),
+        _build_step(
+            step_id="configure-routing-rule",
+            title="Configure the routing rule",
+            description="Configure routing so vision requests are directed to the selected model.",
+            order=4,
+            dependencies=["select-vision-model"],
+            evidence_key="vision_router_configured",
+            required_state_types=["configured", "observed", "verified"],
+            recommended_action="Apply and verify routing configuration for vision traffic.",
+        ),
+        _build_step(
+            step_id="run-end-to-end-routing-test",
+            title="Run an end-to-end routing test",
+            description="Verify routing, model response, and output integrity in a full path test.",
+            order=5,
+            dependencies=["verify-vision-model-response", "configure-routing-rule"],
+            evidence_key="vision_routing_verified",
+            required_state_types=["observed", "verified"],
+            recommended_action="Run an end-to-end routing test and capture verification evidence.",
+        ),
+        _build_step(
+            step_id="review-evidence-and-update-goal",
+            title="Review evidence and update the goal status",
+            description="Review all verification evidence and confirm goal status is current.",
+            order=6,
+            dependencies=["run-end-to-end-routing-test"],
+            evidence_key="vision_routing_ready",
+            required_state_types=["verified"],
+            recommended_action="Review final evidence and update goal status explicitly.",
+        ),
+    ]
+
+
+def _generic_steps() -> List[Dict[str, Any]]:
+    return [
+        _build_step(
+            step_id="define-success-criteria",
+            title="Define success criteria",
+            description="Establish explicit success criteria for the goal.",
+            order=1,
+            dependencies=[],
+            evidence_key="success_criteria_defined",
+            required_state_types=["declared", "configured", "observed", "verified"],
+            recommended_action="Define objective success criteria for this goal.",
+        ),
+        _build_step(
+            step_id="identify-dependencies",
+            title="Identify dependencies",
+            description="Identify prerequisite dependencies and required conditions.",
+            order=2,
+            dependencies=["define-success-criteria"],
+            evidence_key="dependencies_identified",
+            required_state_types=["declared", "configured", "observed", "verified"],
+            recommended_action="List all critical dependencies required by this goal.",
+        ),
+        _build_step(
+            step_id="resolve-missing-evidence",
+            title="Resolve missing evidence",
+            description="Collect and verify missing evidence needed to proceed.",
+            order=3,
+            dependencies=["identify-dependencies"],
+            evidence_key="missing_evidence_resolved",
+            required_state_types=["observed", "verified"],
+            recommended_action="Collect missing evidence and verify unresolved assumptions.",
+        ),
+        _build_step(
+            step_id="perform-implementation-manually",
+            title="Perform the implementation manually",
+            description="Carry out implementation steps outside the planner.",
+            order=4,
+            dependencies=["resolve-missing-evidence"],
+            evidence_key="manual_implementation_completed",
+            required_state_types=["observed", "verified"],
+            recommended_action="Perform the implementation manually and record outcomes.",
+        ),
+        _build_step(
+            step_id="verify-result",
+            title="Verify the result",
+            description="Verify the implementation outcome with trusted evidence.",
+            order=5,
+            dependencies=["perform-implementation-manually"],
+            evidence_key="result_verified",
+            required_state_types=["observed", "verified"],
+            recommended_action="Run deterministic verification and capture evidence.",
+        ),
+        _build_step(
+            step_id="review-and-update-goal",
+            title="Review and update the goal",
+            description="Review verification evidence and update goal status explicitly.",
+            order=6,
+            dependencies=["verify-result"],
+            evidence_key="goal_reviewed",
+            required_state_types=["declared", "configured", "observed", "verified"],
+            recommended_action="Review evidence and update the goal state explicitly.",
+        ),
+    ]
+
+
+def generate_plan_for_goal(
+    *,
+    goal: Dict[str, Any],
+    evidence_store: Dict[str, Any],
+    reasoning_result: Dict[str, Any],
+) -> Dict[str, Any]:
+    _ = evidence_store
+    _ = reasoning_result
+
+    goal_id = str(goal.get("id") or f"goal-{_slug(goal.get('title') or 'goal')}")
+    title = str(goal.get("title") or goal_id)
+    description = str(goal.get("description") or "")
+    priority = str(goal.get("priority") or "normal")
+
+    normalized_title = title.lower().strip()
+    use_vision_template = "vision" in normalized_title and "routing" in normalized_title
+
+    steps = _vision_routing_steps() if use_vision_template else _generic_steps()
+    source = "deterministic_planner" if use_vision_template else "generic_deterministic_template"
+
+    now = _utc_now_iso()
+    plan_id = f"plan-{_slug(goal_id.replace('goal-', '') or title)}"
+    if plan_id == "plan":
+        plan_id = f"plan-{_slug(title)}"
+
+    return {
+        "id": plan_id,
+        "goal_id": goal_id,
+        "title": title,
+        "description": description or (
+            "Select, verify, configure, and test a vision-routing path."
+            if use_vision_template
+            else "Deterministic bounded plan generated from active goal state."
+        ),
+        "status": "proposed",
+        "priority": priority,
+        "version": 1,
+        "source": source,
+        "confidence": 1.0,
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+        "supersedes": None,
+        "superseded_by": None,
+        "steps": steps,
+        "metadata": {
+            "planner_version": 1,
+            "reasoning_snapshot_id": None,
+            "goal_snapshot": {
+                "id": goal_id,
+                "title": title,
+                "status": goal.get("status"),
+            },
+        },
+    }

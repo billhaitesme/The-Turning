@@ -36,6 +36,29 @@ from services.reasoning_engine import (
     sanitize_prompt_messages,
 )
 from services.reasoning_pipeline import run_reasoning_pipeline
+from services.planning_pipeline import (
+    detect_planning_intent,
+    run_planning_pipeline,
+)
+from services.plan_store import (
+    archive_plan,
+    find_active_plan_for_goal,
+    get_plan,
+    list_plans,
+    load_plan_store,
+    save_plan_store,
+)
+from services.decision_store import (
+    get_decision,
+    list_decisions,
+    load_decision_store,
+)
+from services.plan_renderer import (
+    render_decision,
+    render_next_action,
+    render_plan,
+    render_plan_summary,
+)
 from services.runtime_declarations import extract_runtime_declarations
 from services.state_summary import (
     build_current_state_summary,
@@ -88,6 +111,11 @@ ENABLE_CURIOSITY_SUGGESTIONS = os.getenv("ENABLE_CURIOSITY_SUGGESTIONS", "false"
 ENABLE_REASONING_PIPELINE = os.getenv("ENABLE_REASONING_PIPELINE", "true").lower() == "true"
 ENABLE_REASONING_CONTEXT = os.getenv("ENABLE_REASONING_CONTEXT", "false").lower() == "true"
 ENABLE_ACTION_RECOMMENDATIONS = os.getenv("ENABLE_ACTION_RECOMMENDATIONS", "true").lower() == "true"
+ENABLE_PLANNING_PIPELINE = os.getenv("ENABLE_PLANNING_PIPELINE", "true").lower() == "true"
+ENABLE_PLANNING_CONTEXT = os.getenv("ENABLE_PLANNING_CONTEXT", "false").lower() == "true"
+ENABLE_DECISION_RECORDS = os.getenv("ENABLE_DECISION_RECORDS", "true").lower() == "true"
+ENABLE_AUTOMATIC_PLAN_REVISION = os.getenv("ENABLE_AUTOMATIC_PLAN_REVISION", "true").lower() == "true"
+ENABLE_PLAN_EXECUTION = os.getenv("ENABLE_PLAN_EXECUTION", "false").lower() == "true"
 
 ACTIVE_PERSONALITY_MODE = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
 
@@ -526,6 +554,8 @@ def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_messa
 
 
 latest_reasoning_result: Optional[Dict[str, Any]] = None
+latest_planning_result: Optional[Dict[str, Any]] = None
+latest_decision_result: Optional[Dict[str, Any]] = None
 
 
 def _build_dependency_map(evidence_store: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -1010,6 +1040,36 @@ def get_system_reasoning() -> Dict[str, Any]:
     return {"reasoning": latest_reasoning_result}
 
 
+@app.get("/system/plans")
+def get_system_plans() -> Dict[str, Any]:
+    store = load_plan_store()
+    return {"plans": list_plans(store)}
+
+
+@app.get("/system/plans/{plan_id}")
+def get_system_plan(plan_id: str) -> Dict[str, Any]:
+    store = load_plan_store()
+    plan = get_plan(store, plan_id)
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Plan not found.")
+    return {"plan": plan}
+
+
+@app.get("/system/decisions")
+def get_system_decisions() -> Dict[str, Any]:
+    store = load_decision_store()
+    return {"decisions": list_decisions(store)}
+
+
+@app.get("/system/decisions/{decision_id}")
+def get_system_decision(decision_id: str) -> Dict[str, Any]:
+    store = load_decision_store()
+    decision = get_decision(store, decision_id)
+    if decision is None:
+        raise HTTPException(status_code=404, detail="Decision not found.")
+    return {"decision": decision}
+
+
 @app.post("/conversations", response_model=CreateConversationResponse)
 def new_conversation(req: CreateConversationRequest) -> CreateConversationResponse:
     cid = create_conversation(user_id=req.user_id, title=req.title)
@@ -1035,7 +1095,7 @@ def get_conversation_memories(conversation_id: str, q: str) -> MemorySearchRespo
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
-    global latest_reasoning_result
+    global latest_reasoning_result, latest_planning_result, latest_decision_result
     conversation_id = req.conversation_id
     if not conversation_id:
         conversation_id = create_conversation(user_id=req.user_id)
@@ -1049,6 +1109,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
     memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
     summary_intent = detect_summary_intent(req.message)
+    planning_intent = detect_planning_intent(req.message)
     try:
         reasoning_output = None
         if summary_intent in {"state_summary", "uncertainty_summary"}:
@@ -1113,6 +1174,60 @@ def chat(req: ChatRequest) -> ChatResponse:
         except Exception as exc:
             print("Reasoning pipeline warning:", repr(exc))
             reasoning_output = None
+
+    if ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION:
+        try:
+            planning_output = run_planning_pipeline(
+                goal_store=load_goal_store(),
+                evidence_store=_load_scoped_evidence_store(conversation_id),
+                reasoning_result=reasoning_output or {},
+                plan_store=load_plan_store(),
+                decision_store=load_decision_store(),
+                persist=True,
+            )
+            latest_planning_result = planning_output
+            latest_decision_result = {
+                "decisions": list_decisions(load_decision_store()),
+            }
+
+            if planning_intent:
+                active_plan = planning_output.get("active_plan")
+                if planning_intent == "plan_summary":
+                    reply = render_plan(active_plan) if active_plan else "No active plan exists."
+                elif planning_intent == "next_plan_action":
+                    reply = render_next_action(planning_output)
+                elif planning_intent == "plan_blockers":
+                    blocked = planning_output.get("blocked_steps") or []
+                    if blocked:
+                        blocker_lines = [f"- {item.get('title')}: {', '.join(item.get('blockers') or [])}" for item in blocked]
+                        reply = "Current blockers:\n" + "\n".join(blocker_lines)
+                    else:
+                        reply = "Current blockers: none."
+                elif planning_intent == "decision_explanation":
+                    decisions = list_decisions(load_decision_store(), status="active")
+                    if decisions:
+                        reply = render_decision(decisions[0])
+                    else:
+                        reply = "No active decisions are currently recorded."
+                elif planning_intent == "plan_revision_request":
+                    revisions = planning_output.get("revisions") or []
+                    if revisions:
+                        first = revisions[0]
+                        reply = f"Plan revised: {first.get('reason')}"
+                    else:
+                        reply = "No deterministic revision was required for the active plan."
+                elif planning_intent == "alternative_plan_request":
+                    reply = "Alternative plan requests are recognized; use explicit goal context to supersede the active plan deterministically."
+                elif planning_intent == "plan_archive_request":
+                    if active_plan:
+                        store = archive_plan(load_plan_store(), str(active_plan.get("id")))
+                        save_plan_store(store)
+                        reply = f"Archived plan {active_plan.get('id')}."
+                    else:
+                        reply = "No active plan is available to archive."
+        except Exception as exc:
+            print("Planning pipeline warning:", repr(exc))
+            planning_output = None
 
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)

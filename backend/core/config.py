@@ -18,5 +18,10 @@ class Settings:
     enable_reasoning_pipeline: bool = os.getenv("ENABLE_REASONING_PIPELINE", "true").lower() == "true"
     enable_reasoning_context: bool = os.getenv("ENABLE_REASONING_CONTEXT", "false").lower() == "true"
     enable_action_recommendations: bool = os.getenv("ENABLE_ACTION_RECOMMENDATIONS", "true").lower() == "true"
+    enable_planning_pipeline: bool = os.getenv("ENABLE_PLANNING_PIPELINE", "true").lower() == "true"
+    enable_planning_context: bool = os.getenv("ENABLE_PLANNING_CONTEXT", "false").lower() == "true"
+    enable_decision_records: bool = os.getenv("ENABLE_DECISION_RECORDS", "true").lower() == "true"
+    enable_automatic_plan_revision: bool = os.getenv("ENABLE_AUTOMATIC_PLAN_REVISION", "true").lower() == "true"
+    enable_plan_execution: bool = os.getenv("ENABLE_PLAN_EXECUTION", "false").lower() == "true"
 
 settings = Settings()
