@@ -30,3 +30,15 @@ The Epoch VIII tool framework keeps execution bounded and observable.
 - Approval may authorize actions.
 - Tools may execute only bounded actions.
 - Evidence records what actually happened.
+
+## Trusted Diagnostic Execution
+
+The trusted localhost health-check adapter is the first bounded tool to close the full loop.
+
+1. A chat request may create a request-bound approval record for `backend_health_check`.
+2. Confirmation must be explicit before execution is allowed.
+3. The adapter may only check localhost using the configured port and bounded candidate paths.
+4. The result is recorded as structured execution history.
+5. Verified health evidence is derived only from trusted adapter output.
+6. Endpoint mismatch keeps backend health unknown and prevents false verification.
+7. Reasoning is refreshed after evidence ingestion so the cognition loop sees the new truth.
