@@ -24,13 +24,153 @@ function inferSubsystemState(connected, stale, hasWarnings = false) {
   return "READY";
 }
 
+function toMs(isoValue) {
+  if (!isoValue) return null;
+  const parsed = Date.parse(String(isoValue));
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function isoFromMs(valueMs) {
+  if (!Number.isFinite(valueMs)) return null;
+  return new Date(valueMs).toISOString();
+}
+
+function buildEvidenceViewModel({
+  now,
+  toolRequests,
+  toolResults,
+  approvalTtlSeconds,
+  requestFetchOk,
+  resultFetchOk,
+}) {
+  const requests = Array.isArray(toolRequests) ? toolRequests : [];
+  const results = Array.isArray(toolResults) ? toolResults : [];
+  const nowMs = toMs(now) || Date.now();
+  const ttlMs = Math.max(1, Number(approvalTtlSeconds || 300)) * 1000;
+
+  const allCandidates = results.flatMap((item) => (Array.isArray(item?.evidence_candidates) ? item.evidence_candidates : []));
+  const verifiedCandidates = allCandidates.filter((item) => String(item?.kind || "") === "verified_tool_result");
+
+  const requestsApproved = requests.filter((item) => String(item?.status || "") === "approved").length;
+  const pendingApprovals = requests.filter((item) => {
+    const status = String(item?.status || "");
+    return status === "awaiting_approval" || status === "pending";
+  });
+  const invalidations = requests
+    .filter((item) => ["rejected", "expired", "cancelled"].includes(String(item?.status || "")))
+    .map((item) => ({
+      requestId: item.request_id,
+      toolName: item.tool_name,
+      reason: item.status,
+      at: item.updated_at || item.created_at || now,
+    }));
+
+  const expiryMarkers = pendingApprovals.slice(0, 6).map((item) => {
+    const createdMs = toMs(item.created_at);
+    const expiresMs = createdMs ? createdMs + ttlMs : null;
+    const remainingSec = expiresMs ? Math.floor((expiresMs - nowMs) / 1000) : null;
+    return {
+      requestId: item.request_id,
+      toolName: item.tool_name,
+      expiresAt: isoFromMs(expiresMs),
+      remainingSeconds: remainingSec,
+      expired: typeof remainingSec === "number" ? remainingSec <= 0 : false,
+      source: "approval_ttl",
+    };
+  });
+
+  const lastResult = results[0] || null;
+  const lastResultMs = toMs(lastResult?.completed_at || lastResult?.started_at);
+  const freshnessAgeSec = lastResultMs ? Math.floor((nowMs - lastResultMs) / 1000) : null;
+  const freshness = {
+    observedAt: lastResult?.completed_at || lastResult?.started_at || null,
+    ageSeconds: freshnessAgeSec,
+    state: freshnessAgeSec == null ? "unknown" : freshnessAgeSec <= 15 ? "fresh" : freshnessAgeSec <= 60 ? "aging" : "stale",
+  };
+
+  const compactTimeline = [
+    ...results.slice(0, 5).map((item) => ({
+      at: item.completed_at || item.started_at || now,
+      type: "result",
+      detail: `${item.tool_name || "tool"}: ${item.status || "unknown"}`,
+      status: item.success ? "verified" : "observed",
+    })),
+    ...requests.slice(0, 5).map((item) => ({
+      at: item.updated_at || item.created_at || now,
+      type: "request",
+      detail: `${item.tool_name || "tool"}: ${item.status || "unknown"}`,
+      status: String(item.status || "").includes("approval") ? "configured" : "declared",
+    })),
+  ]
+    .sort((left, right) => (toMs(right.at) || 0) - (toMs(left.at) || 0))
+    .slice(0, 10);
+
+  const provenance = verifiedCandidates.slice(0, 6).map((item) => ({
+    candidateId: item.candidate_id,
+    toolName: item.tool_name,
+    adapter: item.adapter_name,
+    requestId: item.request_id,
+    checkedEndpoint:
+      item?.output?.checked_url || item?.output?.checked_endpoint || item?.output?.endpoint || "unknown",
+    observedAt: item.observed_at || item.created_at,
+  }));
+
+  const confidence = {
+    verifiedRatio: requests.length > 0 ? Math.round((verifiedCandidates.length / requests.length) * 100) : 0,
+    successRatio: results.length > 0 ? Math.round((results.filter((item) => item.success).length / results.length) * 100) : 0,
+  };
+
+  const counts = {
+    declared: requests.length,
+    configured: requestsApproved,
+    observed: results.length,
+    verified: verifiedCandidates.length,
+    unknown: Math.max(0, requests.length - results.length),
+  };
+
+  const indicators = [
+    { label: "Tool Requests", state: requestFetchOk ? "observed" : "unknown" },
+    { label: "Tool Results", state: resultFetchOk ? "observed" : "unknown" },
+    { label: "Verified Evidence", state: verifiedCandidates.length > 0 ? "verified" : "unknown" },
+    { label: "Approval Queue", state: pendingApprovals.length > 0 ? "configured" : "declared" },
+  ];
+
+  return {
+    counts,
+    indicators,
+    confidence,
+    freshness,
+    expiryMarkers,
+    invalidations,
+    timeline: compactTimeline,
+    provenance,
+    requests,
+    results,
+    candidates: allCandidates,
+  };
+}
+
 export function useBridgeData() {
   const [conversation, setConversation] = useState({
     state: "INITIALIZING",
     messages: [{ role: "SYSTEM", content: "Initializing Bridge Zero polling bus." }],
   });
   const [identity, setIdentity] = useState({ state: "INITIALIZING", user: "operator", project: "unknown", session: "live", confidence: 0, activity_at: null });
-  const [evidence, setEvidence] = useState({ state: "INITIALIZING", counts: { declared: 0, configured: 0, observed: 0, verified: 0, unknown: 0 }, indicators: [], activity_at: null });
+  const [evidence, setEvidence] = useState({
+    state: "INITIALIZING",
+    counts: { declared: 0, configured: 0, observed: 0, verified: 0, unknown: 0 },
+    indicators: [],
+    confidence: { verifiedRatio: 0, successRatio: 0 },
+    freshness: { observedAt: null, ageSeconds: null, state: "unknown" },
+    expiryMarkers: [],
+    invalidations: [],
+    timeline: [],
+    provenance: [],
+    requests: [],
+    results: [],
+    candidates: [],
+    activity_at: null,
+  });
   const [reasoning, setReasoning] = useState({ state: "INITIALIZING", confidence: 0, inferences: [], assumptions: [], activity_at: null });
   const [planning, setPlanning] = useState({ state: "INITIALIZING", activeGoal: "none", nextAction: "none", steps: [], activity_at: null });
   const [deliberation, setDeliberation] = useState({ state: "INITIALIZING", recommendation: "none", approvalState: "pending", alternatives: [], activity_at: null });
@@ -142,6 +282,8 @@ export function useBridgeData() {
         fetch(`${API_BASE}/system/plans`),
         fetch(`${API_BASE}/system/decisions`),
         fetch(`${API_BASE}/system/reasoning`),
+        fetch(`${API_BASE}/system/tool-requests`),
+        fetch(`${API_BASE}/system/tool-results`),
       ]);
 
       const toJson = async (settled) => {
@@ -154,7 +296,7 @@ export function useBridgeData() {
         }
       };
 
-      const [statusRes, toolsRes, plansRes, decisionsRes, reasoningRes] = await Promise.all(calls.map(toJson));
+      const [statusRes, toolsRes, plansRes, decisionsRes, reasoningRes, requestRes, resultRes] = await Promise.all(calls.map(toJson));
       const coreSuccess = toolsRes.ok && plansRes.ok && decisionsRes.ok && reasoningRes.ok;
 
       if (!coreSuccess) {
@@ -197,6 +339,8 @@ export function useBridgeData() {
       const plansPayload = plansRes.payload || {};
       const decisionsPayload = decisionsRes.payload || {};
       const reasoningPayload = reasoningRes.payload || {};
+      const requestPayload = requestRes.payload || {};
+      const resultPayload = resultRes.payload || {};
 
       const plans = plansPayload.plans || [];
       const activePlan = plans.find((item) => String(item.status || "").toLowerCase() === "active") || plans[0] || null;
@@ -228,26 +372,19 @@ export function useBridgeData() {
         activity_at: identityChanged ? now : prev.activity_at,
       }));
 
-      const evidenceCounts = {
-        declared: 0,
-        configured: 1,
-        observed: inferences.length,
-        verified: statusRes.ok ? 1 : 0,
-        unknown: statusRes.ok ? 0 : 1,
-      };
-      const evidencePayload = {
-        counts: evidenceCounts,
-        indicators: [
-          { label: "Backend Status", state: statusRes.ok ? "observed" : "unknown" },
-          { label: "Reasoning", state: inferences.length > 0 ? "observed" : "unknown" },
-          { label: "Planning", state: activePlan ? "configured" : "unknown" },
-        ],
-      };
+      const evidencePayload = buildEvidenceViewModel({
+        now,
+        toolRequests: requestPayload.requests,
+        toolResults: resultPayload.results,
+        approvalTtlSeconds: requestPayload.approval_ttl_seconds,
+        requestFetchOk: requestRes.ok,
+        resultFetchOk: resultRes.ok,
+      });
       const evidenceChanged = markActivityIfChanged("evidence", evidencePayload);
       setEvidence((prev) => ({
         ...prev,
         ...evidencePayload,
-        state: inferSubsystemState(connected, stale, !statusRes.ok),
+        state: inferSubsystemState(connected, stale, !requestRes.ok || !resultRes.ok),
         activity_at: evidenceChanged ? now : prev.activity_at,
       }));
 
