@@ -4,7 +4,7 @@ from awareness_engine import AwarenessSnapshot, awareness_prompt
 class Tests(unittest.TestCase):
     def test_awareness_prompt(self):
         snapshot = AwarenessSnapshot(
-            True, True, False, "offline",
+            True, False, "offline",
             "llama2-uncensored:7b", "llava:7b",
             "embeddinggemma:latest", "gemma3:1b",
             "TEST GPU", {"vision": True}

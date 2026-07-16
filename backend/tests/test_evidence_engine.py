@@ -2,10 +2,14 @@ import unittest
 from datetime import datetime, timedelta, timezone
 
 from services.evidence_engine import (
+    extract_durable_evidence_store,
+    extract_session_scoped_evidence_store,
     empty_evidence_record,
     invalidate_dependent_evidence,
     is_evidence_fresh,
+    merge_evidence_stores,
     normalize_evidence_record,
+    record_health_check_result,
     render_evidence_for_prompt,
     rank_state_type,
     set_evidence,
@@ -56,6 +60,57 @@ class EvidenceEngineTests(unittest.TestCase):
     def test_prompts_preserve_evidence_labels(self):
         store = {"facts": {"backend_port": {"value": 8001, "state_type": "configured", "source": "user"}}}
         self.assertIn("configured as 8001", render_evidence_for_prompt(store, key="backend_port"))
+
+    def test_trusted_health_check_record_creates_verified_runtime_evidence(self):
+        record = record_health_check_result(
+            target="backend",
+            url="http://127.0.0.1:8002",
+            success=True,
+            checked_at="2026-07-15T00:00:00+00:00",
+            source="health_check",
+        )
+        self.assertEqual(record["key"], "backend_health")
+        self.assertEqual(record["value"], "online")
+        self.assertEqual(record["state_type"], "verified")
+        self.assertEqual(record["source"], "health_check")
+        self.assertEqual(record["checked_url"], "http://127.0.0.1:8002")
+        self.assertEqual(record["checked_at"], "2026-07-15T00:00:00+00:00")
+
+    def test_new_session_does_not_inherit_user_declared_online_state(self):
+        durable = {
+            "version": 1,
+            "facts": {
+                "backend_port": {"value": 8002, "state_type": "configured", "source": "user"},
+            },
+        }
+        session_a = {
+            "version": 1,
+            "facts": {
+                "backend_health": {"value": "online", "state_type": "declared", "source": "user"},
+            },
+        }
+        merged_session_b = merge_evidence_stores(durable, {"version": 1, "facts": {}})
+        self.assertEqual(merged_session_b["facts"]["backend_port"]["value"], 8002)
+        self.assertNotIn("backend_health", merged_session_b["facts"])
+
+        merged_session_a = merge_evidence_stores(durable, session_a)
+        self.assertEqual(merged_session_a["facts"]["backend_health"]["state_type"], "declared")
+
+    def test_extractors_split_durable_and_session_scoped_facts(self):
+        combined = {
+            "version": 1,
+            "facts": {
+                "backend_port": {"value": 8002, "state_type": "configured", "source": "user"},
+                "backend_health": {"value": "online", "state_type": "declared", "source": "user"},
+            },
+        }
+        durable = extract_durable_evidence_store(combined)
+        session = extract_session_scoped_evidence_store(combined)
+
+        self.assertIn("backend_port", durable["facts"])
+        self.assertNotIn("backend_health", durable["facts"])
+        self.assertIn("backend_health", session["facts"])
+        self.assertNotIn("backend_port", session["facts"])
 
 
 if __name__ == "__main__":

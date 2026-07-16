@@ -82,6 +82,31 @@ class CuriosityEngineTests(unittest.TestCase):
 
         self.assertNotIn("Would you like", response)
 
+    def test_health_check_offer_is_not_appended_when_curiosity_is_disabled(self):
+        response = apply_curiosity_to_response(
+            response="The backend is configured for port 8001. Its current runtime health has not been verified.",
+            curiosity_candidate={
+                "kind": "curiosity",
+                "question": "Would you like me to attempt a health check?",
+            },
+            enabled=False,
+        )
+
+        self.assertNotIn("Would you like me to attempt a health check?", response)
+        self.assertNotIn("health check?", response)
+
+    def test_vision_readiness_follow_up_is_not_appended_when_curiosity_is_disabled(self):
+        response = apply_curiosity_to_response(
+            response="Vision routing readiness is not verified. Installed status alone is not enough.",
+            curiosity_candidate={
+                "kind": "curiosity",
+                "question": "Would you like me to run a routing verification now?",
+            },
+            enabled=False,
+        )
+
+        self.assertNotIn("Would you like me to run a routing verification now?", response)
+
     def test_curiosity_enabled_mode_appends_no_more_than_one_question(self):
         response = apply_curiosity_to_response(
             response="Understood. I’ll treat 8001 as the configured backend port.",

@@ -45,6 +45,31 @@ class GoalEngineTests(unittest.TestCase):
     def test_apply_candidates(self):
         store = apply_goal_candidates({}, [{"value": "Add vision routing", "confidence": 1.0, "importance": 0.9, "requires_confirmation": False}])
         self.assertEqual(store["goals"][0]["title"], "Add vision routing")
+        self.assertEqual(
+            store["goals"][0]["dependencies"],
+            [
+                "vision_model_selected",
+                "vision_model_loaded",
+                "vision_model_healthy",
+                "vision_router_configured",
+                "vision_routing_verified",
+            ],
+        )
+        self.assertEqual(store["goals"][0]["completion_evidence_key"], "vision_routing_ready")
+
+    def test_build_project_candidate_is_normalized(self):
+        store = apply_goal_candidates(
+            {},
+            [{"key": "build_project", "value": "OMEGA-ARC", "confidence": 1.0, "importance": 0.9, "requires_confirmation": False}],
+        )
+        self.assertEqual(store["goals"][0]["title"], "Build OMEGA-ARC")
+
+    def test_build_project_candidate_never_stores_vague_project_only_title(self):
+        store = apply_goal_candidates(
+            {},
+            [{"key": "build_project", "value": "OMEGA-ARC", "confidence": 1.0, "importance": 0.9, "requires_confirmation": False}],
+        )
+        self.assertNotEqual(store["goals"][0]["title"], "OMEGA-ARC")
 
     def test_save_and_reload(self):
         with tempfile.TemporaryDirectory() as tmpdir:
