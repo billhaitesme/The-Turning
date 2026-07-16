@@ -317,6 +317,52 @@ function Invoke-OmegaClean {
     Write-OmegaPass "Clean operation completed."
 }
 
+function Show-OmegaPlan {
+    $paths = Get-OmegaPaths
+    $goalsPath = Join-Path $paths.Backend "data/goals.json"
+
+    $activeGoals = @()
+    if (Test-Path $goalsPath) {
+        try {
+            $store = Get-Content -Path $goalsPath -Raw | ConvertFrom-Json
+            foreach ($goal in @($store.goals)) {
+                if ($null -eq $goal) {
+                    continue
+                }
+                $status = ("$($goal.status)").ToLowerInvariant()
+                if ([string]::IsNullOrWhiteSpace($status) -or $status -eq "active" -or $status -eq "in_progress") {
+                    $activeGoals += ("$($goal.title)")
+                }
+            }
+        }
+        catch {
+            Write-OmegaWarning "Could not parse goals store at $goalsPath"
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Current Goals"
+    if ($activeGoals.Count -gt 0) {
+        foreach ($goal in $activeGoals) {
+            Write-Host "- $goal"
+        }
+    }
+    else {
+        Write-Host "- None"
+    }
+
+    Write-Host ""
+    Write-Host "Current Plans"
+    Write-Host "- Planning placeholder active. Use backend planning pipeline for deterministic proposals."
+
+    Write-Host ""
+    Write-Host "Current Blockers"
+    Write-Host "- None"
+
+    Write-Host ""
+    Write-OmegaInfo "No execution performed. Planning output is proposal-only."
+}
+
 function Show-OmegaFutureHook {
     param([Parameter(Mandatory = $true)][string]$Name)
     Write-OmegaWarning "Future hook '$Name' is reserved but not yet implemented."
@@ -337,6 +383,7 @@ function Show-OmegaCommandHelp {
     Write-Host "  docs"
     Write-Host "  git"
     Write-Host "  clean"
+    Write-Host "  plan"
 }
 
 Export-ModuleMember -Function @(
@@ -347,6 +394,7 @@ Export-ModuleMember -Function @(
     "Invoke-OmegaDoctor",
     "Open-OmegaDocs",
     "Invoke-OmegaClean",
+    "Show-OmegaPlan",
     "Show-OmegaFutureHook",
     "Show-OmegaCommandHelp"
 )

@@ -68,6 +68,10 @@ switch ($normalized) {
         Invoke-OmegaClean
         break
     }
+    "plan" {
+        Show-OmegaPlan
+        break
+    }
     "benchmark" {
         Show-OmegaFutureHook -Name "benchmark"
         break
