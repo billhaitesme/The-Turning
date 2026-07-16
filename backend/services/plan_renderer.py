@@ -49,6 +49,14 @@ def render_plan_summary(plan: Dict[str, Any]) -> str:
 def render_next_action(planning_result: Dict[str, Any]) -> str:
     actions = planning_result.get("next_actions") or []
     if not actions:
+        blocked = planning_result.get("blocked_steps") or []
+        if blocked:
+            first = blocked[0]
+            blocker_text = ", ".join(first.get("blockers") or [])
+            suggestion = first.get("recommended_action") or first.get("title") or "Resolve the highest-priority blocker."
+            if blocker_text:
+                return f"Next action: {suggestion} Blocker context: {blocker_text}"
+            return f"Next action: {suggestion}"
         return "No next action is currently available."
     action = actions[0]
     return f"Next action: {action.get('title')}."

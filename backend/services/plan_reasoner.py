@@ -41,8 +41,11 @@ def _evidence_requirement_satisfied(requirement: Dict[str, Any], records: Dict[s
     state_type = str(record.get("state_type") or "unknown")
     value = record.get("value")
 
-    if state_type in {"invalidated", "expired", "unknown"}:
+    if state_type in {"invalidated", "expired"}:
         return False, f"{key} is {state_type}.", {}
+
+    if state_type == "unknown":
+        return False, "", {}
 
     required_states = requirement.get("required_state_types") or []
     required_states = [str(item) for item in required_states]
@@ -73,17 +76,18 @@ def evaluate_step(
     steps = _step_index(plan)
 
     blockers: List[str] = []
+    hard_blockers: List[str] = []
     completion: List[Dict[str, Any]] = []
 
     for dep in updated.get("dependencies") or []:
         dep_id = str(dep)
         dep_step = steps.get(dep_id)
         if not dep_step:
-            blockers.append(f"Missing dependency step: {dep_id}.")
+            hard_blockers.append(f"Missing dependency step: {dep_id}.")
             continue
         dep_status = str(dep_step.get("status") or "").lower()
         if dep_status != "completed":
-            blockers.append(f"Dependency {dep_id} is {dep_status or 'not completed'}.")
+            hard_blockers.append(f"Dependency {dep_id} is {dep_status or 'not completed'}.")
 
     for requirement in updated.get("evidence_requirements") or []:
         if not isinstance(requirement, dict):
@@ -93,16 +97,21 @@ def evaluate_step(
         if ok:
             completion.append(completion_entry)
         else:
-            blockers.append(reason)
+            if reason:
+                blockers.append(reason)
 
-    if blockers:
+    if hard_blockers:
         updated["status"] = "blocked"
-        updated["blockers"] = blockers
+        updated["blockers"] = hard_blockers
         updated["completion_evidence"] = []
     elif completion:
         updated["status"] = "completed"
         updated["blockers"] = []
         updated["completion_evidence"] = completion
+    elif blockers:
+        updated["status"] = "blocked"
+        updated["blockers"] = blockers
+        updated["completion_evidence"] = []
     else:
         updated["status"] = "ready"
         updated["blockers"] = []

@@ -5,7 +5,9 @@ from pathlib import Path
 
 from services.goal_engine import (
     apply_goal_candidates,
+    canonical_goal_key,
     load_goal_store,
+    normalize_goal_title,
     save_goal_store,
     update_goal_progress,
     upsert_goal,
@@ -78,6 +80,24 @@ class GoalEngineTests(unittest.TestCase):
             save_goal_store(store, path)
             reloaded = load_goal_store(path)
             self.assertEqual(reloaded["goals"], [])
+
+    def test_goal_normalization_punctuation_and_case(self):
+        self.assertEqual(normalize_goal_title("add vision routing."), "Add vision routing")
+        self.assertEqual(normalize_goal_title("Vision Routing"), "Add vision routing")
+        self.assertEqual(normalize_goal_title("implement vision routing"), "Add vision routing")
+
+    def test_canonical_goal_key_equivalent_phrases(self):
+        phrases = [
+            "add vision routing",
+            "Add vision routing.",
+            "vision routing",
+            "implement vision routing",
+        ]
+        for phrase in phrases:
+            self.assertEqual(canonical_goal_key(phrase), "add_vision_routing")
+
+    def test_omega_arc_not_equivalent_to_add_vision_routing(self):
+        self.assertNotEqual(canonical_goal_key("OMEGA-ARC"), "add_vision_routing")
 
 
 if __name__ == "__main__":

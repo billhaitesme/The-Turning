@@ -1183,6 +1183,8 @@ def chat(req: ChatRequest) -> ChatResponse:
                 reasoning_result=reasoning_output or {},
                 plan_store=load_plan_store(),
                 decision_store=load_decision_store(),
+                user_message=req.message,
+                session_id=conversation_id,
                 persist=True,
             )
             latest_planning_result = planning_output
@@ -1191,9 +1193,14 @@ def chat(req: ChatRequest) -> ChatResponse:
             }
 
             if planning_intent:
-                active_plan = planning_output.get("active_plan")
+                active_plan = planning_output.get("selected_plan") or planning_output.get("active_plan")
                 if planning_intent == "plan_summary":
-                    reply = render_plan(active_plan) if active_plan else "No active plan exists."
+                    if active_plan:
+                        reply = render_plan(active_plan)
+                    elif planning_output.get("selection_message"):
+                        reply = planning_output["selection_message"]
+                    else:
+                        reply = "No active plan exists."
                 elif planning_intent == "next_plan_action":
                     reply = render_next_action(planning_output)
                 elif planning_intent == "plan_blockers":
@@ -1204,11 +1211,15 @@ def chat(req: ChatRequest) -> ChatResponse:
                     else:
                         reply = "Current blockers: none."
                 elif planning_intent == "decision_explanation":
-                    decisions = list_decisions(load_decision_store(), status="active")
+                    decisions = [
+                        item
+                        for item in list_decisions(load_decision_store(), status="active")
+                        if str(item.get("source") or "") == "explicit_user_choice"
+                    ]
                     if decisions:
                         reply = render_decision(decisions[0])
                     else:
-                        reply = "No active decisions are currently recorded."
+                        reply = "No active model choice has been recorded yet."
                 elif planning_intent == "plan_revision_request":
                     revisions = planning_output.get("revisions") or []
                     if revisions:

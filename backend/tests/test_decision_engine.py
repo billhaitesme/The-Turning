@@ -86,6 +86,18 @@ class DecisionEngineTests(unittest.TestCase):
         explanation = explain_decision(decision)
         self.assertNotIn("chain-of-thought", explanation.lower())
 
+    def test_explanation_for_explicit_selection_without_additional_rationale(self):
+        decision = create_decision(
+            decision_id="decision-llava",
+            title="Use LLaVA for vision routing",
+            decision_text="Use llava:7b as the initial vision model.",
+            reason="LLaVA was explicitly selected, but no additional rationale has been recorded.",
+            explicit_choice=True,
+            source="explicit_user_choice",
+        )
+        explanation = explain_decision(decision)
+        self.assertIn("explicitly selected", explanation.lower())
+
     def test_validate_decision(self):
         decision = create_decision(
             decision_id="decision-a",

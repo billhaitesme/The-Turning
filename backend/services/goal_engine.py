@@ -22,8 +22,33 @@ VISION_ROUTING_DEPENDENCIES = [
 ]
 
 
+def normalize_goal_title(title: str) -> str:
+    raw = str(title or "").strip()
+    stripped = re.sub(r"[\s\t\n\r]+", " ", raw)
+    stripped = re.sub(r"[\.!?]+$", "", stripped).strip()
+    lowered = stripped.lower()
+
+    if "vision" in lowered and "routing" in lowered:
+        return "Add vision routing"
+
+    if lowered.startswith("build "):
+        subject = stripped[6:].strip()
+        if not subject:
+            return "Build project"
+        return f"Build {subject}"
+
+    return stripped or "Goal"
+
+
+def canonical_goal_key(title: str) -> str:
+    normalized = normalize_goal_title(title).lower()
+    if "vision" in normalized and "routing" in normalized:
+        return "add_vision_routing"
+    return re.sub(r"[^a-z0-9]+", "_", normalized).strip("_") or "goal"
+
+
 def infer_goal_requirements(title: str) -> Dict[str, Any]:
-    lowered = str(title or "").strip().lower()
+    lowered = normalize_goal_title(title).strip().lower()
 
     if "vision" in lowered and "routing" in lowered:
         return {
@@ -86,15 +111,21 @@ def upsert_goal(
     updated.setdefault("version", 1)
     updated.setdefault("goals", [])
 
-    goal_id = f"goal-{slugify(title)}"
+    normalized_title = normalize_goal_title(title)
+    goal_key = canonical_goal_key(normalized_title)
+    goal_id = f"goal-{goal_key.replace('_', '-') }"
     now = utc_now_iso()
-    requirements = infer_goal_requirements(title)
+    requirements = infer_goal_requirements(normalized_title)
 
     for goal in updated["goals"]:
-        if goal.get("id") != goal_id:
+        existing_key = str(goal.get("canonical_key") or canonical_goal_key(str(goal.get("title") or "")))
+        if goal.get("id") != goal_id and existing_key != goal_key:
             continue
 
-        goal["description"] = description or goal.get("description") or title
+        goal["id"] = goal_id
+        goal["canonical_key"] = goal_key
+        goal["title"] = normalized_title
+        goal["description"] = description or goal.get("description") or normalized_title
         goal["status"] = status
         goal["priority"] = priority
         goal["source"] = source
@@ -109,8 +140,9 @@ def upsert_goal(
     updated["goals"].append(
         {
             "id": goal_id,
-            "title": title,
-            "description": description or title,
+            "canonical_key": goal_key,
+            "title": normalized_title,
+            "description": description or normalized_title,
             "status": status,
             "priority": priority,
             "progress": 0.0,
@@ -183,6 +215,8 @@ def apply_goal_candidates(store: Dict[str, Any], candidates: List[Dict[str, Any]
 
         if not title:
             continue
+
+        title = normalize_goal_title(title)
 
         updated = upsert_goal(
             updated,

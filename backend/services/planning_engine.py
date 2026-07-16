@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import re
 from typing import Any, Dict, List, Tuple
 
-from services.goal_engine import infer_goal_requirements
+from services.goal_engine import canonical_goal_key, infer_goal_requirements, normalize_goal_title
 from services.plan_graph import build_plan_graph
 from services.planning_models import Plan, PlanDependency, PlanStep
 
@@ -279,7 +279,7 @@ def _vision_routing_steps() -> List[Dict[str, Any]]:
         ),
         _build_step(
             step_id="verify-vision-model-load",
-            title="Verify that the model loads successfully",
+            title="Verify that the selected vision model loads successfully.",
             description="Confirm the selected model can load in the runtime environment.",
             order=2,
             dependencies=["select-vision-model"],
@@ -289,7 +289,7 @@ def _vision_routing_steps() -> List[Dict[str, Any]]:
         ),
         _build_step(
             step_id="verify-vision-model-response",
-            title="Verify the model responds to a basic vision request",
+            title="Verify a basic vision response.",
             description="Validate a minimal vision inference path using the selected model.",
             order=3,
             dependencies=["verify-vision-model-load"],
@@ -299,7 +299,7 @@ def _vision_routing_steps() -> List[Dict[str, Any]]:
         ),
         _build_step(
             step_id="configure-routing-rule",
-            title="Configure the routing rule",
+            title="Configure the routing rule.",
             description="Configure routing so vision requests are directed to the selected model.",
             order=4,
             dependencies=["select-vision-model"],
@@ -309,7 +309,7 @@ def _vision_routing_steps() -> List[Dict[str, Any]]:
         ),
         _build_step(
             step_id="run-end-to-end-routing-test",
-            title="Run an end-to-end routing test",
+            title="Run an end-to-end routing test.",
             description="Verify routing, model response, and output integrity in a full path test.",
             order=5,
             dependencies=["verify-vision-model-response", "configure-routing-rule"],
@@ -319,7 +319,7 @@ def _vision_routing_steps() -> List[Dict[str, Any]]:
         ),
         _build_step(
             step_id="review-evidence-and-update-goal",
-            title="Review evidence and update the goal status",
+            title="Review evidence and update the goal status.",
             description="Review all verification evidence and confirm goal status is current.",
             order=6,
             dependencies=["run-end-to-end-routing-test"],
@@ -404,19 +404,20 @@ def generate_plan_for_goal(
     _ = evidence_store
     _ = reasoning_result
 
-    goal_id = str(goal.get("id") or f"goal-{_slug(goal.get('title') or 'goal')}")
-    title = str(goal.get("title") or goal_id)
+    normalized_goal_title = normalize_goal_title(str(goal.get("title") or ""))
+    goal_key = canonical_goal_key(normalized_goal_title)
+    goal_id = str(goal.get("id") or f"goal-{goal_key.replace('_', '-')}")
+    title = normalized_goal_title or str(goal.get("title") or goal_id)
     description = str(goal.get("description") or "")
     priority = str(goal.get("priority") or "normal")
 
-    normalized_title = title.lower().strip()
-    use_vision_template = "vision" in normalized_title and "routing" in normalized_title
+    use_vision_template = goal_key == "add_vision_routing"
 
     steps = _vision_routing_steps() if use_vision_template else _generic_steps()
     source = "deterministic_planner" if use_vision_template else "generic_deterministic_template"
 
     now = _utc_now_iso()
-    plan_id = f"plan-{_slug(goal_id.replace('goal-', '') or title)}"
+    plan_id = f"plan-{goal_key.replace('_', '-')}"
     if plan_id == "plan":
         plan_id = f"plan-{_slug(title)}"
 

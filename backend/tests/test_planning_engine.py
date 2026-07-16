@@ -1,6 +1,6 @@
 import unittest
 
-from services.planning_engine import build_plan
+from services.planning_engine import build_plan, generate_plan_for_goal
 
 
 class PlanningEngineTests(unittest.TestCase):
@@ -149,6 +149,48 @@ class PlanningEngineTests(unittest.TestCase):
             {},
         )
         self.assertEqual(plans_a[0].confidence, plans_b[0].confidence)
+
+    def test_vision_template_canonical_exact_match(self):
+        plan = generate_plan_for_goal(
+            goal={"id": "goal-add-vision-routing", "title": "Add vision routing", "status": "active"},
+            evidence_store={"version": 1, "facts": {}},
+            reasoning_result={},
+        )
+        self.assertEqual(plan["title"], "Add vision routing")
+        self.assertEqual(plan["source"], "deterministic_planner")
+        self.assertEqual(plan["steps"][0]["title"], "Select the vision model")
+
+    def test_vision_template_lowercase_phrase_match(self):
+        plan = generate_plan_for_goal(
+            goal={"id": "goal-add-vision-routing", "title": "add vision routing", "status": "active"},
+            evidence_store={"version": 1, "facts": {}},
+            reasoning_result={},
+        )
+        self.assertEqual(plan["source"], "deterministic_planner")
+
+    def test_vision_template_punctuation_match(self):
+        plan = generate_plan_for_goal(
+            goal={"id": "goal-add-vision-routing", "title": "Add vision routing.", "status": "active"},
+            evidence_store={"version": 1, "facts": {}},
+            reasoning_result={},
+        )
+        self.assertEqual(plan["source"], "deterministic_planner")
+
+    def test_vision_template_equivalent_phrase_match(self):
+        plan = generate_plan_for_goal(
+            goal={"id": "goal-add-vision-routing", "title": "implement vision routing", "status": "active"},
+            evidence_store={"version": 1, "facts": {}},
+            reasoning_result={},
+        )
+        self.assertEqual(plan["source"], "deterministic_planner")
+
+    def test_unrelated_goal_uses_generic_template(self):
+        plan = generate_plan_for_goal(
+            goal={"id": "goal-build-omega-arc", "title": "Build OMEGA-ARC", "status": "active"},
+            evidence_store={"version": 1, "facts": {}},
+            reasoning_result={},
+        )
+        self.assertEqual(plan["source"], "generic_deterministic_template")
 
 
 if __name__ == "__main__":
