@@ -12,6 +12,12 @@ DEFAULT_EVIDENCE_PATH = (
     / "evidence.json"
 )
 
+DEFAULT_SESSION_EVIDENCE_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "evidence_sessions"
+)
+
 STATE_RANK = {
     "unknown": 0,
     "declared": 1,
@@ -105,6 +111,107 @@ def load_evidence_store(path: Path = DEFAULT_EVIDENCE_PATH) -> Dict[str, Any]:
 def save_evidence_store(store: Dict[str, Any], path: Path = DEFAULT_EVIDENCE_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(store, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _session_evidence_path(session_id: str, base_dir: Path = DEFAULT_SESSION_EVIDENCE_DIR) -> Path:
+    slug = "".join(ch for ch in str(session_id or "") if ch.isalnum() or ch in {"-", "_"})
+    if not slug:
+        slug = "unknown-session"
+    return base_dir / f"{slug}.json"
+
+
+def load_session_evidence_store(
+    *,
+    session_id: str,
+    base_dir: Path = DEFAULT_SESSION_EVIDENCE_DIR,
+) -> Dict[str, Any]:
+    path = _session_evidence_path(session_id, base_dir)
+    return load_evidence_store(path=path)
+
+
+def save_session_evidence_store(
+    *,
+    session_id: str,
+    store: Dict[str, Any],
+    base_dir: Path = DEFAULT_SESSION_EVIDENCE_DIR,
+) -> None:
+    path = _session_evidence_path(session_id, base_dir)
+    save_evidence_store(store=store, path=path)
+
+
+def is_durable_record(key: str, record: Optional[Dict[str, Any]]) -> bool:
+    normalized = normalize_evidence_record(record)
+    state_type = normalized.get("state_type")
+
+    # Durable persistence is restricted to intentionally stored configuration facts.
+    if state_type == "configured":
+        return True
+
+    return False
+
+
+def extract_durable_evidence_store(store: Dict[str, Any]) -> Dict[str, Any]:
+    facts = store.get("facts", {}) if isinstance(store, dict) else {}
+    if not isinstance(facts, dict):
+        facts = {}
+
+    durable: Dict[str, Any] = {"version": 1, "facts": {}}
+    for key, record in facts.items():
+        if is_durable_record(key, record):
+            durable["facts"][key] = normalize_evidence_record(record)
+
+    return durable
+
+
+def extract_session_scoped_evidence_store(store: Dict[str, Any]) -> Dict[str, Any]:
+    facts = store.get("facts", {}) if isinstance(store, dict) else {}
+    if not isinstance(facts, dict):
+        facts = {}
+
+    session_store: Dict[str, Any] = {"version": 1, "facts": {}}
+    for key, record in facts.items():
+        if not is_durable_record(key, record):
+            session_store["facts"][key] = normalize_evidence_record(record)
+
+    return session_store
+
+
+def merge_evidence_stores(*stores: Dict[str, Any]) -> Dict[str, Any]:
+    merged: Dict[str, Any] = {"version": 1, "facts": {}}
+    for store in stores:
+        if not isinstance(store, dict):
+            continue
+        facts = store.get("facts", {})
+        if not isinstance(facts, dict):
+            continue
+        for key, record in facts.items():
+            merged = set_evidence(merged, key=key, record=normalize_evidence_record(record))
+    return merged
+
+
+def record_health_check_result(
+    *,
+    target: str,
+    url: str,
+    success: bool,
+    checked_at: str,
+    source: str = "health_check",
+) -> Dict[str, Any]:
+    normalized_target = str(target or "").strip().lower()
+    key = "backend_health" if normalized_target in {"backend", "api", "server"} else f"{normalized_target}_health"
+    return {
+        "key": key,
+        "value": "online" if success else "offline",
+        "state_type": "verified" if success else "observed",
+        "source": source,
+        "confidence": 1.0,
+        "observed_at": checked_at,
+        "checked_at": checked_at,
+        "checked_url": str(url or "").strip() or None,
+        "dependencies": ["backend_port"] if key == "backend_health" else [],
+        "scope": "runtime",
+        "notes": "Trusted health-check adapter result.",
+    }
 
 
 def rank_state_type(state_type: str) -> int:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from services.evidence_engine import (
     invalidate_dependent_evidence,
+    record_health_check_result,
     render_evidence_for_prompt,
     set_evidence,
 )
@@ -16,7 +17,6 @@ CONSTITUTION = BASE / "data" / "constitution.json"
 @dataclass
 class AwarenessSnapshot:
     ollama_online: bool
-    backend_online: bool
     frontend_online: bool
     network_mode: str
     active_model: str
@@ -106,7 +106,7 @@ def apply_backend_port_statement(state, message):
     health["status"] = "unknown"
     health["checked_url"] = f"http://127.0.0.1:{port}"
     health["checked_at"] = None
-    health["source"] = "health_check"
+    health["source"] = "system"
     updated["backend_health"] = health
 
     return updated
@@ -123,18 +123,17 @@ def apply_backend_health_check(state, *, port, success, checked_url=None):
         "source": "health_check",
     }
     updated["backend_health"] = health
+    trusted_record = record_health_check_result(
+        target="backend",
+        url=health["checked_url"],
+        success=success,
+        checked_at=health["checked_at"],
+        source="health_check",
+    )
     updated = set_evidence(
         updated,
         key="backend_health",
-        record={
-            "value": health["status"],
-            "state_type": "verified" if success else "observed",
-            "source": "health_check",
-            "confidence": 1.0,
-            "observed_at": health.get("checked_at"),
-            "expires_at": None,
-            "scope": "backend_health",
-        },
+        record=trusted_record,
     )
     return updated
 
@@ -156,11 +155,8 @@ def build_awareness_snapshot(
         health_state=backend_health_state,
     )
     backend_health = health_state.get("backend_health", {}) if isinstance(health_state, dict) else {}
-    backend_status = backend_health.get("status", "unknown") if isinstance(backend_health, dict) else "unknown"
-    backend_online = backend_status == "online"
     return AwarenessSnapshot(
         ollama_online=http_ok(ollama_url),
-        backend_online=backend_online,
         frontend_online=http_ok(frontend_url),
         network_mode=network_mode,
         active_model=active_model,
@@ -200,7 +196,7 @@ def awareness_prompt(snapshot):
     }
     return f"""Operational awareness:
 - Ollama online: {data['ollama_online']}
-- Backend online: {data['backend_online']}
+- Backend runtime health evidence: {health_status}
 - Frontend online: {data['frontend_online']}
 - Network mode: {data['network_mode']}
 - Active model: {data['active_model']}

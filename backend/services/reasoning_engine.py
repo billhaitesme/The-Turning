@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional
 
 from services.evidence_engine import normalize_evidence_record, rank_state, is_expired
@@ -242,3 +243,123 @@ def build_reasoning_prompt_context(
         lines.append("- None.")
 
     return "\n".join(lines)
+
+
+def _extract_records_for_backend_state(evidence_store: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    if not isinstance(evidence_store, dict):
+        return {}
+    records = evidence_store.get("records")
+    if isinstance(records, dict):
+        return records
+    facts = evidence_store.get("facts")
+    if isinstance(facts, dict):
+        return facts
+    return {}
+
+
+def _normalize_backend_health_value(value: Any) -> Optional[str]:
+    if isinstance(value, bool):
+        return "online" if value else "offline"
+    if value is None:
+        return None
+    lowered = str(value).strip().lower()
+    if lowered in {"online", "offline"}:
+        return lowered
+    return None
+
+
+def _reasoning_health_status(reasoning_result: Dict[str, Any]) -> Optional[str]:
+    if not isinstance(reasoning_result, dict):
+        return None
+    for belief in reasoning_result.get("resolved_beliefs", []) or []:
+        if belief.get("key") != "backend_health":
+            continue
+        status = belief.get("status")
+        if status in {"unknown", "stale", "invalidated", "conflicted"}:
+            return "unknown"
+        if status == "resolved":
+            value = _normalize_backend_health_value(belief.get("value"))
+            if value in {"online", "offline"}:
+                return value
+    return None
+
+
+def render_backend_state_for_prompt(
+    evidence_store: Dict[str, Any],
+    reasoning_result: Optional[Dict[str, Any]],
+) -> str:
+    records = _extract_records_for_backend_state(evidence_store)
+    backend_port_record = normalize_evidence_record(records.get("backend_port"))
+    backend_health_record = normalize_evidence_record(records.get("backend_health"))
+
+    configured_port = backend_port_record.get("value")
+    health_state_type = backend_health_record.get("state_type")
+    health_source = backend_health_record.get("source")
+    health_value = _normalize_backend_health_value(backend_health_record.get("value"))
+    health_observed_at = backend_health_record.get("observed_at")
+    health_checked_url = backend_health_record.get("checked_url")
+
+    reasoning_status = _reasoning_health_status(reasoning_result or {})
+    if reasoning_status == "unknown":
+        lines = [
+            "Backend state:",
+            f"- Configured port: {configured_port if configured_port is not None else 'unknown'}",
+            "- Runtime health: unknown",
+            "- Verification: none",
+        ]
+        return "\n".join(lines)
+
+    if health_state_type == "declared" and health_source == "user" and health_value in {"online", "offline"}:
+        lines = [
+            "Backend state:",
+            f"- Configured port: {configured_port if configured_port is not None else 'unknown'}",
+            f"- Reported health: {health_value}",
+            "- Source: user declaration",
+            "- Verification: not independently verified",
+        ]
+        return "\n".join(lines)
+
+    if health_state_type in {"verified", "observed"} and health_source == "health_check":
+        # Only health-check evidence may establish verified runtime status.
+        if health_value in {"online", "offline"}:
+            verification_state = "current" if health_state_type == "verified" else "observed"
+            lines = [
+                "Backend state:",
+                f"- Configured port: {configured_port if configured_port is not None else 'unknown'}",
+                f"- Runtime health: {health_value}",
+                "- Source: successful health check" if health_value == "online" else "- Source: health check",
+                f"- Verification: {verification_state}",
+            ]
+            if health_checked_url:
+                lines.append(f"- Checked endpoint: {health_checked_url}")
+            if health_observed_at:
+                lines.append(f"- Verified at: {health_observed_at}")
+            return "\n".join(lines)
+
+    lines = [
+        "Backend state:",
+        f"- Configured port: {configured_port if configured_port is not None else 'unknown'}",
+        "- Runtime health: unknown",
+        "- Verification: none",
+    ]
+    return "\n".join(lines)
+
+
+def sanitize_prompt_text(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+
+    sanitized = text.replace("Backend online: False", "Backend state: unknown")
+    sanitized = sanitized.replace("Backend online: True", "Backend state: unknown")
+    return sanitized
+
+
+def sanitize_prompt_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    sanitized_messages: List[Dict[str, Any]] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        updated = deepcopy(message)
+        updated["content"] = sanitize_prompt_text(str(updated.get("content", "")))
+        sanitized_messages.append(updated)
+    return sanitized_messages

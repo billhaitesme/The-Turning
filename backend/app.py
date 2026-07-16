@@ -4,8 +4,6 @@ from copy import deepcopy
 
 from awareness_engine import (
     apply_backend_port_statement,
-    awareness_prompt,
-    build_awareness_snapshot,
     constitution_prompt,
 )
 # Journal only meaningful events
@@ -13,14 +11,38 @@ from journal_engine import write_journal_entry
 from identity_engine import classify_identity_intent, identity_prompt_fragment
 from personality_engine import get_active_personality, build_personality_prompt
 from services.evidence_engine import (
+    extract_durable_evidence_store,
+    extract_session_scoped_evidence_store,
     invalidate_dependents,
     load_evidence_store,
+    load_session_evidence_store,
+    merge_evidence_stores,
     normalize_evidence_record,
     save_evidence_store,
+    save_session_evidence_store,
     set_evidence,
 )
+from services.backend_health_response import (
+    build_backend_health_response,
+    build_health_check_execution_response,
+    is_backend_health_query,
+    is_health_check_execution_request,
+)
 from services.goal_engine import load_goal_store
+from services.knowledge_graph import load_graph
+from services.reasoning_engine import (
+    build_reasoning_prompt_context,
+    render_backend_state_for_prompt,
+    sanitize_prompt_messages,
+)
 from services.reasoning_pipeline import run_reasoning_pipeline
+from services.runtime_declarations import extract_runtime_declarations
+from services.state_summary import (
+    build_current_state_summary,
+    detect_summary_intent,
+    render_current_state_summary,
+    select_summary_for_intent,
+)
 from services.user_identity import (
     apply_explicit_identity_updates,
     extract_explicit_age,
@@ -30,6 +52,7 @@ from services.user_identity import (
 )
 from services.cognition_pipeline import process_completed_turn
 from services.curiosity_engine import apply_curiosity_to_response
+from services.declarative_acknowledger import build_declarative_acknowledgement
 from routes.system import router as system_router
 from dotenv import load_dotenv
 load_dotenv(override=True)
@@ -489,6 +512,16 @@ def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_messa
     if updated_state.get("backend_health") is not None:
         preferences["backend_health"] = updated_state["backend_health"]
 
+    declarations = extract_runtime_declarations(user_message)
+    backend_declared = next((item for item in declarations if item.get("key") == "backend_health"), None)
+    if backend_declared is not None:
+        preferences["backend_health"] = {
+            "status": backend_declared.get("value"),
+            "source": "user",
+            "state_type": "declared",
+            "notes": backend_declared.get("notes") or "Reported by user; not independently verified.",
+        }
+
     return preferences
 
 
@@ -511,10 +544,31 @@ def _build_dependency_map(evidence_store: Dict[str, Any]) -> Dict[str, List[str]
     return dependency_map
 
 
+def _load_scoped_evidence_store(conversation_id: Optional[str]) -> Dict[str, Any]:
+    if not conversation_id:
+        return {"version": 1, "facts": {}}
+
+    durable_store = load_evidence_store()
+    session_store = load_session_evidence_store(session_id=conversation_id)
+    return merge_evidence_stores(durable_store, session_store)
+
+
+def _persist_scoped_evidence_store(conversation_id: Optional[str], evidence_store: Dict[str, Any]) -> None:
+    if not conversation_id:
+        return
+
+    durable_store = extract_durable_evidence_store(evidence_store)
+    session_store = extract_session_scoped_evidence_store(evidence_store)
+    save_evidence_store(durable_store)
+    save_session_evidence_store(session_id=conversation_id, store=session_store)
+
+
 def _build_runtime_evidence_store(
     *,
     previous_evidence_store: Optional[Dict[str, Any]],
     preferences: Dict[str, Any],
+    user_message: str,
+    conversation_id: Optional[str],
 ) -> Dict[str, Any]:
     evidence_store = deepcopy(previous_evidence_store or load_evidence_store())
     if not isinstance(evidence_store, dict):
@@ -522,6 +576,7 @@ def _build_runtime_evidence_store(
 
     evidence_store.setdefault("version", 1)
     evidence_store.setdefault("facts", {})
+    runtime_scope = f"session:{conversation_id}" if conversation_id else "session:ephemeral"
 
     previous_port = normalize_evidence_record(evidence_store["facts"].get("backend_port")).get("value")
     backend_port = preferences.get("backend_port")
@@ -538,25 +593,32 @@ def _build_runtime_evidence_store(
                 "source": "user",
                 "confidence": 1.0,
                 "dependencies": [],
-                "scope": "runtime",
+                "scope": "durable",
                 "notes": "Configured backend port.",
             },
         )
 
     if isinstance(backend_health, dict):
         status = backend_health.get("status") or "unknown"
-        if status == "online":
-            state_type = "verified"
-            value = True
-            confidence = 1.0
-        elif status == "offline":
-            state_type = "observed"
-            value = False
-            confidence = 1.0
+        source = backend_health.get("source") or "system"
+        explicit_state = str(backend_health.get("state_type") or "").lower()
+
+        if explicit_state:
+            state_type = explicit_state
+        elif source == "user":
+            state_type = "declared"
+        elif source == "health_check":
+            state_type = "verified" if status == "online" else "observed" if status == "offline" else "unknown"
         else:
             state_type = "unknown"
-            value = None
-            confidence = 0.0
+
+        value = status if state_type != "unknown" else None
+        confidence = float(
+            backend_health.get(
+                "confidence",
+                1.0 if source == "user" else 0.0 if state_type == "unknown" else 1.0,
+            )
+        )
 
         evidence_store = set_evidence(
             evidence_store,
@@ -565,12 +627,24 @@ def _build_runtime_evidence_store(
                 "key": "backend_health",
                 "value": value,
                 "state_type": state_type,
-                "source": backend_health.get("source", "health_check"),
+                "source": source,
                 "confidence": confidence,
                 "dependencies": ["backend_port"],
-                "scope": "runtime",
+                "scope": runtime_scope,
                 "notes": backend_health.get("notes", ""),
+                "observed_at": backend_health.get("checked_at") if source == "health_check" else None,
+                "checked_at": backend_health.get("checked_at") if source == "health_check" else None,
+                "checked_url": backend_health.get("checked_url") if source == "health_check" else None,
             },
+        )
+
+    for declaration in extract_runtime_declarations(user_message):
+        declaration_record = dict(declaration)
+        declaration_record["scope"] = runtime_scope
+        evidence_store = set_evidence(
+            evidence_store,
+            key=declaration["key"],
+            record=declaration_record,
         )
 
     if previous_port is not None and backend_port is not None and previous_port != backend_port:
@@ -579,30 +653,75 @@ def _build_runtime_evidence_store(
     return evidence_store
 
 
-def build_ollama_messages(*, history, user_message, user_profile, memories, web_results):
+def _build_deterministic_summary_reply(
+    *,
+    conversation_id: str,
+    user_message: str,
+    user_profile: Dict[str, Any],
+    intent: str,
+) -> Tuple[str, Dict[str, Any]]:
+    previous_evidence_store = _load_scoped_evidence_store(conversation_id)
+    evidence_store = _build_runtime_evidence_store(
+        previous_evidence_store=previous_evidence_store,
+        preferences=user_profile.get("preferences", {}),
+        user_message=user_message,
+        conversation_id=conversation_id,
+    )
+    _persist_scoped_evidence_store(conversation_id, evidence_store)
+    goal_store = load_goal_store()
+    knowledge_graph = load_graph()
+    reasoning_result = run_reasoning_pipeline(
+        evidence_store=evidence_store,
+        goal_store=goal_store,
+        previous_evidence_store=previous_evidence_store,
+        dependency_map=_build_dependency_map(evidence_store),
+    )
+
+    summary = build_current_state_summary(
+        identity_profile=get_identity_profile(user_profile),
+        evidence_store=evidence_store,
+        goal_store=goal_store,
+        knowledge_graph=knowledge_graph,
+        reasoning_result=reasoning_result,
+    )
+
+    summary = select_summary_for_intent(summary, intent)
+
+    return render_current_state_summary(summary), reasoning_result
+
+
+def build_ollama_messages(*, history, user_message, user_profile, memories, web_results, conversation_id: Optional[str] = None):
     adaptive = build_adaptive_guidance(
         user_message=user_message,
         memories=memories,
         user_profile=user_profile,
     )
 
-    backend_health_state = {
-        "backend_port": user_profile.get("preferences", {}).get("backend_port"),
-        "backend_health": user_profile.get("preferences", {}).get("backend_health"),
-    }
-
-    snapshot = build_awareness_snapshot(
-        network_mode=os.getenv("NETWORK_MODE", "offline"),
-        active_model=OLLAMA_CHAT_MODEL,
-        vision_model=os.getenv("OLLAMA_VISION_MODEL", "llava:7b"),
-        embedding_model=OLLAMA_EMBED_MODEL,
-        router_model=os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b"),
-        configured_backend_port=user_profile.get("preferences", {}).get("backend_port"),
-        backend_health_state=backend_health_state,
-    )
-
-    awareness_block = awareness_prompt(snapshot)
     constitution_block = constitution_prompt()
+    backend_state_block = "Backend state:\n- Configured port: unknown\n- Runtime health: unknown\n- Verification: none"
+    reasoning_block = "Reasoning summary unavailable for this turn."
+    try:
+        previous_evidence_store = _load_scoped_evidence_store(conversation_id)
+        current_evidence_store = _build_runtime_evidence_store(
+            previous_evidence_store=previous_evidence_store,
+            preferences=user_profile.get("preferences", {}),
+            user_message=user_message,
+            conversation_id=conversation_id,
+        )
+        prompt_reasoning_result = run_reasoning_pipeline(
+            evidence_store=current_evidence_store,
+            goal_store=load_goal_store(),
+            previous_evidence_store=previous_evidence_store,
+            dependency_map=_build_dependency_map(current_evidence_store),
+        )
+        backend_state_block = render_backend_state_for_prompt(
+            current_evidence_store,
+            prompt_reasoning_result,
+        )
+        if ENABLE_REASONING_CONTEXT:
+            reasoning_block = build_reasoning_prompt_context(prompt_reasoning_result)
+    except Exception as exc:
+        print("Prompt reasoning warning:", repr(exc))
 
     memory_block = build_memory_block(memories)
     history_block = build_history_block(history)
@@ -626,7 +745,7 @@ def build_ollama_messages(*, history, user_message, user_profile, memories, web_
     system_message = f"""
 {constitution_block}
 
-{awareness_block}
+{backend_state_block}
 
 {SYSTEM_PROMPT}
 
@@ -634,8 +753,16 @@ Acknowledgement guidance:
 - For a project statement, respond with a brief acknowledgement that the project is recognized.
 - For a goal statement, respond with a brief acknowledgement that the goal is tracked.
 - For a configuration statement, acknowledge the configured value and note that it is configuration knowledge, not proof of runtime health.
+- If a user reports runtime status (for example online, connected, ready, readable), treat it as user-reported declared evidence.
+- If a user reports model installation, treat it only as declared installation evidence.
+- Do not infer availability, loaded state, health, routability, or readiness from installation alone.
+- Do not claim a model is available, loaded, healthy, routable, or ready unless current evidence explicitly supports that state.
+- Do not claim that verification occurred unless verification evidence exists.
+- If verification evidence is absent, explicitly state that status has not been independently verified.
 - Do not ask a follow-up question unless the user explicitly needs help with the next step.
 - Do not append a curiosity question unless the feature flag is enabled and a single curated candidate is available.
+- If curiosity suggestions are disabled, do not ask whether to run checks.
+- For declarative goal and state statements, acknowledge concisely without interviews.
 
 Runtime identity decision:
 {identity_block}
@@ -671,6 +798,9 @@ Recent history:
 
 Web search results:
 {web_block}
+
+Reasoning context:
+{reasoning_block}
 """.strip()
 
     messages = [{"role": "system", "content": system_message}]
@@ -685,12 +815,12 @@ Web search results:
 
     messages.append({"role": "user", "content": user_message})
 
-    return messages
+    return sanitize_prompt_messages(messages)
 
 
-def generate_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]]) -> str:
+def generate_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None) -> str:
     web_results = search_web(user_message) if should_enable_web_search(user_message) else []
-    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results)
+    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
     with httpx.Client(timeout=120.0) as client:
         response = client.post(f"{OLLAMA_BASE_URL}/chat", json={"model": OLLAMA_CHAT_MODEL, "messages": messages, "stream": False})
         response.raise_for_status()
@@ -698,9 +828,9 @@ def generate_response_text(*, history: List[Dict[str, str]], user_message: str, 
         return data["message"]["content"]
 
 
-def stream_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]]) -> Generator[str, None, None]:
+def stream_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None) -> Generator[str, None, None]:
     web_results = search_web(user_message) if should_enable_web_search(user_message) else []
-    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results)
+    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
     yield f"data: {json.dumps({'type': 'phase', 'name': 'whisper'})}\n\n"
     sanitized_memories = [{"kind": m.get("kind"), "summary_text": m.get("summary_text"), "similarity": m.get("similarity"), "created_at": m.get("created_at")} for m in memories]
     yield f"data: {json.dumps({'type': 'memory', 'items': sanitized_memories})}\n\n"
@@ -905,6 +1035,7 @@ def get_conversation_memories(conversation_id: str, q: str) -> MemorySearchRespo
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
+    global latest_reasoning_result
     conversation_id = req.conversation_id
     if not conversation_id:
         conversation_id = create_conversation(user_id=req.user_id)
@@ -917,11 +1048,31 @@ def chat(req: ChatRequest) -> ChatResponse:
     user_profile = get_user_profile(effective_user_id)
     user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
     memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
+    summary_intent = detect_summary_intent(req.message)
     try:
-        reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories)
+        reasoning_output = None
+        if summary_intent in {"state_summary", "uncertainty_summary"}:
+            reply, reasoning_output = _build_deterministic_summary_reply(
+                conversation_id=conversation_id,
+                user_message=req.message,
+                user_profile=user_profile,
+                intent=summary_intent,
+            )
+        elif is_backend_health_query(req.message):
+            scoped_evidence = _load_scoped_evidence_store(conversation_id)
+            reply = build_backend_health_response(scoped_evidence)
+        elif is_health_check_execution_request(req.message):
+            scoped_evidence = _load_scoped_evidence_store(conversation_id)
+            reply = build_health_check_execution_response(scoped_evidence)
+        else:
+            deterministic_ack = build_declarative_acknowledgement(req.message)
+            if deterministic_ack:
+                reply = deterministic_ack
+            else:
+                reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories, conversation_id=conversation_id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    if ENABLE_COGNITION_PIPELINE:
+    if ENABLE_COGNITION_PIPELINE and summary_intent not in {"state_summary", "uncertainty_summary"}:
         try:
             cognition_output = process_completed_turn(
                 user_message=req.message,
@@ -939,20 +1090,25 @@ def chat(req: ChatRequest) -> ChatResponse:
             print("Cognition pipeline warning:", repr(exc))
             cognition_output = None
 
-    if ENABLE_REASONING_PIPELINE:
+    if summary_intent in {"state_summary", "uncertainty_summary"} and reasoning_output is not None:
+        latest_reasoning_result = reasoning_output
+    elif ENABLE_REASONING_PIPELINE:
         try:
+            previous_evidence_store = _load_scoped_evidence_store(conversation_id)
             evidence_store = _build_runtime_evidence_store(
-                previous_evidence_store=load_evidence_store(),
+                previous_evidence_store=previous_evidence_store,
                 preferences=user_profile.get("preferences", {}),
+                user_message=req.message,
+                conversation_id=conversation_id,
             )
+            _persist_scoped_evidence_store(conversation_id, evidence_store)
             goal_store = load_goal_store()
             reasoning_output = run_reasoning_pipeline(
                 evidence_store=evidence_store,
                 goal_store=goal_store,
-                previous_evidence_store=load_evidence_store(),
+                previous_evidence_store=previous_evidence_store,
                 dependency_map=_build_dependency_map(evidence_store),
             )
-            global latest_reasoning_result
             latest_reasoning_result = reasoning_output
         except Exception as exc:
             print("Reasoning pipeline warning:", repr(exc))
@@ -985,29 +1141,134 @@ def chat_stream(req: ChatRequest):
         conversation_id=conversation_id,
         user_id=effective_user_id,
     )
+    summary_intent = detect_summary_intent(req.message)
 
     def event_generator():
-        chunks: List[str] = []
+        global latest_reasoning_result
+        if summary_intent in {"state_summary", "uncertainty_summary"}:
+            try:
+                full_text, reasoning_output = _build_deterministic_summary_reply(
+                    conversation_id=conversation_id,
+                    user_message=req.message,
+                    user_profile=user_profile,
+                    intent=summary_intent,
+                )
+            except Exception as exc:
+                yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+                yield f"data: {json.dumps({'type': 'end'})}\n\n"
+                return
 
-        try:
-            for event in stream_response_text(
-                history=history[:-1],
+            latest_reasoning_result = reasoning_output
+
+            yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+            yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+
+            add_message(conversation_id, "assistant", full_text)
+
+            learning = persist_learning(
+                conversation_id=conversation_id,
+                user_id=effective_user_id,
                 user_message=req.message,
-                user_profile=user_profile,
-                memories=memories,
-            ):
-                yield event
+                assistant_message=full_text,
+            )
 
-                if event.startswith("data: "):
-                    payload = json.loads(event[len("data: "):].strip())
-                    if payload.get("type") == "delta":
-                        chunks.append(payload.get("text", ""))
-        except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+            yield f"data: {json.dumps({'type': 'learning', 'data': learning})}\n\n"
+            confidence = {
+                "memory_available": len(memories) > 0,
+                "memory_count": len(memories),
+                "used_fallback": len(memories) == 0,
+                "reflection_score": learning.get("reflection_score") if learning else None,
+                "web_search_enabled": ENABLE_WEB_SEARCH,
+                "web_search_used": False,
+            }
+            yield f"data: {json.dumps({'type': 'confidence', 'data': confidence})}\n\n"
             yield f"data: {json.dumps({'type': 'end'})}\n\n"
             return
 
-        full_text = "".join(chunks).strip()
+        if is_backend_health_query(req.message):
+            scoped_evidence = _load_scoped_evidence_store(conversation_id)
+            full_text = build_backend_health_response(scoped_evidence)
+            yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+            yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+
+            add_message(conversation_id, "assistant", full_text)
+
+            learning = persist_learning(
+                conversation_id=conversation_id,
+                user_id=effective_user_id,
+                user_message=req.message,
+                assistant_message=full_text,
+            )
+
+            yield f"data: {json.dumps({'type': 'learning', 'data': learning})}\n\n"
+            confidence = {
+                "memory_available": len(memories) > 0,
+                "memory_count": len(memories),
+                "used_fallback": len(memories) == 0,
+                "reflection_score": learning.get("reflection_score") if learning else None,
+                "web_search_enabled": ENABLE_WEB_SEARCH,
+                "web_search_used": False,
+            }
+            yield f"data: {json.dumps({'type': 'confidence', 'data': confidence})}\n\n"
+            yield f"data: {json.dumps({'type': 'end'})}\n\n"
+            return
+
+        if is_health_check_execution_request(req.message):
+            scoped_evidence = _load_scoped_evidence_store(conversation_id)
+            full_text = build_health_check_execution_response(scoped_evidence)
+            yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+            yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+
+            add_message(conversation_id, "assistant", full_text)
+
+            learning = persist_learning(
+                conversation_id=conversation_id,
+                user_id=effective_user_id,
+                user_message=req.message,
+                assistant_message=full_text,
+            )
+
+            yield f"data: {json.dumps({'type': 'learning', 'data': learning})}\n\n"
+            confidence = {
+                "memory_available": len(memories) > 0,
+                "memory_count": len(memories),
+                "used_fallback": len(memories) == 0,
+                "reflection_score": learning.get("reflection_score") if learning else None,
+                "web_search_enabled": ENABLE_WEB_SEARCH,
+                "web_search_used": False,
+            }
+            yield f"data: {json.dumps({'type': 'confidence', 'data': confidence})}\n\n"
+            yield f"data: {json.dumps({'type': 'end'})}\n\n"
+            return
+
+        chunks: List[str] = []
+        deterministic_ack = build_declarative_acknowledgement(req.message)
+
+        if deterministic_ack:
+            full_text = deterministic_ack
+            yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+            yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+        else:
+            try:
+                for event in stream_response_text(
+                    history=history[:-1],
+                    user_message=req.message,
+                    user_profile=user_profile,
+                    memories=memories,
+                    conversation_id=conversation_id,
+                ):
+                    yield event
+
+                    if event.startswith("data: "):
+                        payload = json.loads(event[len("data: "):].strip())
+                        if payload.get("type") == "delta":
+                            chunks.append(payload.get("text", ""))
+            except Exception as exc:
+                yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+                yield f"data: {json.dumps({'type': 'end'})}\n\n"
+                return
+
+        full_text = (deterministic_ack or "".join(chunks)).strip()
 
         if full_text:
             if ENABLE_COGNITION_PIPELINE:
@@ -1030,18 +1291,21 @@ def chat_stream(req: ChatRequest):
 
             if ENABLE_REASONING_PIPELINE:
                 try:
+                    previous_evidence_store = _load_scoped_evidence_store(conversation_id)
                     evidence_store = _build_runtime_evidence_store(
-                        previous_evidence_store=load_evidence_store(),
+                        previous_evidence_store=previous_evidence_store,
                         preferences=user_profile.get("preferences", {}),
+                        user_message=req.message,
+                        conversation_id=conversation_id,
                     )
+                    _persist_scoped_evidence_store(conversation_id, evidence_store)
                     goal_store = load_goal_store()
                     reasoning_output = run_reasoning_pipeline(
                         evidence_store=evidence_store,
                         goal_store=goal_store,
-                        previous_evidence_store=load_evidence_store(),
+                        previous_evidence_store=previous_evidence_store,
                         dependency_map=_build_dependency_map(evidence_store),
                     )
-                    global latest_reasoning_result
                     latest_reasoning_result = reasoning_output
                 except Exception as exc:
                     print("Reasoning pipeline warning:", repr(exc))

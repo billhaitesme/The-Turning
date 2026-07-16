@@ -112,6 +112,13 @@ def extract_explicit_goals(message: str) -> List[str]:
     return list(dict.fromkeys(goals))
 
 
+def normalize_goal_title(goal: str) -> str:
+    cleaned = str(goal or "").strip(" .,!?:;")
+    if not cleaned:
+        return ""
+    return cleaned[0].upper() + cleaned[1:]
+
+
 def extract_explicit_backend_port(message: str) -> int | None:
     match = PORT_PATTERN.search(message)
 
@@ -186,7 +193,7 @@ def analyze_message(*, message: str, assistant_response: str = "") -> Dict[str, 
             {
                 "kind": "goal",
                 "key": "build_project",
-                "value": project,
+                "value": f"Build {project}",
                 "source": "explicit_user_statement",
                 "confidence": 0.95,
                 "importance": 0.9,
@@ -197,11 +204,14 @@ def analyze_message(*, message: str, assistant_response: str = "") -> Dict[str, 
     goals = extract_explicit_goals(message)
 
     for goal in goals:
+        normalized_goal = normalize_goal_title(goal)
+        if not normalized_goal:
+            continue
         result["goal_candidates"].append(
             {
                 "kind": "goal",
                 "key": "explicit_goal",
-                "value": goal,
+                "value": normalized_goal,
                 "source": "explicit_user_statement",
                 "confidence": 1.0,
                 "importance": 0.8,

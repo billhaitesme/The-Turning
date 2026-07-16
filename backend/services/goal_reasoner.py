@@ -33,7 +33,7 @@ def evaluate_goal_blockers(
                 blockers.append(
                     {
                         "key": dependency,
-                        "reason": "Dependency is missing from the current evidence set.",
+                        "reason": "Missing readiness evidence for this dependency.",
                     }
                 )
                 continue
@@ -64,7 +64,7 @@ def evaluate_goal_blockers(
                 blockers.append(
                     {
                         "key": dependency,
-                        "reason": "Configured-only readiness does not satisfy runtime requirement.",
+                        "reason": "Declared or configured evidence does not satisfy verified runtime readiness.",
                     }
                 )
                 continue
@@ -83,6 +83,7 @@ def evaluate_goal_blockers(
                     "goal_id": goal.get("id"),
                     "title": goal.get("title"),
                     "status": "blocked",
+                    "completion": "unverified",
                     "blockers": blockers,
                 }
             )

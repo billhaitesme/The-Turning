@@ -13,6 +13,29 @@ DEFAULT_GOALS_PATH = (
     / "goals.json"
 )
 
+VISION_ROUTING_DEPENDENCIES = [
+    "vision_model_selected",
+    "vision_model_loaded",
+    "vision_model_healthy",
+    "vision_router_configured",
+    "vision_routing_verified",
+]
+
+
+def infer_goal_requirements(title: str) -> Dict[str, Any]:
+    lowered = str(title or "").strip().lower()
+
+    if "vision" in lowered and "routing" in lowered:
+        return {
+            "dependencies": list(VISION_ROUTING_DEPENDENCIES),
+            "completion_evidence_key": "vision_routing_ready",
+        }
+
+    return {
+        "dependencies": [],
+        "completion_evidence_key": None,
+    }
+
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -65,6 +88,7 @@ def upsert_goal(
 
     goal_id = f"goal-{slugify(title)}"
     now = utc_now_iso()
+    requirements = infer_goal_requirements(title)
 
     for goal in updated["goals"]:
         if goal.get("id") != goal_id:
@@ -75,6 +99,9 @@ def upsert_goal(
         goal["priority"] = priority
         goal["source"] = source
         goal["confidence"] = confidence
+        goal["dependencies"] = list(requirements.get("dependencies") or goal.get("dependencies") or [])
+        if requirements.get("completion_evidence_key"):
+            goal["completion_evidence_key"] = requirements["completion_evidence_key"]
         goal["updated_at"] = now
 
         return updated
@@ -89,6 +116,8 @@ def upsert_goal(
             "progress": 0.0,
             "source": source,
             "confidence": confidence,
+            "dependencies": list(requirements.get("dependencies") or []),
+            "completion_evidence_key": requirements.get("completion_evidence_key"),
             "created_at": now,
             "updated_at": now,
         }
@@ -140,9 +169,24 @@ def apply_goal_candidates(store: Dict[str, Any], candidates: List[Dict[str, Any]
         if candidate.get("requires_confirmation", False):
             continue
 
+        title = value.strip()
+        candidate_key = str(candidate.get("key") or "").strip().lower()
+        if candidate_key == "build_project":
+            lowered = title.lower()
+            if lowered.startswith("build "):
+                project = title[6:].strip()
+            else:
+                project = title
+            if not project:
+                continue
+            title = f"Build {project}"
+
+        if not title:
+            continue
+
         updated = upsert_goal(
             updated,
-            title=value.strip(),
+            title=title,
             source=candidate.get("source", "conversation"),
             confidence=float(candidate.get("confidence", 0.5)),
             priority=(
