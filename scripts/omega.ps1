@@ -72,6 +72,14 @@ switch ($normalized) {
         Show-OmegaPlan
         break
     }
+    "plans" {
+        Show-OmegaPlans
+        break
+    }
+    "decisions" {
+        Show-OmegaDecisions
+        break
+    }
     "benchmark" {
         Show-OmegaFutureHook -Name "benchmark"
         break

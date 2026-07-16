@@ -320,8 +320,11 @@ function Invoke-OmegaClean {
 function Show-OmegaPlan {
     $paths = Get-OmegaPaths
     $goalsPath = Join-Path $paths.Backend "data/goals.json"
+    $plansPath = Join-Path $paths.Backend "data/plans.json"
 
     $activeGoals = @()
+    $activePlan = $null
+
     if (Test-Path $goalsPath) {
         try {
             $store = Get-Content -Path $goalsPath -Raw | ConvertFrom-Json
@@ -340,6 +343,22 @@ function Show-OmegaPlan {
         }
     }
 
+    if (Test-Path $plansPath) {
+        try {
+            $planStore = Get-Content -Path $plansPath -Raw | ConvertFrom-Json
+            $candidates = @($planStore.plans | Where-Object {
+                $status = ("$($_.status)").ToLowerInvariant()
+                $status -eq "active" -or $status -eq "blocked" -or $status -eq "validated"
+            })
+            if ($candidates.Count -gt 0) {
+                $activePlan = $candidates | Sort-Object -Property updated_at -Descending | Select-Object -First 1
+            }
+        }
+        catch {
+            Write-OmegaWarning "Could not parse plan store at $plansPath"
+        }
+    }
+
     Write-Host ""
     Write-Host "Current Goals"
     if ($activeGoals.Count -gt 0) {
@@ -353,14 +372,111 @@ function Show-OmegaPlan {
 
     Write-Host ""
     Write-Host "Current Plans"
-    Write-Host "- Planning placeholder active. Use backend planning pipeline for deterministic proposals."
+    if ($null -ne $activePlan) {
+        Write-Host "- ID: $($activePlan.id)"
+        Write-Host "  Goal: $($activePlan.title)"
+        Write-Host "  Status: $($activePlan.status)"
+
+        $nextStep = @($activePlan.steps | Where-Object { "$_" -and ($_.status -eq "active" -or $_.status -eq "ready" -or $_.status -eq "pending") } | Sort-Object -Property order | Select-Object -First 1)
+        if ($nextStep.Count -gt 0) {
+            Write-Host "  Next Step: $($nextStep[0].title)"
+        }
+    }
+    else {
+        Write-Host "- None"
+    }
 
     Write-Host ""
     Write-Host "Current Blockers"
-    Write-Host "- None"
+    if ($null -ne $activePlan) {
+        $blocked = @($activePlan.steps | Where-Object { "$_" -and $_.status -eq "blocked" })
+        if ($blocked.Count -gt 0) {
+            foreach ($step in $blocked) {
+                Write-Host "- $($step.title)"
+            }
+        }
+        else {
+            Write-Host "- None"
+        }
+    }
+    else {
+        Write-Host "- None"
+    }
 
     Write-Host ""
     Write-OmegaInfo "No execution performed. Planning output is proposal-only."
+}
+
+function Show-OmegaPlans {
+    $paths = Get-OmegaPaths
+    $plansPath = Join-Path $paths.Backend "data/plans.json"
+
+    Write-Host ""
+    Write-Host "Plans"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $plansPath)) {
+        Write-Host "No plans store found."
+        return
+    }
+
+    try {
+        $planStore = Get-Content -Path $plansPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse plan store at $plansPath"
+        return
+    }
+
+    $plans = @($planStore.plans)
+    if ($plans.Count -eq 0) {
+        Write-Host "No plans recorded."
+        return
+    }
+
+    foreach ($plan in $plans) {
+        $nextStep = @($plan.steps | Where-Object { "$_" -and ($_.status -eq "active" -or $_.status -eq "ready" -or $_.status -eq "pending") } | Sort-Object -Property order | Select-Object -First 1)
+        $blockers = @($plan.steps | Where-Object { "$_" -and $_.status -eq "blocked" })
+
+        Write-Host "ID: $($plan.id)"
+        Write-Host "Goal: $($plan.title)"
+        Write-Host "Status: $($plan.status)"
+        Write-Host "Next Step: $(if ($nextStep.Count -gt 0) { $nextStep[0].title } else { 'None' })"
+        Write-Host "Blockers: $(if ($blockers.Count -gt 0) { ($blockers | ForEach-Object { $_.title }) -join '; ' } else { 'None' })"
+        Write-Host ""
+    }
+}
+
+function Show-OmegaDecisions {
+    $paths = Get-OmegaPaths
+    $decisionsPath = Join-Path $paths.Backend "data/decisions.json"
+
+    Write-Host ""
+    Write-Host "Decisions"
+    Write-Host "-------------------------------------"
+
+    if (-not (Test-Path $decisionsPath)) {
+        Write-Host "No decisions store found."
+        return
+    }
+
+    try {
+        $decisionStore = Get-Content -Path $decisionsPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-OmegaWarning "Could not parse decision store at $decisionsPath"
+        return
+    }
+
+    $decisions = @($decisionStore.decisions | Where-Object { "$_" -and $_.status -eq "active" })
+    if ($decisions.Count -eq 0) {
+        Write-Host "No active decisions recorded."
+        return
+    }
+
+    foreach ($decision in $decisions) {
+        Write-Host "- $($decision.title): $($decision.reason)"
+    }
 }
 
 function Show-OmegaFutureHook {
@@ -384,6 +500,8 @@ function Show-OmegaCommandHelp {
     Write-Host "  git"
     Write-Host "  clean"
     Write-Host "  plan"
+    Write-Host "  plans"
+    Write-Host "  decisions"
 }
 
 Export-ModuleMember -Function @(
@@ -395,6 +513,8 @@ Export-ModuleMember -Function @(
     "Open-OmegaDocs",
     "Invoke-OmegaClean",
     "Show-OmegaPlan",
+    "Show-OmegaPlans",
+    "Show-OmegaDecisions",
     "Show-OmegaFutureHook",
     "Show-OmegaCommandHelp"
 )
