@@ -96,6 +96,14 @@ switch ($normalized) {
         Show-OmegaCompare
         break
     }
+    "bridge" {
+        Show-OmegaBridge
+        break
+    }
+    "bridge-status" {
+        Show-OmegaBridgeStatus
+        break
+    }
     "tools" {
         Show-OmegaTools
         break
