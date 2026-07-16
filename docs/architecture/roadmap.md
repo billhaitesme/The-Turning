@@ -67,6 +67,9 @@ Deliverables:
 - next-best-action reasoning
 - dependency-aware execution planning
 
+Reference:
+- [Epoch VI Planning](epoch6_planning.md)
+
 Completion criteria:
 - the system can support goal-directed action
 
