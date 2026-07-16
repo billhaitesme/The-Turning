@@ -13,7 +13,7 @@ VALID_TOOL_CATEGORIES = {"diagnostic", "inspection", "verification", "maintenanc
 VALID_TOOL_RISK_LEVELS = {"low", "medium", "high", "critical"}
 VALID_TOOL_REQUEST_STATUSES = {"proposed", "awaiting_approval", "approved", "rejected", "executing", "completed", "failed", "expired", "cancelled"}
 VALID_APPROVAL_STATUSES = {"pending", "approved", "rejected", "expired", "revoked"}
-VALID_TOOL_RESULT_STATUSES = {"completed", "failed"}
+VALID_TOOL_RESULT_STATUSES = {"completed", "failed", "endpoint_mismatch"}
 
 TOOL_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 TOOL_REQUESTS_PATH = TOOL_DATA_DIR / "tool_requests.json"

@@ -17,6 +17,7 @@ from services.tool_contracts import (
     utc_now_iso,
     validate_tool_request,
 )
+from services.tool_request_store import list_tool_requests
 
 
 def _load_store(path: Path, key: str) -> Dict[str, Any]:
@@ -90,6 +91,30 @@ def upsert_tool_request(request: Dict[str, Any], store: Optional[Dict[str, Any]]
 def list_tool_approvals(store: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     approval_store = load_tool_approval_store() if store is None else store
     return [deepcopy(item) for item in approval_store.get("approvals", []) if isinstance(item, dict)]
+
+
+def find_latest_pending_request(
+    *,
+    session_id: str,
+    tool_name: str,
+    request_store: Optional[Dict[str, Any]] = None,
+    approval_store: Optional[Dict[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
+    request_store_obj = load_tool_request_store() if request_store is None else request_store
+    approval_store_obj = load_tool_approval_store() if approval_store is None else approval_store
+    approvals = {str(item.get("request_id") or ""): item for item in list_tool_approvals(approval_store_obj)}
+
+    for request in reversed(list_tool_requests(request_store_obj)):
+        if str(request.get("session_id") or "") != str(session_id):
+            continue
+        if str(request.get("tool_name") or "") != str(tool_name):
+            continue
+        if str(request.get("status") or "") not in {"proposed", "awaiting_approval", "pending"}:
+            continue
+        approval = approvals.get(str(request.get("request_id") or ""))
+        if approval and str(approval.get("status") or "") == "pending":
+            return deepcopy(request)
+    return None
 
 
 def get_tool_approval(approval_id: str, store: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:

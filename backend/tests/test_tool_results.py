@@ -51,13 +51,9 @@ class ToolResultTests(unittest.TestCase):
             side_effects_observed=[],
         )
         self.assertFalse(result["success"])
-        candidates = tool_result_to_evidence_candidates(result)
-        self.assertEqual(len(candidates), 1)
-        self.assertEqual(candidates[0]["kind"], "observed_failure")
-        self.assertEqual(candidates[0]["request_id"], "toolreq-123")
-        self.assertEqual(candidates[0]["adapter_name"], "local_adapter")
+        self.assertEqual(tool_result_to_evidence_candidates(result), [])
 
-    def test_verified_evidence_candidates_preserve_provenance(self):
+    def test_completed_health_check_can_yield_verified_evidence(self):
         result = create_tool_result(
             request_id="toolreq-456",
             tool_name="backend_health_check",
@@ -66,15 +62,35 @@ class ToolResultTests(unittest.TestCase):
             started_at="2026-07-16T00:00:00+00:00",
             completed_at="2026-07-16T00:00:00+00:00",
             duration_ms=4.0,
-            output={"checked": True},
+            output={"checked_url": "http://127.0.0.1:8001/health", "checked_at": "2026-07-16T00:00:00+00:00", "status_code": 200},
             evidence_candidates=[],
             side_effects_observed=[],
             execution_mode="live",
         )
         candidates = tool_result_to_evidence_candidates(result)
         self.assertEqual(len(candidates), 1)
-        self.assertEqual(candidates[0]["request_id"], "toolreq-456")
-        self.assertEqual(candidates[0]["adapter_name"], "local_adapter")
+        self.assertEqual(candidates[0]["key"], "backend_health")
+        self.assertEqual(candidates[0]["value"], "online")
+        self.assertEqual(candidates[0]["metadata"]["request_id"], "toolreq-456")
+
+    def test_completed_offline_health_check_yields_verified_offline_evidence(self):
+        result = create_tool_result(
+            request_id="toolreq-789",
+            tool_name="backend_health_check",
+            status="completed",
+            success=False,
+            started_at="2026-07-16T00:00:00+00:00",
+            completed_at="2026-07-16T00:00:01+00:00",
+            duration_ms=4.0,
+            output={"checked_url": "http://127.0.0.1:8001/health", "error": "connection refused"},
+            evidence_candidates=[],
+            side_effects_observed=[],
+            execution_mode="live",
+        )
+        candidates = tool_result_to_evidence_candidates(result)
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["value"], "offline")
+        self.assertEqual(candidates[0]["metadata"]["error"], "connection refused")
 
 
 if __name__ == "__main__":

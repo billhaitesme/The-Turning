@@ -12,7 +12,8 @@ from services.tool_contracts import (
     validate_tool_request,
 )
 from services.tool_registry import get_tool
-from services.tool_results import create_tool_result, record_tool_result, tool_result_to_evidence_candidates
+from services.tool_evidence_bridge import tool_result_to_evidence_candidates
+from services.tool_results import create_tool_result, record_tool_result
 
 
 def _scope_is_valid(descriptor: Dict[str, Any], request: Dict[str, Any], arguments: Dict[str, Any]) -> bool:
@@ -216,7 +217,10 @@ def execute_tool_request(
         success = bool(output.get("success", True)) if isinstance(output, dict) else True
         raw_output = deepcopy(output.get("output") if isinstance(output, dict) and "output" in output else output or {})
         side_effects_observed = deepcopy(output.get("side_effects_observed") if isinstance(output, dict) else []) or []
-        if success:
+        if validated_request["tool_name"] == "backend_health_check":
+            status = "completed"
+            error = None
+        elif success:
             status = "completed"
             error = None
         else:

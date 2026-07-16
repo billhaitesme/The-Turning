@@ -1,6 +1,8 @@
 import unittest
+from unittest.mock import patch
 
 from services.tool_approval import approve_request, create_approval_request
+from services.adapters.backend_health_check import BackendHealthCheckAdapter
 from services.tool_contracts import ToolAdapter, build_tool_request
 from services.tool_executor import execute_tool_request
 from services.tool_registry import register_tool, unregister_tool
@@ -60,7 +62,7 @@ class ToolExecutorTests(unittest.TestCase):
             unregister_tool("disabled_tool")
 
     def test_approval_required_tool_blocks_without_approval(self):
-        request = build_tool_request(tool_name="backend_health_check", arguments={}, requested_by="user", session_id="session-1")
+        request = build_tool_request(tool_name="backend_health_check", arguments={"port": 8001}, requested_by="user", session_id="session-1")
         result = execute_tool_request(request=request, registry=__import__("services.tool_registry", fromlist=["get_tool"]), approval_store={"version": 1, "approvals": []})
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["code"], "approval_required")
@@ -68,16 +70,30 @@ class ToolExecutorTests(unittest.TestCase):
     def test_approved_exact_request_may_execute(self):
         request_store = {"version": 1, "requests": []}
         approval_store = {"version": 1, "approvals": []}
-        request = build_tool_request(tool_name="backend_health_check", arguments={}, requested_by="user", session_id="session-1")
+        request = build_tool_request(tool_name="backend_health_check", arguments={"port": 8001}, requested_by="user", session_id="session-1")
         create_approval_request(request, request_store=request_store, approval_store=approval_store, ttl_seconds=300)
         approve_request(request["request_id"], approved_by="user", request_store=request_store, approval_store=approval_store)
-        result = execute_tool_request(request=request, registry=__import__("services.tool_registry", fromlist=["get_tool"]), approval_store=approval_store)
-        self.assertEqual(result["status"], "failed")
-        self.assertEqual(result["error"]["code"], "not_implemented")
+        with patch.object(
+            BackendHealthCheckAdapter,
+            "execute",
+            return_value={
+                "target": "backend",
+                "checked_url": "http://127.0.0.1:8001/health",
+                "success": True,
+                "status_code": 200,
+                "latency_ms": 12.5,
+                "checked_at": "2026-07-16T00:00:00+00:00",
+                "error": None,
+            },
+        ):
+            result = execute_tool_request(request=request, registry=__import__("services.tool_registry", fromlist=["get_tool"]), approval_store=approval_store)
+        self.assertEqual(result["status"], "completed")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["output"]["checked_url"], "http://127.0.0.1:8001/health")
         self.assertEqual(approval_store["approvals"][0]["status"], "revoked")
 
     def test_dry_run_works_without_approval_and_never_emits_verified_evidence(self):
-        request = build_tool_request(tool_name="backend_health_check", arguments={}, requested_by="user", session_id="session-1")
+        request = build_tool_request(tool_name="backend_health_check", arguments={"port": 8001}, requested_by="user", session_id="session-1")
         result = execute_tool_request(request=request, registry=__import__("services.tool_registry", fromlist=["get_tool"]), approval_store={"version": 1, "approvals": []}, dry_run=True)
         self.assertEqual(result["status"], "completed")
         self.assertTrue(result["success"])
