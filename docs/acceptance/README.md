@@ -18,6 +18,9 @@ They validate:
 - general question isolation
 - reasoning summaries
 - reasoning explanation transparency
+- plan persistence and lifecycle updates
+- deterministic next-action selection
+- decision provenance and explanation
 
 ## How to Use
 
@@ -71,3 +74,15 @@ Use this checklist for each run:
 - [009 — Curiosity Gating](docs/acceptance/009_curiosity_gating.md)
 - [010 — General Question Isolation](docs/acceptance/010_general_qa_isolation.md)
 - [011 — Reasoning Explanation Transparency](docs/acceptance/011_reasoning_explanation.md)
+- [012 — Plan Persistence](docs/acceptance/012_plan_persistence.md)
+- [013 — Plan Generation](docs/acceptance/013_plan_generation.md)
+- [014 — Dependency Resolution](docs/acceptance/014_dependency_resolution.md)
+- [015 — Plan Revision](docs/acceptance/015_plan_revision.md)
+- [016 — Blocked Plan](docs/acceptance/016_blocked_plan.md)
+- [017 — Multiple Goals](docs/acceptance/017_multiple_goals.md)
+- [018 — Completed Plan](docs/acceptance/018_completed_plan.md)
+- [019 — Conflicting Plans](docs/acceptance/019_conflicting_plans.md)
+- [020 — Next Best Action](docs/acceptance/020_next_best_action.md)
+- [021 — Reasoning to Plan](docs/acceptance/021_reasoning_to_plan.md)
+- [022 — Plan Isolation](docs/acceptance/022_plan_isolation.md)
+- [023 — Decision Provenance](docs/acceptance/023_decision_provenance.md)

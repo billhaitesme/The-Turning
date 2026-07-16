@@ -46,6 +46,26 @@ flowchart TD
     Router --> Models[Language Models]
 ```
 
+## Epoch VI Additions
+
+Epoch VI introduces persistent deterministic planning and decision provenance.
+
+- Plans are first-class persistent objects under backend/data/plans.json.
+- Decisions are first-class provenance records under backend/data/decisions.json.
+- Planning consumes goals, evidence, and reasoning output.
+- Planning proposes steps but never executes them.
+- Decisions preserve concise rationale and evidence references.
+
+### Updated Logical Flow
+
+```mermaid
+flowchart TD
+  Evidence[Evidence] --> Reasoning[Reasoning]
+  Reasoning --> Planning[Planning]
+  Planning --> Decisions[Decision Records]
+  Decisions --> Response[Response]
+```
+
 ## Current Epoch Timeline
 
 - Foundational Era
@@ -85,6 +105,8 @@ OMEGA-ARC persists structured state in JSON-backed files under backend/data/ and
 - backend/data/goals.json — goal state
 - backend/data/knowledge_graph.json — knowledge graph state
 - backend/data/evidence.json — evidence records
+- backend/data/plans.json — persistent plan records
+- backend/data/decisions.json — persistent decision records
 - backend/data/constitution.json — operating principles
 - backend/omega_arc.db — runtime persistence used by the application
 

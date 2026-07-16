@@ -38,19 +38,21 @@ This is not a changelog. It is a historical map of how OMEGA-ARC evolved.
 
 ## Epoch V — Reasoning
 
-- In progress
-- Planned evidence-backed reasoning engine
-- Contradiction detection
-- Dependency impact analysis
-- Stale observation handling
-- Next-best-action analysis
+- Deterministic reasoning pipeline
+- Conflict and uncertainty handling
+- Blocked-goal reasoning
+- Runtime-aware deterministic summaries
+- Developer console foundation
 
 ## Epoch VI — Planning
 
-- Future work
-- Goal-directed action selection
-- Constraint-aware execution
-- Dependency-sensitive planning
+- Persistent plan lifecycle
+- Deterministic plan templates
+- Evidence-driven step evaluation
+- Deterministic plan revision
+- Decision provenance records
+- Read-only system endpoints for plans and decisions
+- Console inspection commands: plan, plans, decisions
 
 ## Epoch VII — Perception
 
