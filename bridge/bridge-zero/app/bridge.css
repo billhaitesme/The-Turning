@@ -362,6 +362,37 @@ body,
 .evidence-freshness.stale { color: #e18f5b; }
 .evidence-freshness.unknown { color: #9da6af; }
 
+.evidence-drawer-head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.evidence-drawer {
+  padding: 8px;
+}
+
+.evidence-candidate-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.evidence-candidate-chip {
+  border: 1px solid #3a4954;
+  background: #121922;
+  color: #aac6db;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.evidence-candidate-chip.selected {
+  border-color: #7fb6d9;
+  color: #d6e8f5;
+}
+
 .instrument-list {
   margin: 0;
   padding-left: 18px;
