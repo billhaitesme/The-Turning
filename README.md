@@ -1,4 +1,4 @@
-# OMEGA-ARC
+# The-Turning
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
