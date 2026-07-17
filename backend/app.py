@@ -113,7 +113,8 @@ APP_NAME = "0M3-G4-ARC"
 DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
-OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "llama3.1:8b")
+# Locked textual model for all /chat and /chat/stream responses.
+OLLAMA_CHAT_MODEL = "dolphin-mixtral:8x7b"
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
 
 ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "false").lower() == "true"

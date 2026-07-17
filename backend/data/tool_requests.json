@@ -1,4 +1,21 @@
 {
   "version": 1,
-  "requests": []
+  "requests": [
+    {
+      "request_id": "toolreq-a87677ba67774f589c5a35fe263b670a",
+      "tool_name": "backend_health_check",
+      "arguments": {
+        "port": 8001
+      },
+      "requested_by": "user",
+      "session_id": "2cb1ab87-049d-4d09-8796-a78b9c3aac72",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-a87677ba67774f589c5a35fe263b670a",
+      "created_at": "2026-07-16T21:38:29.074989+00:00",
+      "status": "completed",
+      "updated_at": "2026-07-16T21:38:53.093109+00:00"
+    }
+  ]
 }

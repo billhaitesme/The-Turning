@@ -1,4 +1,409 @@
 {
   "version": 1,
-  "plans": []
+  "plans": [
+    {
+      "id": "plan-omega-arc",
+      "goal_id": "goal-omega-arc",
+      "title": "OMEGA-ARC",
+      "description": "OMEGA-ARC",
+      "status": "active",
+      "priority": "high",
+      "version": 1,
+      "source": "generic_deterministic_template",
+      "confidence": 1.0,
+      "created_at": "2026-07-16T21:38:29.098366+00:00",
+      "updated_at": "2026-07-16T21:38:29.098366+00:00",
+      "completed_at": null,
+      "supersedes": null,
+      "superseded_by": null,
+      "steps": [
+        {
+          "id": "define-success-criteria",
+          "title": "Define success criteria",
+          "description": "Establish explicit success criteria for the goal.",
+          "status": "active",
+          "order": 1,
+          "required": true,
+          "dependencies": [],
+          "evidence_requirements": [
+            {
+              "key": "success_criteria_defined",
+              "required_state_types": [
+                "declared",
+                "configured",
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [],
+          "recommended_action": "Define objective success criteria for this goal.",
+          "created_at": "2026-07-16T21:38:29.098291+00:00",
+          "updated_at": "2026-07-16T21:38:29.098291+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "identify-dependencies",
+          "title": "Identify dependencies",
+          "description": "Identify prerequisite dependencies and required conditions.",
+          "status": "blocked",
+          "order": 2,
+          "required": true,
+          "dependencies": [
+            "define-success-criteria"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "dependencies_identified",
+              "required_state_types": [
+                "declared",
+                "configured",
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency define-success-criteria is ready."
+          ],
+          "recommended_action": "List all critical dependencies required by this goal.",
+          "created_at": "2026-07-16T21:38:29.098331+00:00",
+          "updated_at": "2026-07-16T21:38:29.098331+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "resolve-missing-evidence",
+          "title": "Resolve missing evidence",
+          "description": "Collect and verify missing evidence needed to proceed.",
+          "status": "blocked",
+          "order": 3,
+          "required": true,
+          "dependencies": [
+            "identify-dependencies"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "missing_evidence_resolved",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency identify-dependencies is blocked."
+          ],
+          "recommended_action": "Collect missing evidence and verify unresolved assumptions.",
+          "created_at": "2026-07-16T21:38:29.098343+00:00",
+          "updated_at": "2026-07-16T21:38:29.098343+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "perform-implementation-manually",
+          "title": "Perform the implementation manually",
+          "description": "Carry out implementation steps outside the planner.",
+          "status": "blocked",
+          "order": 4,
+          "required": true,
+          "dependencies": [
+            "resolve-missing-evidence"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "manual_implementation_completed",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency resolve-missing-evidence is blocked."
+          ],
+          "recommended_action": "Perform the implementation manually and record outcomes.",
+          "created_at": "2026-07-16T21:38:29.098350+00:00",
+          "updated_at": "2026-07-16T21:38:29.098350+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "verify-result",
+          "title": "Verify the result",
+          "description": "Verify the implementation outcome with trusted evidence.",
+          "status": "blocked",
+          "order": 5,
+          "required": true,
+          "dependencies": [
+            "perform-implementation-manually"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "result_verified",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency perform-implementation-manually is blocked."
+          ],
+          "recommended_action": "Run deterministic verification and capture evidence.",
+          "created_at": "2026-07-16T21:38:29.098355+00:00",
+          "updated_at": "2026-07-16T21:38:29.098355+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "review-and-update-goal",
+          "title": "Review and update the goal",
+          "description": "Review verification evidence and update goal status explicitly.",
+          "status": "blocked",
+          "order": 6,
+          "required": true,
+          "dependencies": [
+            "verify-result"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "goal_reviewed",
+              "required_state_types": [
+                "declared",
+                "configured",
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency verify-result is blocked."
+          ],
+          "recommended_action": "Review evidence and update the goal state explicitly.",
+          "created_at": "2026-07-16T21:38:29.098361+00:00",
+          "updated_at": "2026-07-16T21:38:29.098361+00:00",
+          "completed_at": null
+        }
+      ],
+      "metadata": {
+        "planner_version": 1,
+        "reasoning_snapshot_id": null,
+        "goal_snapshot": {
+          "id": "goal-omega-arc",
+          "title": "OMEGA-ARC",
+          "status": "active"
+        }
+      }
+    },
+    {
+      "id": "plan-add-vision-routing",
+      "goal_id": "goal-add-vision-routing",
+      "title": "Add vision routing",
+      "description": "add vision routing",
+      "status": "active",
+      "priority": "high",
+      "version": 1,
+      "source": "deterministic_planner",
+      "confidence": 1.0,
+      "created_at": "2026-07-16T21:38:29.100074+00:00",
+      "updated_at": "2026-07-16T21:38:29.100074+00:00",
+      "completed_at": null,
+      "supersedes": null,
+      "superseded_by": null,
+      "steps": [
+        {
+          "id": "select-vision-model",
+          "title": "Select the vision model",
+          "description": "Choose the model that will receive image-based requests.",
+          "status": "active",
+          "order": 1,
+          "required": true,
+          "dependencies": [],
+          "evidence_requirements": [
+            {
+              "key": "vision_model_selected",
+              "required_state_types": [
+                "declared",
+                "configured",
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [],
+          "recommended_action": "Confirm which vision model will be used.",
+          "created_at": "2026-07-16T21:38:29.100032+00:00",
+          "updated_at": "2026-07-16T21:38:29.100032+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "verify-vision-model-load",
+          "title": "Verify that the selected vision model loads successfully.",
+          "description": "Confirm the selected model can load in the runtime environment.",
+          "status": "blocked",
+          "order": 2,
+          "required": true,
+          "dependencies": [
+            "select-vision-model"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "vision_model_loaded",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency select-vision-model is ready."
+          ],
+          "recommended_action": "Run a trusted load verification for the selected model.",
+          "created_at": "2026-07-16T21:38:29.100042+00:00",
+          "updated_at": "2026-07-16T21:38:29.100042+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "verify-vision-model-response",
+          "title": "Verify a basic vision response.",
+          "description": "Validate a minimal vision inference path using the selected model.",
+          "status": "blocked",
+          "order": 3,
+          "required": true,
+          "dependencies": [
+            "verify-vision-model-load"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "vision_model_responding",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency verify-vision-model-load is blocked."
+          ],
+          "recommended_action": "Run a basic vision request and capture verification evidence.",
+          "created_at": "2026-07-16T21:38:29.100048+00:00",
+          "updated_at": "2026-07-16T21:38:29.100048+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "configure-routing-rule",
+          "title": "Configure the routing rule.",
+          "description": "Configure routing so vision requests are directed to the selected model.",
+          "status": "blocked",
+          "order": 4,
+          "required": true,
+          "dependencies": [
+            "select-vision-model"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "vision_router_configured",
+              "required_state_types": [
+                "configured",
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency select-vision-model is ready."
+          ],
+          "recommended_action": "Apply and verify routing configuration for vision traffic.",
+          "created_at": "2026-07-16T21:38:29.100056+00:00",
+          "updated_at": "2026-07-16T21:38:29.100056+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "run-end-to-end-routing-test",
+          "title": "Run an end-to-end routing test.",
+          "description": "Verify routing, model response, and output integrity in a full path test.",
+          "status": "blocked",
+          "order": 5,
+          "required": true,
+          "dependencies": [
+            "verify-vision-model-response",
+            "configure-routing-rule"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "vision_routing_verified",
+              "required_state_types": [
+                "observed",
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency verify-vision-model-response is blocked.",
+            "Dependency configure-routing-rule is blocked."
+          ],
+          "recommended_action": "Run an end-to-end routing test and capture verification evidence.",
+          "created_at": "2026-07-16T21:38:29.100062+00:00",
+          "updated_at": "2026-07-16T21:38:29.100062+00:00",
+          "completed_at": null
+        },
+        {
+          "id": "review-evidence-and-update-goal",
+          "title": "Review evidence and update the goal status.",
+          "description": "Review all verification evidence and confirm goal status is current.",
+          "status": "blocked",
+          "order": 6,
+          "required": true,
+          "dependencies": [
+            "run-end-to-end-routing-test"
+          ],
+          "evidence_requirements": [
+            {
+              "key": "vision_routing_ready",
+              "required_state_types": [
+                "verified"
+              ],
+              "required_value": true
+            }
+          ],
+          "completion_evidence": [],
+          "blockers": [
+            "Dependency run-end-to-end-routing-test is blocked."
+          ],
+          "recommended_action": "Review final evidence and update goal status explicitly.",
+          "created_at": "2026-07-16T21:38:29.100069+00:00",
+          "updated_at": "2026-07-16T21:38:29.100069+00:00",
+          "completed_at": null
+        }
+      ],
+      "metadata": {
+        "planner_version": 1,
+        "reasoning_snapshot_id": null,
+        "goal_snapshot": {
+          "id": "goal-add-vision-routing",
+          "title": "Add vision routing",
+          "status": "active"
+        }
+      }
+    }
+  ]
 }

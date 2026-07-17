@@ -25,6 +25,14 @@ from services.adapters.backend_health_check import BackendHealthCheckAdapter
 
 router = APIRouter(prefix="/system", tags=["system"])
 
+
+@router.get("/status")
+def get_system_status() -> Dict[str, Any]:
+    return {
+        "status": "ok",
+        "tool_framework": _tool_framework_payload(),
+    }
+
 @router.get("/config")
 def get_runtime_config():
     return {
