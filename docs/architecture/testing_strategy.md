@@ -15,7 +15,7 @@ Tests are grouped by subsystem:
 - goal engine
 - identity engine
 - knowledge graph
-- model router
+- model control, explicit switching, and deterministic subsystem routing
 - reflection engine
 - user identity
 - evidence engine

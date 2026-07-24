@@ -42,8 +42,9 @@ flowchart TD
     Knowledge --> Reflection
     Reflection --> Curiosity[Curiosity]
     Curiosity --> Prompt[Prompt Composer]
-    Prompt --> Router[Model Router]
-    Router --> Models[Language Models]
+    Prompt --> Control[Model Control]
+    Control --> ActiveModel[Operator-Selected Chat Model]
+    ActiveModel --> DirectResponse[Unmodified Model Response]
 ```
 
 ## Epoch VI Additions
@@ -76,7 +77,7 @@ flowchart TD
   - Knowledge Graph
   - Reflection
   - Curiosity
-  - Model Routing
+  - Model Lock and deterministic subsystem routing
   - Tests
   - ADRs
 

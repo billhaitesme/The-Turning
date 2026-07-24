@@ -4,29 +4,25 @@
 User
   |
   v
-Intent Router
+Deterministic Runtime
   +--> Identity Engine
   +--> Personality Engine
   +--> Memory Retrieval
   +--> Network Search
   +--> Vision Router
+  +--> Tool Approval / Trusted Adapters
   |
   v
 Prompt Composer
   |
   v
-Model Router
-  +--> llama2-uncensored:7b
-  +--> llama3.1:8b
-  +--> llava:7b
-  +--> gemma3:1b
-  +--> embeddinggemma:latest
+Operator-Selected Chat Model (Model Lock)
   |
   v
-Response Validator
+Unmodified Model Response
   |
   v
 Memory / Journal / Academy / Proposals
 ```
 
-Important state is human-readable, versioned, and reversible. Runtime models are replaceable.
+Vision, embedding, and trusted-tool adapters remain deterministic subsystem selections. They do not substitute, supervise, or rewrite the conversational model. Important state is human-readable, versioned, and reversible. Runtime models are replaceable only through explicit operator selection.
