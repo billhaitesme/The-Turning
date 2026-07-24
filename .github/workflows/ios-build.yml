@@ -1,0 +1,139 @@
+name: iOS Build and Test
+
+# Builds the Bridge Zero iOS operator console on a real macOS runner.
+#
+# Why this exists: the project targets iOS 17 (ContentUnavailableView, NavigationStack) and
+# Swift 5.10, which require Xcode 15+ on macOS 13.5+. No local macOS host was available that
+# could reach that toolchain, so IX-B iOS validation was blocked. This workflow supplies a
+# reproducible build and simulator test run without requiring a Mac.
+#
+# It also produces an UNSIGNED .ipa artifact. That artifact can be signed and installed on a
+# physical iPhone from Windows using Sideloadly/AltStore with a free Apple ID, which is what
+# closes the physical-device half of the gate. CI itself cannot reach a physical device.
+
+on:
+  push:
+    paths:
+      - 'bridge/bridge-zero-ios/**'
+      - '.github/workflows/ios-build.yml'
+  pull_request:
+    paths:
+      - 'bridge/bridge-zero-ios/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build, test, and package
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: bridge/bridge-zero-ios
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Record toolchain versions
+        run: |
+          echo "--- Xcode ---"
+          xcodebuild -version
+          echo "--- Swift ---"
+          swift --version
+          echo "--- SDKs ---"
+          xcodebuild -showsdks | grep -i ios || true
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # project.yml is the source of truth; the .xcodeproj is generated, not committed.
+      - name: Generate Xcode project
+        run: |
+          xcodegen generate
+          ls -la BridgeZeroMobile.xcodeproj
+
+      # Primary compile validation. Uses a generic simulator destination so it does not
+      # depend on which specific simulator images the runner image ships.
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project BridgeZeroMobile.xcodeproj \
+            -scheme BridgeZeroMobile \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
+
+      # xcodebuild test needs a concrete device, and simulator names drift between runner
+      # images, so resolve an available iPhone at run time rather than hardcoding a name.
+      - name: Select an available iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          for runtime, entries in devices.items():
+              if 'iOS' not in runtime:
+                  continue
+              for device in entries:
+                  if device.get('isAvailable') and 'iPhone' in device['name']:
+                      print(device['udid'])
+                      sys.exit(0)
+          sys.exit(1)")
+          echo "Selected simulator: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit and UI tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project BridgeZeroMobile.xcodeproj \
+            -scheme BridgeZeroMobile \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO
+
+      # Unsigned device build. Sideloadly/AltStore re-sign this with a free Apple ID, so CI
+      # needs no certificates or secrets.
+      - name: Build unsigned device binary
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project BridgeZeroMobile.xcodeproj \
+            -scheme BridgeZeroMobile \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
+      - name: Package .ipa
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/BridgeZeroMobile.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Expected app bundle not found at $APP_PATH"
+            find build -name '*.app' -maxdepth 6 || true
+            exit 1
+          fi
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -qry BridgeZeroMobile-unsigned.ipa Payload
+          ls -lh BridgeZeroMobile-unsigned.ipa
+
+      - name: Upload unsigned .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: BridgeZeroMobile-unsigned-ipa
+          path: bridge/bridge-zero-ios/BridgeZeroMobile-unsigned.ipa
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: |
+            bridge/bridge-zero-ios/build/Logs/Test/**
+          retention-days: 14
+          if-no-files-found: ignore
