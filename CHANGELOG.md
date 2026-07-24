@@ -33,14 +33,16 @@ released until the reviewed checkpoint commit and its annotated tag actually exi
   temporary `OMEGA_TOOL_DATA_DIR` and leave tracked runtime data unchanged)
 - Desktop Bridge Zero and frontend Vite production builds succeed at 0.2.0
 - Shared OpenAPI and design-token files parse
+- Android: clean `assembleDebug` and `testDebugUnitTest` pass (Gradle 9.5.0 / JDK 21 / SDK 37);
+  8/8 physical-device checklist on moto g15 power / Android 15
+- iOS: `xcodegen generate`, simulator build, unit + UI tests, and `.ipa` packaging pass on CI
+  (macos-14 / Xcode 16 / iOS 17 SDK / Swift 5.10) — the `APIClient.swift` fix is compiler-confirmed
 
 ### Pending Validation
 
-- iOS native compile and unit/UI tests (a compile-blocking syntax error was fixed in the tree, but
-  no macOS/Xcode build has confirmed it)
-- Android unit, instrumentation, and `assembleDebug` runs (wrapper present but untracked and unrun;
-  the concurrency/resource fixes are unbuilt)
-- Physical iPhone and physical Android device validation
+- Physical iPhone run (install the CI `.ipa` via Sideloadly/AltStore; CI cannot drive a device)
+- Android instrumentation tests, TalkBack pass, and a release-configuration build
+- The `backend/data/` runtime records need a fixture-or-ignore decision before the tree is clean
 - Desktop typed-event consumption parity (desktop Bridge Zero still refreshes via `/system/*` REST
   polling rather than consuming the typed SSE stream)
 - Design-token parity confirmed on device (or via a generated comparison test)
@@ -48,12 +50,15 @@ released until the reviewed checkpoint commit and its annotated tag actually exi
 
 ### Known Release Blockers
 
-- No reviewed checkpoint commit exists; `epoch-ix-a` does not exist; the mobile and shared trees
-  are untracked
-- Native iOS and Android builds are unverified
-- The physical-device validation gate in `PROJECT_STATUS.md` has no recorded hardware pass
-- Design-token parity is not yet device-verified
-- Full clean-clone reproduction of backend + web + native builds is unconfirmed
+- Physical-iPhone validation not yet recorded (the Android hardware pass is recorded)
+- `epoch-ix-a` tag not yet created — deliberately withheld until the physical-iPhone run is
+  recorded and the `backend/data/` records are resolved
+- `backend/data/` runtime records remain uncommitted pending a fixture-or-ignore decision
+
+Resolved since the initial candidate: the reviewed checkpoint now exists as six commits on
+`release/epoch-ix-0.2.0`; the mobile and shared sources are tracked; Android and iOS both build
+and pass their tests (Android on hardware, iOS on CI); clean-clone build reproducibility is
+demonstrated by the CI run.
 
 ## [0.1.0]
 

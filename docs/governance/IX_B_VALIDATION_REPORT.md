@@ -260,10 +260,22 @@ substitute, because the required SDK symbols are absent, not mislabelled.
 
 **Minimum viable iOS toolchain: Xcode 15+ (iOS 17 SDK) on macOS 13.5+.**
 
-**Status: iOS remains unvalidated.** The original defect is resolved by inspection, but no
-compiler has confirmed it, and no simulator or device run exists. Do not record iOS as validated
-on the strength of the structural check alone.
+### CI resolution — iOS builds and tests pass on a real toolchain
 
-Recommended path: build iOS on a macOS CI runner with Xcode 15.3+ once the sources are committed.
-That yields reproducible evidence without local VM toolchain work and simultaneously supports the
-clean-clone reproducibility gate. A macOS 13+ host or physical Mac is the alternative.
+After the sources were committed and pushed, the `ios-build` GitHub Actions workflow
+(`macos-14`, Xcode 16, iOS 17 SDK, Swift 5.10) completed green in 2m 40s:
+
+- `xcodegen generate` produced the project from `project.yml`.
+- **Build for simulator succeeded** — the iOS sources compile on a genuine iOS 17 toolchain,
+  confirming the `APIClient.swift` fix by compiler rather than by inspection.
+- Unit and UI tests passed (`APIConfigurationTests`, `MobileVersionTests`, `SSEParserTests`,
+  `BridgeZeroMobileUITests`).
+- An unsigned device binary built and packaged to `.ipa`, uploaded as a run artifact.
+
+Because CI checked out only the committed sources, this also serves as clean-clone
+build-reproducibility evidence for iOS.
+
+**Status: iOS builds and passes simulator tests on CI. The physical-iPhone run remains the only
+open iOS item** — CI cannot drive a USB device. The path is: download the unsigned `.ipa`, sign
+it with a free Apple ID via Sideloadly/AltStore on Windows, install to the device, and run the
+device checklist. Until that run is recorded, do not mark the physical-iOS gate closed.
