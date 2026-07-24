@@ -108,7 +108,15 @@ actor RuntimeAPIClient {
                     let (bytes, response) = try await self.session.bytes(for: eventRequest)
                     try Self.validate(response)
                     var parser = RuntimeOperationsSSEParser()
-                    for try await line in bytes.lines {
+                    // Split the byte stream on LF ourselves. URLSession.AsyncBytes.lines
+                    // coalesces blank lines, but SSE uses a blank line to delimit events,
+                    // so .lines prevents the parser from ever finalizing an event.
+                    var lineBytes: [UInt8] = []
+                    for try await byte in bytes {
+                        guard byte == 0x0A else { lineBytes.append(byte); continue }
+                        if lineBytes.last == 0x0D { lineBytes.removeLast() }
+                        let line = String(decoding: lineBytes, as: UTF8.self)
+                        lineBytes.removeAll(keepingCapacity: true)
                         if let event = try parser.consume(line: line) {
                             continuation.yield(event)
                         }
@@ -140,7 +148,14 @@ actor RuntimeAPIClient {
                     let (bytes, response) = try await self.session.bytes(for: request)
                     try Self.validate(response)
                     var parser = SSEParser()
-                    for try await line in bytes.lines {
+                    // See runtimeEvents: split on LF manually so blank-line SSE delimiters
+                    // survive (URLSession.AsyncBytes.lines drops them).
+                    var lineBytes: [UInt8] = []
+                    for try await byte in bytes {
+                        guard byte == 0x0A else { lineBytes.append(byte); continue }
+                        if lineBytes.last == 0x0D { lineBytes.removeLast() }
+                        let line = String(decoding: lineBytes, as: UTF8.self)
+                        lineBytes.removeAll(keepingCapacity: true)
                         if let event = parser.consume(line: line) {
                             continuation.yield(event)
                             if event.kind == .end { break }
