@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import uuid
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -15,7 +16,7 @@ VALID_TOOL_REQUEST_STATUSES = {"proposed", "awaiting_approval", "approved", "rej
 VALID_APPROVAL_STATUSES = {"pending", "approved", "rejected", "expired", "revoked"}
 VALID_TOOL_RESULT_STATUSES = {"completed", "failed", "endpoint_mismatch"}
 
-TOOL_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+TOOL_DATA_DIR = Path(os.environ.get("OMEGA_TOOL_DATA_DIR") or Path(__file__).resolve().parents[1] / "data")
 TOOL_REQUESTS_PATH = TOOL_DATA_DIR / "tool_requests.json"
 TOOL_APPROVALS_PATH = TOOL_DATA_DIR / "tool_approvals.json"
 TOOL_RESULTS_PATH = TOOL_DATA_DIR / "tool_results.json"
@@ -159,7 +160,7 @@ def validate_tool_definition(tool: Dict[str, Any]) -> Dict[str, Any]:
     if risk_level not in VALID_TOOL_RISK_LEVELS:
         raise ValueError(f"Unsupported tool risk level: {risk_level}")
     if risk_level == "critical":
-        raise ValueError("Critical tools are not supported in Epoch VIII.")
+        raise ValueError("Critical tools are not supported by the bounded execution policy.")
 
     requires_approval = tool.get("requires_approval")
     supports_dry_run = tool.get("supports_dry_run")
@@ -226,7 +227,7 @@ def validate_arguments_against_schema(arguments: Dict[str, Any], schema: Dict[st
 
     schema_type = str(schema.get("type") or "object")
     if schema_type != "object":
-        raise ValueError("Only object tool input schemas are supported in Epoch VIII.")
+        raise ValueError("Only object tool input schemas are supported by the current contract.")
 
     for key in _schema_required_keys(schema):
         if key not in normalized_arguments:

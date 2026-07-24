@@ -124,7 +124,7 @@ def execute_tool_request(
             request=validated_request,
             status="failed",
             code="risk_unsupported",
-            message="Critical tools are unsupported in Epoch VIII.",
+            message="Critical tools are unsupported by the bounded execution policy.",
             started_at=started_at,
             completed_at=utc_now_iso(),
             execution_mode="dry_run" if dry_run else "live",

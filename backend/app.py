@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 from copy import deepcopy
 
 from awareness_engine import (
@@ -33,8 +36,9 @@ from services.knowledge_graph import load_graph
 from services.reasoning_engine import (
     build_reasoning_prompt_context,
     render_backend_state_for_prompt,
-    sanitize_prompt_messages,
 )
+from core.config import settings
+from services.model_control import ConversationTelemetry, model_control, select_chat_model
 from services.reasoning_pipeline import run_reasoning_pipeline
 from services.planning_pipeline import (
     detect_planning_intent,
@@ -87,20 +91,21 @@ from services.user_identity import (
     normalize_identity_profile,
 )
 from services.cognition_pipeline import process_completed_turn
-from services.curiosity_engine import apply_curiosity_to_response
 from services.declarative_acknowledger import build_declarative_acknowledgement
 from routes.system import router as system_router
-from dotenv import load_dotenv
-load_dotenv(override=True)
+from routes.mobile import configure_mobile_runtime, router as mobile_router
+from routes.runtime_operations import router as runtime_operations_router
 
 import json
 import math
+from services.runtime_store import observe_streaming_response
 import os
 import re
 import sqlite3
+import time
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Literal, Optional, Tuple
 
 import httpx
 from ddgs import DDGS
@@ -113,9 +118,8 @@ APP_NAME = "0M3-G4-ARC"
 DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
-# Locked textual model for all /chat and /chat/stream responses.
-OLLAMA_CHAT_MODEL = "dolphin-mixtral:8x7b"
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
+DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "dolphin-mixtral:8x7b")
 
 ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "false").lower() == "true"
 WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "5"))
@@ -619,7 +623,7 @@ def _create_backend_health_request(*, conversation_id: str, user_profile: Dict[s
 def _execute_backend_health_request(*, conversation_id: str, user_profile: Dict[str, Any]) -> Tuple[str, Optional[Dict[str, Any]]]:
     if not ENABLE_TOOL_EXECUTION:
         return (
-            "Tool execution remains disabled in Epoch VIII. Use the bounded tool request endpoints for inspection and approval.",
+            "Tool execution remains disabled by runtime policy. Use the bounded tool request endpoints for inspection and approval.",
             None,
         )
 
@@ -975,48 +979,156 @@ Reasoning context:
 
     messages.append({"role": "user", "content": user_message})
 
-    return sanitize_prompt_messages(messages)
+    # User and assistant language is kept byte-for-byte at the message-content
+    # level. Transport serialization is the only normalization performed here.
+    return messages
 
 
-def generate_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None) -> str:
-    web_results = search_web(user_message) if should_enable_web_search(user_message) else []
-    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
+def build_direct_model_messages(*, history: List[Dict[str, str]], user_message: str) -> List[Dict[str, str]]:
+    """Build an unaugmented chat transcript for the operator-selected direct mode."""
+    messages = [
+        {"role": msg["role"], "content": msg["content"]}
+        for msg in history
+        if msg.get("role") in {"user", "assistant"}
+    ]
+    messages.append({"role": "user", "content": user_message})
+    return messages
+
+
+class ModelUnavailableError(RuntimeError):
+    pass
+
+
+def _model_unavailable_message(model: str) -> str:
+    return (
+        f"Unable to load {model}.\n\n"
+        "Automatic fallback is disabled.\n\n"
+        "Please choose another conversational model."
+    )
+
+
+def generate_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None, direct_mode: bool = False) -> str:
+    if direct_mode:
+        messages = build_direct_model_messages(history=history, user_message=user_message)
+    else:
+        web_results = search_web(user_message) if should_enable_web_search(user_message) else []
+        messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
+    requested_model = select_chat_model()
+    attempts = [requested_model]
+    if not direct_mode and settings.allow_automatic_model_fallback and settings.automatic_model_fallback_model != requested_model:
+        attempts.append(settings.automatic_model_fallback_model)
+    started = time.perf_counter()
+    last_error: Optional[Exception] = None
     with httpx.Client(timeout=120.0) as client:
-        response = client.post(f"{OLLAMA_BASE_URL}/chat", json={"model": OLLAMA_CHAT_MODEL, "messages": messages, "stream": False})
-        response.raise_for_status()
-        data = response.json()
-        return data["message"]["content"]
+        for index, candidate in enumerate(attempts):
+            try:
+                response = client.post(f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": False})
+                response.raise_for_status()
+                data = response.json()
+                actual_model = str(data.get("model") or candidate)
+                if actual_model != candidate:
+                    raise RuntimeError(f"Provider returned {actual_model} after {candidate} was selected.")
+                model_control.record(ConversationTelemetry(
+                    requested_model=requested_model,
+                    selected_model=requested_model,
+                    actual_model=actual_model,
+                    response_time=round(time.perf_counter() - started, 6),
+                    tokens=data.get("eval_count"),
+                    fallback_used=index > 0,
+                ))
+                return data["message"]["content"]
+            except Exception as exc:
+                last_error = exc
+    model_control.record(ConversationTelemetry(
+        requested_model=requested_model,
+        selected_model=requested_model,
+        actual_model="",
+        response_time=round(time.perf_counter() - started, 6),
+        tokens=None,
+        fallback_used=len(attempts) > 1,
+    ))
+    if direct_mode or not settings.allow_automatic_model_fallback:
+        raise ModelUnavailableError(_model_unavailable_message(requested_model)) from last_error
+    raise ModelUnavailableError(f"Unable to load configured conversational models: {attempts}.") from last_error
 
 
-def stream_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None) -> Generator[str, None, None]:
-    web_results = search_web(user_message) if should_enable_web_search(user_message) else []
-    messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
-    yield f"data: {json.dumps({'type': 'phase', 'name': 'whisper'})}\n\n"
-    sanitized_memories = [{"kind": m.get("kind"), "summary_text": m.get("summary_text"), "similarity": m.get("similarity"), "created_at": m.get("created_at")} for m in memories]
-    yield f"data: {json.dumps({'type': 'memory', 'items': sanitized_memories})}\n\n"
-    if web_results:
-        yield f"data: {json.dumps({'type': 'web', 'items': web_results})}\n\n"
-    yield f"data: {json.dumps({'type': 'phase', 'name': 'bridge'})}\n\n"
-    yield f"data: {json.dumps({'type': 'phase', 'name': 'mirror'})}\n\n"
-    yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+def stream_response_text(*, history: List[Dict[str, str]], user_message: str, user_profile: Dict[str, Any], memories: List[Dict[str, Any]], conversation_id: Optional[str] = None, direct_mode: bool = False) -> Generator[str, None, None]:
+    if direct_mode:
+        web_results: List[Dict[str, Any]] = []
+        messages = build_direct_model_messages(history=history, user_message=user_message)
+    else:
+        web_results = search_web(user_message) if should_enable_web_search(user_message) else []
+        messages = build_ollama_messages(history=history, user_message=user_message, user_profile=user_profile, memories=memories, web_results=web_results, conversation_id=conversation_id)
+        yield f"data: {json.dumps({'type': 'phase', 'name': 'whisper'})}\n\n"
+        sanitized_memories = [{"kind": m.get("kind"), "summary_text": m.get("summary_text"), "similarity": m.get("similarity"), "created_at": m.get("created_at")} for m in memories]
+        yield f"data: {json.dumps({'type': 'memory', 'items': sanitized_memories})}\n\n"
+        if web_results:
+            yield f"data: {json.dumps({'type': 'web', 'items': web_results})}\n\n"
+        yield f"data: {json.dumps({'type': 'phase', 'name': 'bridge'})}\n\n"
+        yield f"data: {json.dumps({'type': 'phase', 'name': 'mirror'})}\n\n"
+        yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+    requested_model = select_chat_model()
+    attempts = [requested_model]
+    if not direct_mode and settings.allow_automatic_model_fallback and settings.automatic_model_fallback_model != requested_model:
+        attempts.append(settings.automatic_model_fallback_model)
+    started = time.perf_counter()
+    last_error: Optional[Exception] = None
     with httpx.Client(timeout=None) as client:
-        with client.stream("POST", f"{OLLAMA_BASE_URL}/chat", json={"model": OLLAMA_CHAT_MODEL, "messages": messages, "stream": True}) as response:
-            response.raise_for_status()
+        for index, candidate in enumerate(attempts):
             collected: List[str] = []
-            for line in response.iter_lines():
-                if not line:
-                    continue
-                data = json.loads(line)
-                msg = data.get("message", {})
-                chunk = msg.get("content", "")
-                if chunk:
-                    collected.append(chunk)
-                    yield f"data: {json.dumps({'type': 'delta', 'text': chunk})}\n\n"
-                if data.get("done"):
-                    final_text = "".join(collected)
-                    yield f"data: {json.dumps({'type': 'phase', 'name': 'silence'})}\n\n"
-                    yield f"data: {json.dumps({'type': 'done', 'text': final_text})}\n\n"
-                    break
+            try:
+                with client.stream("POST", f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": True}) as response:
+                    response.raise_for_status()
+                    for line in response.iter_lines():
+                        if not line:
+                            continue
+                        data = json.loads(line)
+                        actual_model = str(data.get("model") or candidate)
+                        if actual_model != candidate:
+                            raise RuntimeError(f"Provider returned {actual_model} after {candidate} was selected.")
+                        msg = data.get("message", {})
+                        chunk = msg.get("content", "")
+                        if chunk:
+                            collected.append(chunk)
+                            yield f"data: {json.dumps({'type': 'delta', 'text': chunk})}\n\n"
+                        if data.get("done"):
+                            final_text = "".join(collected)
+                            model_control.record(ConversationTelemetry(
+                                requested_model=requested_model,
+                                selected_model=requested_model,
+                                actual_model=actual_model,
+                                response_time=round(time.perf_counter() - started, 6),
+                                tokens=data.get("eval_count"),
+                                fallback_used=index > 0,
+                            ))
+                            if not direct_mode:
+                                yield f"data: {json.dumps({'type': 'phase', 'name': 'silence'})}\n\n"
+                            yield f"data: {json.dumps({'type': 'done', 'text': final_text})}\n\n"
+                            return
+            except Exception as exc:
+                last_error = exc
+                # Never splice another model into a response already shown to the user.
+                if collected:
+                    model_control.record(ConversationTelemetry(
+                        requested_model=requested_model,
+                        selected_model=requested_model,
+                        actual_model=candidate,
+                        response_time=round(time.perf_counter() - started, 6),
+                        tokens=None,
+                        fallback_used=index > 0,
+                    ))
+                    raise
+    model_control.record(ConversationTelemetry(
+        requested_model=requested_model,
+        selected_model=requested_model,
+        actual_model="",
+        response_time=round(time.perf_counter() - started, 6),
+        tokens=None,
+        fallback_used=len(attempts) > 1,
+    ))
+    if direct_mode or not settings.allow_automatic_model_fallback:
+        raise ModelUnavailableError(_model_unavailable_message(requested_model)) from last_error
+    raise ModelUnavailableError(f"Unable to load configured conversational models: {attempts}.") from last_error
 
 
 def persist_learning(*, conversation_id: str, user_id: Optional[str], user_message: str, assistant_message: str) -> Dict[str, Any]:
@@ -1114,12 +1226,16 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     conversation_id: Optional[str] = None
     user_id: Optional[str] = None
+    model: Optional[str] = None
+    mode: Literal["runtime", "direct"] = "runtime"
 
 
 class ChatResponse(BaseModel):
     conversation_id: str
     reply: str
     learning: Dict[str, Any]
+    model_control: Dict[str, Any]
+    mode: Literal["runtime", "direct"] = "runtime"
 
 
 class ConversationHistoryResponse(BaseModel):
@@ -1132,7 +1248,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="3.0.0")
+app = FastAPI(title=f"{APP_NAME} API", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -1154,7 +1270,7 @@ def root() -> Dict[str, Any]:
         "name": APP_NAME,
         "status": "ok",
         "provider": "ollama",
-        "chat_model": OLLAMA_CHAT_MODEL,
+        "chat_model": select_chat_model(),
         "embedding_model": OLLAMA_EMBED_MODEL,
         "web_search_enabled": ENABLE_WEB_SEARCH,
     }
@@ -1247,7 +1363,56 @@ def chat(req: ChatRequest) -> ChatResponse:
     elif not conversation_exists(conversation_id):
         raise HTTPException(status_code=404, detail="Conversation not found.")
     add_message(conversation_id, "user", req.message)
+    direct_mode = req.mode == "direct"
+    try:
+        if direct_mode:
+            if req.model and req.model != DIRECT_CHAT_MODEL:
+                raise ValueError(f"Direct mode is pinned to {DIRECT_CHAT_MODEL}.")
+            model_control.set_active_model(DIRECT_CHAT_MODEL)
+        elif req.model:
+            model_control.set_active_model(req.model)
+        explicit_model_switch = None if direct_mode else model_control.parse_explicit_switch(req.message)
+        if explicit_model_switch:
+            model_control.set_active_model(explicit_model_switch)
+            reply = f"Active conversational model set to {explicit_model_switch}. Model Lock remains engaged."
+            add_message(conversation_id, "assistant", reply)
+            learning = persist_learning(
+                conversation_id=conversation_id,
+                user_id=req.user_id,
+                user_message=req.message,
+                assistant_message=reply,
+            )
+            return ChatResponse(
+                conversation_id=conversation_id,
+                reply=reply,
+                learning=learning,
+                model_control=model_control.status(),
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     history = get_messages(conversation_id, limit=MAX_HISTORY_MESSAGES)
+    if direct_mode:
+        try:
+            reply = generate_response_text(
+                history=history[:-1],
+                user_message=req.message,
+                user_profile={},
+                memories=[],
+                conversation_id=conversation_id,
+                direct_mode=True,
+            )
+        except ModelUnavailableError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        add_message(conversation_id, "assistant", reply)
+        return ChatResponse(
+            conversation_id=conversation_id,
+            reply=reply,
+            learning={},
+            model_control=model_control.status(),
+            mode="direct",
+        )
     meta = get_conversation_meta(conversation_id) or {}
     effective_user_id = req.user_id or meta.get("user_id")
     user_profile = get_user_profile(effective_user_id)
@@ -1256,6 +1421,20 @@ def chat(req: ChatRequest) -> ChatResponse:
     summary_intent = detect_summary_intent(req.message)
     planning_intent = detect_planning_intent(req.message)
     deliberation_intent = detect_deliberation_intent(req.message)
+    declaration_keys = {
+        str(item.get("key") or "")
+        for item in extract_runtime_declarations(req.message)
+        if isinstance(item, dict)
+    }
+    execution_request_pattern = re.compile(r"\b(execute|run\s+it\s+now|implement\s+now|apply\s+now|deploy\s+now)\b", re.IGNORECASE)
+    tool_request_pattern = re.compile(r"\b(tool|backend\s+health\s+check|system\s+tools|tool\s+request)\b", re.IGNORECASE)
+    deterministic_runtime_request = bool(
+        (ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION and planning_intent)
+        or (ENABLE_DELIBERATION_PIPELINE and not ENABLE_PLAN_EXECUTION and deliberation_intent)
+        or (ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION and "vision_model_selected" in declaration_keys)
+        or (not ENABLE_PLAN_EXECUTION and execution_request_pattern.search(req.message))
+        or (ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION and tool_request_pattern.search(req.message))
+    )
     try:
         reasoning_output = None
         if summary_intent in {"state_summary", "uncertainty_summary"}:
@@ -1276,28 +1455,16 @@ def chat(req: ChatRequest) -> ChatResponse:
             deterministic_ack = build_declarative_acknowledgement(req.message)
             if deterministic_ack:
                 reply = deterministic_ack
+            elif deterministic_runtime_request:
+                # Dedicated runtime requests are answered by their deterministic
+                # subsystem below; no conversational model is called or discarded.
+                reply = ""
             else:
                 reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories, conversation_id=conversation_id)
+    except ModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    if ENABLE_COGNITION_PIPELINE and summary_intent not in {"state_summary", "uncertainty_summary"}:
-        try:
-            cognition_output = process_completed_turn(
-                user_message=req.message,
-                assistant_response=reply,
-                identity_profile=get_identity_profile(user_profile),
-                persist=True,
-            )
-            curiosity = cognition_output.get("curiosity") if cognition_output else None
-            reply = apply_curiosity_to_response(
-                response=reply,
-                curiosity_candidate=curiosity,
-                enabled=ENABLE_CURIOSITY_SUGGESTIONS,
-            )
-        except Exception as exc:
-            print("Cognition pipeline warning:", repr(exc))
-            cognition_output = None
-
     if summary_intent in {"state_summary", "uncertainty_summary"} and reasoning_output is not None:
         latest_reasoning_result = reasoning_output
     elif ENABLE_REASONING_PIPELINE:
@@ -1385,11 +1552,6 @@ def chat(req: ChatRequest) -> ChatResponse:
                         reply = "No active plan is available to archive."
             else:
                 active_plan = planning_output.get("selected_plan") or planning_output.get("active_plan")
-                declaration_keys = {
-                    str(item.get("key") or "")
-                    for item in extract_runtime_declarations(req.message)
-                    if isinstance(item, dict)
-                }
                 if active_plan and "vision_model_selected" in declaration_keys:
                     reply = render_plan(active_plan)
         except Exception as exc:
@@ -1466,24 +1628,39 @@ def chat(req: ChatRequest) -> ChatResponse:
             deliberation_output = None
 
     if not ENABLE_PLAN_EXECUTION:
-        execution_request_pattern = re.compile(r"\b(execute|run\s+it\s+now|implement\s+now|apply\s+now|deploy\s+now)\b", re.IGNORECASE)
         if execution_request_pattern.search(req.message):
             reply = "Execution remains disabled in Epoch VII. Approval and decision recording are available, but actions are not executed automatically."
 
     if ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION:
-        tool_request_pattern = re.compile(r"\b(tool|backend\s+health\s+check|system\s+tools|tool\s+request)\b", re.IGNORECASE)
         if (
             tool_request_pattern.search(req.message)
             and not is_backend_health_query(req.message)
             and not BACKEND_HEALTH_CHECK_REQUEST_RE.search(req.message or "")
             and not BACKEND_HEALTH_CHECK_CONFIRMATION_RE.match(req.message or "")
         ):
-            reply = "Tool execution remains disabled in Epoch VIII. Use the bounded tool request endpoints for inspection and approval."
+            reply = "Tool execution remains disabled by runtime policy. Use the bounded tool request endpoints for inspection and approval."
+
+    if reply and ENABLE_COGNITION_PIPELINE and summary_intent not in {"state_summary", "uncertainty_summary"}:
+        try:
+            process_completed_turn(
+                user_message=req.message,
+                assistant_response=reply,
+                identity_profile=get_identity_profile(user_profile),
+                persist=True,
+            )
+        except Exception as exc:
+            print("Cognition pipeline warning:", repr(exc))
 
     add_message(conversation_id, "assistant", reply)
     learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)
 
-    return ChatResponse(conversation_id=conversation_id, reply=reply, learning=learning)
+    return ChatResponse(
+        conversation_id=conversation_id,
+        reply=reply,
+        learning=learning,
+        model_control=model_control.status(),
+        mode="runtime",
+    )
 
 
 @app.post("/chat/stream")
@@ -1496,10 +1673,62 @@ def chat_stream(req: ChatRequest):
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
     add_message(conversation_id, "user", req.message)
+    direct_mode = req.mode == "direct"
+    try:
+        if direct_mode:
+            if req.model and req.model != DIRECT_CHAT_MODEL:
+                raise ValueError(f"Direct mode is pinned to {DIRECT_CHAT_MODEL}.")
+            model_control.set_active_model(DIRECT_CHAT_MODEL)
+        elif req.model:
+            model_control.set_active_model(req.model)
+        explicit_model_switch = None if direct_mode else model_control.parse_explicit_switch(req.message)
+        if explicit_model_switch:
+            model_control.set_active_model(explicit_model_switch)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    history = get_messages(conversation_id, limit=MAX_HISTORY_MESSAGES)
+    if direct_mode:
+        def direct_event_generator():
+            chunks: List[str] = []
+            try:
+                for event in stream_response_text(
+                    history=history[:-1],
+                    user_message=req.message,
+                    user_profile={},
+                    memories=[],
+                    conversation_id=conversation_id,
+                    direct_mode=True,
+                ):
+                    yield event
+                    if event.startswith("data: "):
+                        payload = json.loads(event[len("data: "):].strip())
+                        if payload.get("type") == "delta":
+                            chunks.append(payload.get("text", ""))
+            except Exception as exc:
+                yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+                yield f"data: {json.dumps({'type': 'end'})}\n\n"
+                return
+
+            full_text = "".join(chunks)
+            if full_text:
+                add_message(conversation_id, "assistant", full_text)
+            yield f"data: {json.dumps({'type': 'mode', 'name': 'direct', 'model': DIRECT_CHAT_MODEL})}\n\n"
+            yield f"data: {json.dumps({'type': 'end'})}\n\n"
+
+        return observe_streaming_response(StreamingResponse(
+            direct_event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Conversation-Id": conversation_id,
+                "X-Conversation-Mode": "direct",
+            },
+        ), conversation_id)
 
     meta = get_conversation_meta(conversation_id) or {}
     effective_user_id = req.user_id or meta.get("user_id")
-    history = get_messages(conversation_id, limit=MAX_HISTORY_MESSAGES)
     user_profile = get_user_profile(effective_user_id)
     user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
     memories = search_memories(
@@ -1511,6 +1740,13 @@ def chat_stream(req: ChatRequest):
 
     def event_generator():
         global latest_reasoning_result
+        if explicit_model_switch:
+            full_text = f"Active conversational model set to {explicit_model_switch}. Model Lock remains engaged."
+            add_message(conversation_id, "assistant", full_text)
+            yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+            yield f"data: {json.dumps({'type': 'model_control', 'data': model_control.status()})}\n\n"
+            yield f"data: {json.dumps({'type': 'end'})}\n\n"
+            return
         if summary_intent in {"state_summary", "uncertainty_summary"}:
             try:
                 full_text, reasoning_output = _build_deterministic_summary_reply(
@@ -1635,7 +1871,7 @@ def chat_stream(req: ChatRequest):
                 yield f"data: {json.dumps({'type': 'end'})}\n\n"
                 return
 
-        full_text = (deterministic_ack or "".join(chunks)).strip()
+        full_text = deterministic_ack if deterministic_ack is not None else "".join(chunks)
 
         if full_text:
             if ENABLE_COGNITION_PIPELINE:
@@ -1645,12 +1881,6 @@ def chat_stream(req: ChatRequest):
                         assistant_response=full_text,
                         identity_profile=get_identity_profile(user_profile),
                         persist=True,
-                    )
-                    curiosity = cognition_output.get("curiosity") if cognition_output else None
-                    full_text = apply_curiosity_to_response(
-                        response=full_text,
-                        curiosity_candidate=curiosity,
-                        enabled=ENABLE_CURIOSITY_SUGGESTIONS,
                     )
                 except Exception as exc:
                     print("Cognition pipeline warning:", repr(exc))
@@ -1708,8 +1938,22 @@ def chat_stream(req: ChatRequest):
         "X-Conversation-Id": conversation_id,
     }
 
-    return StreamingResponse(
+    return observe_streaming_response(StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers=headers,
-    )
+    ), conversation_id)
+
+
+configure_mobile_runtime(
+    create_conversation=create_conversation,
+    conversation_exists=conversation_exists,
+    get_full_messages=get_full_messages,
+    get_conversation_meta=get_conversation_meta,
+    get_db=get_db,
+    stream_chat=lambda message, conversation_id: chat_stream(
+        ChatRequest(message=message, conversation_id=conversation_id)
+    ),
+)
+app.include_router(mobile_router)
+app.include_router(runtime_operations_router)

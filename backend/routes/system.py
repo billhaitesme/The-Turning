@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from core.config import settings
 from services.goal_engine import load_goal_store
 from services.knowledge_graph import load_graph
+from services.model_control import model_control
 from services.evidence_engine import (
     extract_durable_evidence_store,
     extract_session_scoped_evidence_store,
@@ -30,13 +31,19 @@ router = APIRouter(prefix="/system", tags=["system"])
 def get_system_status() -> Dict[str, Any]:
     return {
         "status": "ok",
+        "model_control": model_control.status(),
         "tool_framework": _tool_framework_payload(),
     }
 
 @router.get("/config")
 def get_runtime_config():
     return {
-        "chat_model": settings.chat_model,
+        "chat_model": model_control.select_chat_model(),
+        "active_chat_model": model_control.select_chat_model(),
+        "model_lock": settings.model_lock,
+        "allow_topic_routing": settings.allow_topic_routing,
+        "allow_secondary_rewrite": settings.allow_secondary_rewrite,
+        "allow_automatic_model_fallback": settings.allow_automatic_model_fallback,
         "reasoning_model": settings.reasoning_model,
         "vision_model": settings.vision_model,
         "router_model": settings.router_model,
@@ -52,6 +59,26 @@ def get_runtime_config():
         "backend_health_check_paths": settings.backend_health_check_paths,
         "tool_approval_ttl_seconds": settings.tool_approval_ttl_seconds,
     }
+
+
+class ActiveModelRequest(BaseModel):
+    model: str = Field(..., min_length=1, max_length=200)
+
+
+@router.get("/model-control")
+def get_model_control() -> Dict[str, Any]:
+    payload = model_control.status()
+    payload["telemetry"] = model_control.telemetry()
+    return payload
+
+
+@router.post("/model-control")
+def set_model_control(req: ActiveModelRequest) -> Dict[str, Any]:
+    try:
+        model_control.set_active_model(req.model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return model_control.status()
 
 
 @router.get("/cognition")

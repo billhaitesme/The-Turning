@@ -1,16 +1,30 @@
 from dataclasses import dataclass
 import os
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    return os.getenv(name, str(default)).lower() == "true"
+
+
 @dataclass(frozen=True)
 class Settings:
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-    chat_model: str = os.getenv("OLLAMA_CHAT_MODEL", "llama2-uncensored:7b")
+    active_chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    # Backwards-compatible name for integrations that still read chat_model.
+    chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
     reasoning_model: str = os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b")
     vision_model: str = os.getenv("OLLAMA_VISION_MODEL", "llava:7b")
     router_model: str = os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b")
     embedding_model: str = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma:latest")
     network_mode: str = os.getenv("NETWORK_MODE", "offline")
     personality_mode: str = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
+    model_lock: bool = _env_bool("MODEL_LOCK", True)
+    # These policy safeguards are intentionally fail-closed. Environment values
+    # cannot reactivate forbidden conversational routing or response rewriting.
+    allow_topic_routing: bool = False
+    allow_secondary_rewrite: bool = False
+    allow_automatic_model_fallback: bool = _env_bool("ALLOW_AUTOMATIC_MODEL_FALLBACK", False)
+    automatic_model_fallback_model: str = os.getenv("AUTOMATIC_MODEL_FALLBACK_MODEL", os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b"))
     enable_tool_framework: bool = os.getenv("ENABLE_TOOL_FRAMEWORK", "true").lower() == "true"
     enable_tool_execution: bool = os.getenv("ENABLE_TOOL_EXECUTION", "false").lower() == "true"
     enable_tool_dry_run: bool = os.getenv("ENABLE_TOOL_DRY_RUN", "true").lower() == "true"
