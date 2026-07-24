@@ -8,9 +8,28 @@ export const chronicleTimeline = [
   "Planning",
   "Deliberation",
   "Tools",
+  "Mobile Operations",
 ];
 
 export const epochRecords = [
+  {
+    epoch: "Epoch IX",
+    title: "Bridge Zero Mobile and Runtime Operations",
+    adrs: ["bridge-zero-mobile", "versioning"],
+    acceptance: ["IX-A", "IX-B-foundation"],
+    milestones: [
+      "Authenticated native operator consoles",
+      "RuntimeStore and typed event bus",
+      "Measured operations telemetry",
+      "Shared design-system foundation",
+    ],
+    backendTests: null,
+    architectureChanges: [
+      "Mobile runtime projection",
+      "Typed operations event stream",
+      "Epoch IX / Version 0.2.x authority",
+    ],
+  },
   {
     epoch: "Epoch VIII",
     title: "Trusted Tools and Verified Execution",
@@ -22,7 +41,7 @@ export const epochRecords = [
       "Non-general executor foundation",
       "Read-only system inspection endpoints",
     ],
-    backendTests: 289,
+    backendTests: 340,
     architectureChanges: [
       "Bounded adapter protocol",
       "Approval scope hash validation",

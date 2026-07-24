@@ -261,6 +261,27 @@ body,
   gap: 8px;
 }
 
+.model-control-active {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border-main);
+  padding: 9px;
+  font-family: var(--font-mono);
+}
+
+.model-control-active span {
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+}
+
+.model-control-active strong {
+  color: #b7d8ed;
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
 .system-badge {
   padding: 8px;
 }

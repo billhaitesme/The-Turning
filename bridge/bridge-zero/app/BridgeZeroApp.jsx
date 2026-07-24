@@ -5,6 +5,7 @@ import ConversationPanel from "../panels/ConversationPanel";
 import DeliberationPanel from "../panels/DeliberationPanel";
 import EvidencePanel from "../panels/EvidencePanel";
 import IdentityPanel from "../panels/IdentityPanel";
+import ModelControlPanel from "../panels/ModelControlPanel";
 import PlanningPanel from "../panels/PlanningPanel";
 import ReasoningPanel from "../panels/ReasoningPanel";
 import ToolsPanel from "../panels/ToolsPanel";
@@ -28,8 +29,7 @@ export default function BridgeZeroApp() {
           <div className="brand-sub">Bridge Zero</div>
         </div>
         <div className="bridge-status">
-          Epoch VIII | LINK: {connectionState}{stale ? " | DATA: STALE" : " | DATA: LIVE"}
-        </div>
+          Epoch IX | VERSION 0.2.0 | LINK: {connectionState}{stale ? " | DATA: STALE" : " | DATA: LIVE"}        </div>
       </header>
 
       <SignalBus subsystems={subsystems} activeSubsystem={bridge.busActive} />
@@ -52,6 +52,7 @@ export default function BridgeZeroApp() {
         </section>
 
         <section className="bridge-column-right">
+          <ModelControlPanel accent="#7aa8c8" data={bridge.modelControl} />
           <VersionPlate metadata={metadata} />
           <ChroniclePanel
             accent="#7c8d9a"

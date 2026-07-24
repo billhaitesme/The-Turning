@@ -175,6 +175,16 @@ export function useBridgeData() {
   const [planning, setPlanning] = useState({ state: "INITIALIZING", activeGoal: "none", nextAction: "none", steps: [], activity_at: null });
   const [deliberation, setDeliberation] = useState({ state: "INITIALIZING", recommendation: "none", approvalState: "pending", alternatives: [], activity_at: null });
   const [tools, setTools] = useState({ state: "INITIALIZING", tools: [], currentActivity: "idle", executionEnabled: false, timeline: [], last_poll_at: null, activity_at: null });
+  const [modelControl, setModelControl] = useState({
+    state: "INITIALIZING",
+    activeModel: "unknown",
+    modelLock: true,
+    topicRouting: false,
+    secondaryRewrite: false,
+    automaticFallback: false,
+    userSelected: false,
+    activity_at: null,
+  });
 
   const [connection, setConnection] = useState({
     state: "INITIALIZING",
@@ -335,6 +345,8 @@ export function useBridgeData() {
       const stale = false;
 
       const statusPayload = statusRes.payload || {};
+      const modelPayload = statusPayload.model_control || {};
+      const hasModelControl = Boolean(statusPayload.model_control);
       const toolsPayload = toolsRes.payload || {};
       const plansPayload = plansRes.payload || {};
       const decisionsPayload = decisionsRes.payload || {};
@@ -357,6 +369,18 @@ export function useBridgeData() {
 
       const toolTimeline = buildToolTimeline(toolsPayload, decisionsPayload);
       const connected = true;
+
+      setModelControl((prev) => ({
+        ...prev,
+        state: inferSubsystemState(connected, stale, !statusRes.ok || !hasModelControl),
+        activeModel: modelPayload.active_model || prev.activeModel,
+        modelLock: hasModelControl ? Boolean(modelPayload.model_lock) : prev.modelLock,
+        topicRouting: hasModelControl ? Boolean(modelPayload.topic_routing) : prev.topicRouting,
+        secondaryRewrite: hasModelControl ? Boolean(modelPayload.secondary_rewrite) : prev.secondaryRewrite,
+        automaticFallback: hasModelControl ? Boolean(modelPayload.automatic_fallback) : prev.automaticFallback,
+        userSelected: hasModelControl ? Boolean(modelPayload.user_selected) : prev.userSelected,
+        activity_at: now,
+      }));
 
       const identityPayload = {
         user: "operator",
@@ -494,7 +518,7 @@ export function useBridgeData() {
   }, []);
 
   const chronicleRecord = useMemo(() => {
-    return epochRecords.find((item) => item.epoch.includes("VIII")) || null;
+    return epochRecords.find((item) => item.epoch.includes("IX")) || null;
   }, []);
 
   return {
@@ -505,6 +529,7 @@ export function useBridgeData() {
     planning,
     deliberation,
     tools,
+    modelControl,
     busActive,
     connection,
     activityMap,

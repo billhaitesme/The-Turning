@@ -3,6 +3,7 @@ import "./App.css";
 
 const API_BASE = "http://127.0.0.1:8001";
 const ASSISTANT_NAME = "0M3-G4-ARC";
+const DIRECT_MODEL = "dolphin-mixtral:8x7b";
 const ACTIVE_ADAPTERS = {
   backend_health_check: "A-001",
   git_status: "A-002",
@@ -423,8 +424,7 @@ function ChroniclePlate({ lastResult }) {
   return (
     <div className={`chronicle-plate chronicle-${arrivalPhase}`}>
       <div>SYSTEM CHRONICLE</div>
-      <div>Epoch VIII-A</div>
-      <div>First Trusted Runtime Observation</div>
+      <div>Epoch IX-A</div>      <div>First Trusted Runtime Observation</div>
       <div>Verified: Backend Health</div>
       <div>Method: Approved Local Adapter</div>
       <div>Result: {lastResult?.output?.status_code ? `HTTP ${lastResult.output.status_code}` : "--"}</div>
@@ -698,6 +698,7 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState("");
+  const [conversationMode, setConversationMode] = useState("runtime");
   const [status, setStatus] = useState("STANDBY");
   const [learning, setLearning] = useState(null);
   const [confidence, setConfidence] = useState(null);
@@ -1048,11 +1049,15 @@ export default function App() {
     const userMsg = message;
     setMessages((prev) => [...prev, { role: "USER", content: userMsg }]);
     setMessage("");
-    setStatus("CHANNEL OPEN");
-    setCurrentPhase("guide");
-    setCognitiveStage("RECEIVING");
-    setLastCognitiveActivityAt(Date.now());
-    startBusPulseSequence();
+    setStatus(conversationMode === "direct" ? "DIRECT MODEL" : "CHANNEL OPEN");
+    if (conversationMode === "direct") {
+      setCurrentPhase("none");
+    } else {
+      setCurrentPhase("guide");
+      setCognitiveStage("RECEIVING");
+      setLastCognitiveActivityAt(Date.now());
+      startBusPulseSequence();
+    }
 
     try {
       const res = await fetch(`${API_BASE}/chat`, {
@@ -1062,6 +1067,7 @@ export default function App() {
           conversation_id: conversationId,
           user_id: "demo",
           message: userMsg,
+          mode: conversationMode,
         }),
       });
 
@@ -1070,10 +1076,10 @@ export default function App() {
       }
 
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: ASSISTANT_NAME, content: data.reply }]);
+      setMessages((prev) => [...prev, { role: conversationMode === "direct" ? DIRECT_MODEL : ASSISTANT_NAME, content: data.reply }]);
       setLearning(data.learning || null);
-      setStatus("LINK ESTABLISHED");
-      setCurrentPhase("silence");
+      setStatus(conversationMode === "direct" ? "DIRECT COMPLETE" : "LINK ESTABLISHED");
+      setCurrentPhase(conversationMode === "direct" ? "none" : "silence");
     } catch (err) {
       setStatus(`WARNING: ${err.message}`);
       setCurrentPhase("none");
@@ -1094,12 +1100,16 @@ export default function App() {
     const userMsg = message;
     setMessages((prev) => [...prev, { role: "USER", content: userMsg }]);
     setMessage("");
-    setStatus("CHANNEL OPEN");
+    setStatus(conversationMode === "direct" ? "DIRECT MODEL" : "CHANNEL OPEN");
     setIsStreaming(true);
-    setCurrentPhase("whisper");
-    setCognitiveStage("RECEIVING");
-    setLastCognitiveActivityAt(Date.now());
-    startBusPulseSequence();
+    if (conversationMode === "direct") {
+      setCurrentPhase("none");
+    } else {
+      setCurrentPhase("whisper");
+      setCognitiveStage("RECEIVING");
+      setLastCognitiveActivityAt(Date.now());
+      startBusPulseSequence();
+    }
     setLiveMemoryHits([]);
     setWebHits([]);
 
@@ -1111,6 +1121,7 @@ export default function App() {
           conversation_id: conversationId,
           user_id: "demo",
           message: userMsg,
+          mode: conversationMode,
         }),
       });
 
@@ -1120,7 +1131,8 @@ export default function App() {
 
       let assistantText = "";
       let streamEnded = false;
-      setMessages((prev) => [...prev, { role: ASSISTANT_NAME, content: "" }]);
+      const responseRole = conversationMode === "direct" ? DIRECT_MODEL : ASSISTANT_NAME;
+      setMessages((prev) => [...prev, { role: responseRole, content: "" }]);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -1147,7 +1159,7 @@ export default function App() {
             assistantText += payload.text || "";
             setMessages((prev) => {
               const next = [...prev];
-              next[next.length - 1] = { role: ASSISTANT_NAME, content: assistantText };
+              next[next.length - 1] = { role: responseRole, content: assistantText };
               return next;
             });
           } else if (payload.type === "learning") {
@@ -1155,9 +1167,11 @@ export default function App() {
           } else if (payload.type === "confidence") {
             setConfidence(payload.data);
           } else if (payload.type === "done") {
-            setStatus("STREAM COMPLETE");
-            setCurrentPhase("silence");
+            setStatus(conversationMode === "direct" ? "DIRECT COMPLETE" : "STREAM COMPLETE");
+            setCurrentPhase(conversationMode === "direct" ? "none" : "silence");
             playAudioCue("completion");
+          } else if (payload.type === "mode" && payload.name === "direct") {
+            setStatus(`DIRECT // ${payload.model || DIRECT_MODEL}`);
           } else if (payload.type === "end") {
             streamEnded = true;
           } else if (payload.type === "error") {
@@ -1551,15 +1565,13 @@ export default function App() {
         <div className="identity-plate">
           <h1>OMEGA-ARC</h1>
           <h2>BRIDGE ZERO</h2>
-          <div className="epoch-line">EPOCH VIII // COMMAND DECK</div>
-          <StatusLamp status={bootReady ? (coreRuntimeState === "OPERATIONAL" ? "OPERATIONAL" : "WARNING") : "BOOTING"} pulse={!!runtime.busPulse.systemStatus || scanBurst || !bootReady} />
+          <div className="epoch-line">EPOCH IX // COMMAND DECK</div>          <StatusLamp status={bootReady ? (coreRuntimeState === "OPERATIONAL" ? "OPERATIONAL" : "WARNING") : "BOOTING"} pulse={!!runtime.busPulse.systemStatus || scanBurst || !bootReady} />
         </div>
         <div className="build-plate">
           <SystemBadge label="Core Runtime" value={coreRuntimeState} />
           <SystemBadge label="Power State" value={powerState} />
           <SystemBadge label="Phase" value={phaseLabel(currentPhase)} />
-          <SystemBadge label="Build" value={runtime.systemStatus?.version || "v1.0.0"} />
-          <SystemBadge label="Branch" value={runtime.systemStatus?.branch || "feature/epoch8-tools"} />
+          <SystemBadge label="Build" value={runtime.systemStatus?.version || "v0.2.0"} />          <SystemBadge label="Branch" value={runtime.systemStatus?.branch || "feature/epoch8-tools"} />
           <SystemBadge label="Tag" value={runtime.systemStatus?.tag || "epoch-8a-trusted-diagnostics"} />
           <SystemBadge label="Tests" value={runtime.systemStatus?.tests_run || "310"} />
           <SystemBadge label="Active Adapters" value={runtime.tools.length} />
@@ -1764,6 +1776,29 @@ export default function App() {
             <div className={`comm-plates ${consoleLive ? "is-live" : ""}`}>
               <small>COMM CHANNEL // BZ-COMM-01</small>
               <small>SYNC {runtime.telemetry.endpoint_up}/{runtime.telemetry.endpoint_total} // LAT {runtime.telemetry.poll_ms}ms // CRC OK</small>
+            </div>
+            <div className={`conversation-mode ${conversationMode === "direct" ? "is-direct" : ""}`}>
+              <div className="conversation-mode-buttons" role="group" aria-label="Conversation mode">
+                <button
+                  className={conversationMode === "runtime" ? "is-active" : ""}
+                  onClick={() => setConversationMode("runtime")}
+                  disabled={isStreaming}
+                >
+                  Runtime
+                </button>
+                <button
+                  className={conversationMode === "direct" ? "is-active" : ""}
+                  onClick={() => setConversationMode("direct")}
+                  disabled={isStreaming}
+                >
+                  Direct Model
+                </button>
+              </div>
+              <small>
+                {conversationMode === "direct"
+                  ? `PINNED ${DIRECT_MODEL} // RAW HISTORY + INPUT // NO PROMPT, MEMORY, WEB, COGNITION, REASONING, PLANNING, OR LEARNING`
+                  : "OMEGA-ARC RUNTIME // DETERMINISTIC SUBSYSTEMS ACTIVE"}
+              </small>
             </div>
             <div className="console-buttons console-buttons-live">
               <button onClick={createConversation}>Create Conversation</button>
