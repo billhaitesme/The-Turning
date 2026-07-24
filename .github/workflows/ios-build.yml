@@ -33,6 +33,18 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v4
 
+      # The Homebrew XcodeGen generates a project in the newest Xcode file format
+      # (objectVersion 77 = Xcode 16+). The runner may default to an older Xcode
+      # (e.g. 15.4) that cannot read it, so pin to the newest Xcode installed.
+      - name: Select the newest installed Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$LATEST" ]; then
+            echo "No Xcode_*.app found under /Applications"; ls -d /Applications/Xcode* || true; exit 1
+          fi
+          echo "Selecting $LATEST"
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+
       - name: Record toolchain versions
         run: |
           echo "--- Xcode ---"
