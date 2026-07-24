@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "epoch": "Epoch IX",
+  "colors": {
+    "void": "#071016",
+    "panel": "#0E171D",
+    "raised": "#15232B",
+    "signal": "#38D1E8",
+    "nominal": "#57D492",
+    "warning": "#F2AD40",
+    "failure": "#F05252",
+    "separator": "#24333C"
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24
+  },
+  "radii": {
+    "badge": 6,
+    "control": 8,
+    "card": 12
+  },
+  "typography": {
+    "display": { "size": 34, "weight": "bold", "tracking": 2 },
+    "title": { "size": 22, "weight": "bold", "tracking": 1.5 },
+    "body": { "size": 16, "weight": "regular", "tracking": 0 },
+    "label": { "size": 12, "weight": "semibold", "tracking": 1.4 },
+    "metric": { "size": 16, "weight": "regular", "family": "monospace" }
+  },
+  "status": {
+    "online": "nominal",
+    "healthy": "nominal",
+    "streaming": "signal",
+    "degraded": "warning",
+    "locked": "warning",
+    "offline": "failure",
+    "unavailable": "separator"
+  }
+}

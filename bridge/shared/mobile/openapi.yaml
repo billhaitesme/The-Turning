@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: OMEGA-ARC Mobile Operator API
+  version: 0.2.0
+servers:
+  - url: /api/mobile/v1
+security:
+  - bearerAuth: []
+paths:
+  /compatibility:
+    get:
+      responses:
+        '200': { description: Runtime, mobile, and API compatibility versions }
+  /status:
+    get:
+      responses:
+        '200': { description: Authoritative Core Runtime and Model Lock status }
+  /diagnostics:
+    get:
+      responses:
+        '200': { description: Read-only subsystem diagnostics }
+  /conversations:
+    post:
+      responses:
+        '200': { description: New synchronized conversation }
+  /conversations/active:
+    get:
+      responses:
+        '200': { description: Most recently active runtime conversation }
+        '404': { description: No conversation exists }
+  /conversations/{conversationId}:
+    get:
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Conversation history }
+  /conversations/{conversationId}/messages:
+    post:
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, client_message_id]
+              properties:
+                content: { type: string, minLength: 1 }
+                client_message_id: { type: string }
+      responses:
+        '200':
+          description: Existing OMEGA-ARC SSE stream (phase, delta, learning, confidence, end, or error payloads)
+          content:
+            text/event-stream:
+              schema: { type: string }
+  /telemetry:
+    get:
+      summary: Read a measured runtime snapshot
+      responses:
+        '200':
+          description: CPU, memory, streaming, queue, session, client, and Chronicle telemetry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeTelemetry'
+  /events:
+    get:
+      summary: Subscribe to typed runtime events
+      responses:
+        '200':
+          description: Typed telemetry, status, diagnostics, streaming, session, and Chronicle events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Each SSE frame includes an event name and a JSON RuntimeEvent payload.
+  /chronicle:
+    get:
+      responses:
+        '200': { description: Chronicle entries }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    RuntimeTelemetry:
+      type: object
+      required:
+        - observed_at
+        - uptime_seconds
+        - streaming_state
+        - tool_queue
+        - connected_clients
+        - active_streams
+        - chronicle_events
+      properties:
+        observed_at: { type: string, format: date-time }
+        uptime_seconds: { type: integer, minimum: 0 }
+        cpu_percent: { type: [number, 'null'] }
+        ram_used_bytes: { type: [integer, 'null'] }
+        ram_total_bytes: { type: [integer, 'null'] }
+        streaming_state: { type: string, enum: [idle, streaming] }
+        current_session: { type: [string, 'null'] }
+        latency_ms: { type: [number, 'null'] }
+        tool_queue: { type: integer, minimum: 0 }
+        connected_clients: { type: integer, minimum: 0 }
+        active_streams: { type: integer, minimum: 0 }
+        chronicle_events: { type: integer, minimum: 0 }
+    RuntimeEvent:
+      type: object
+      required: [event_id, type, occurred_at, payload]
+      properties:
+        event_id: { type: string }
+        type:
+          type: string
+          enum: [telemetry, status, diagnostics, streaming, session, chronicle]
+        occurred_at: { type: string, format: date-time }
+        payload:
+          type: object
+          additionalProperties: true
