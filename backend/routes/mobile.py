@@ -168,7 +168,7 @@ def build_mobile_diagnostics() -> dict[str, Any]:
     return {
         "identity": _diagnostic("healthy", "Core identity engine available"),
         "evidence": _diagnostic(
-            "healthy" if _has_records(evidence, "evidence") else "inactive",
+            "healthy" if _has_records(evidence, "facts") else "inactive",
             "Evidence store loaded",
         ),
         "planning": _diagnostic(
@@ -176,7 +176,7 @@ def build_mobile_diagnostics() -> dict[str, Any]:
             "Planning stores loaded",
         ),
         "deliberation": _diagnostic(
-            "healthy" if bool(approvals) else "inactive",
+            "healthy" if _has_records(approvals, "approvals") else "inactive",
             "Approval store loaded",
         ),
         "tool_state": _diagnostic(

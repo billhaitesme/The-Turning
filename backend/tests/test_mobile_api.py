@@ -106,6 +106,40 @@ def test_active_conversation_maps_runtime_roles(monkeypatch, tmp_path):
     assert response.json()["messages"][0]["role"] == "runtime"
 
 
+def test_evidence_diagnostic_tracks_facts(monkeypatch, tmp_path):
+    client = build_client(monkeypatch, tmp_path)
+    import routes.mobile as mobile
+
+    monkeypatch.setattr(mobile, "load_evidence_store", lambda *a, **k: {"version": 1, "facts": {}})
+    empty = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
+    assert empty["evidence"]["state"] == "inactive"
+
+    # Regression: records live under "facts"; the diagnostic previously checked a
+    # non-existent "evidence" key and could never report healthy.
+    monkeypatch.setattr(
+        mobile, "load_evidence_store", lambda *a, **k: {"version": 1, "facts": {"f1": {"claim": "x"}}}
+    )
+    loaded = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
+    assert loaded["evidence"]["state"] == "healthy"
+
+
+def test_deliberation_diagnostic_tracks_approvals(monkeypatch, tmp_path):
+    client = build_client(monkeypatch, tmp_path)
+    import routes.mobile as mobile
+
+    # Regression: the store dict is always non-empty (version/approvals keys), so
+    # bool(store) reported healthy even with zero approvals. Empty must be inactive.
+    monkeypatch.setattr(mobile, "load_approval_store", lambda *a, **k: {"version": 1, "approvals": {}})
+    empty = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
+    assert empty["deliberation"]["state"] == "inactive"
+
+    monkeypatch.setattr(
+        mobile, "load_approval_store", lambda *a, **k: {"version": 1, "approvals": {"a1": {"status": "pending"}}}
+    )
+    loaded = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
+    assert loaded["deliberation"]["state"] == "healthy"
+
+
 def test_stream_reuses_authoritative_runtime_stream(monkeypatch, tmp_path):
     response = build_client(monkeypatch, tmp_path).post(
         "/api/mobile/v1/conversations/active/messages",
