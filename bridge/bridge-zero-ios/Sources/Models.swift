@@ -10,11 +10,18 @@ struct Compatibility: Codable, Equatable {
 struct RuntimeStatus: Codable, Equatable {
     let online: Bool
     let currentModel: String?
+    let availableModels: [String]?
     let modelLock: Bool
     let uptimeSeconds: Int
     let latencyMs: Double
     let version: String
     let chronicleCount: Int
+}
+
+struct ModelState: Codable, Equatable {
+    let currentModel: String?
+    let availableModels: [String]?
+    let modelLock: Bool
 }
 
 struct RuntimeTelemetry: Codable, Equatable {

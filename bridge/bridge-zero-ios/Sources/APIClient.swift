@@ -172,6 +172,14 @@ actor RuntimeAPIClient {
         }
     }
 
+    func selectModel(_ model: String) async throws -> ModelState {
+        var request = self.request("api/mobile/v1/model", method: "POST")
+        request.httpBody = try encoder.encode(["model": model])
+        let (data, response) = try await session.data(for: request)
+        try Self.validate(response)
+        return try decoder.decode(ModelState.self, from: data)
+    }
+
     private func get<T: Decodable>(_ path: String) async throws -> T {
         let (data, response) = try await session.data(for: request(path))
         try Self.validate(response)

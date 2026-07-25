@@ -15,7 +15,16 @@ struct SettingsView: View {
                 }
             }
             Section("Runtime") {
-                LabeledContent("Model", value: state.runtimeStatus?.currentModel ?? "Unavailable")
+                if let models = state.runtimeStatus?.availableModels, !models.isEmpty {
+                    Picker("Model", selection: Binding(
+                        get: { state.runtimeStatus?.currentModel ?? "" },
+                        set: { state.selectModel($0) }
+                    )) {
+                        ForEach(models, id: \.self) { Text($0).tag($0) }
+                    }
+                } else {
+                    LabeledContent("Model", value: state.runtimeStatus?.currentModel ?? "Unavailable")
+                }
                 LabeledContent("Model Lock", value: state.runtimeStatus?.modelLock == true ? "Engaged" : "Unavailable")
                 LabeledContent("Runtime Version", value: state.runtimeStatus?.version ?? "Unavailable")
                 LabeledContent("Mobile Version", value: MobileVersion.current)

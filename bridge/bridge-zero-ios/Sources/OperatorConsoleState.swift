@@ -120,6 +120,30 @@ final class OperatorConsoleState: ObservableObject {
         }
     }
 
+    func selectModel(_ model: String) {
+        guard let api, isConnected, model != runtimeStatus?.currentModel else { return }
+        Task {
+            do {
+                let result = try await api.selectModel(model)
+                if let status = runtimeStatus {
+                    runtimeStatus = RuntimeStatus(
+                        online: status.online,
+                        currentModel: result.currentModel,
+                        availableModels: result.availableModels ?? status.availableModels,
+                        modelLock: status.modelLock,
+                        uptimeSeconds: status.uptimeSeconds,
+                        latencyMs: status.latencyMs,
+                        version: status.version,
+                        chronicleCount: status.chronicleCount
+                    )
+                }
+                appendLog("Active model set to \(result.currentModel ?? model)")
+            } catch {
+                appendLog("Model switch unavailable: \(safeDescription(error))")
+            }
+        }
+    }
+
     func sendMessage() {
         let content = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty, let api, let conversation, streamTask == nil, isConnected else { return }
