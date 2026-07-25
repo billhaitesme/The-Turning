@@ -62,6 +62,23 @@ class ModelControl:
             self._user_selected = user_selected
             return self._active_model
 
+    def available_models(self) -> list[str]:
+        """Selectable models, always including the current one so it can be shown."""
+        with self._lock:
+            allowed = list(settings.selectable_chat_models)
+            if self._active_model not in allowed:
+                allowed = [self._active_model, *allowed]
+            return allowed
+
+    def set_selected_model(self, model: str) -> str:
+        """Operator selection from a console. Enforces the allowlist, then applies
+        the change through set_active_model so Model Lock telemetry still records it."""
+        candidate = self._validate_model(model)
+        allowed = settings.selectable_chat_models
+        if allowed and candidate not in allowed:
+            raise ValueError(f"Model '{candidate}' is not in the selectable set.")
+        return self.set_active_model(candidate, user_selected=True)
+
     def parse_explicit_switch(self, message: str) -> Optional[str]:
         match = MODEL_SWITCH_PATTERN.fullmatch(str(message or ""))
         return self._validate_model(match.group("model")) if match else None
@@ -76,8 +93,12 @@ class ModelControl:
     def status(self) -> Dict[str, Any]:
         with self._lock:
             latest = asdict(self._telemetry[-1]) if self._telemetry else None
+            available = list(settings.selectable_chat_models)
+            if self._active_model not in available:
+                available = [self._active_model, *available]
             return {
                 "active_model": self._active_model,
+                "available_models": available,
                 "model_lock": settings.model_lock,
                 "topic_routing": settings.allow_topic_routing,
                 "secondary_rewrite": settings.allow_secondary_rewrite,

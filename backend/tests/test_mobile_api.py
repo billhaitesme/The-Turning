@@ -140,6 +140,30 @@ def test_deliberation_diagnostic_tracks_approvals(monkeypatch, tmp_path):
     assert loaded["deliberation"]["state"] == "healthy"
 
 
+def test_status_includes_available_models(monkeypatch, tmp_path):
+    response = build_client(monkeypatch, tmp_path).get("/api/mobile/v1/status", headers=auth())
+    assert response.status_code == 200
+    models = response.json()["available_models"]
+    assert isinstance(models, list) and "dolphin-mixtral:8x7b" in models
+
+
+def test_model_selector_switches_within_allowlist(monkeypatch, tmp_path):
+    client = build_client(monkeypatch, tmp_path)
+    import services.model_control as mc
+
+    try:
+        response = client.post("/api/mobile/v1/model", headers=auth(), json={"model": "llama3.1:8b"})
+        assert response.status_code == 200
+        assert response.json()["current_model"] == "llama3.1:8b"
+
+        # A model outside the allowlist is rejected — Model Lock's controlled set.
+        rejected = client.post("/api/mobile/v1/model", headers=auth(), json={"model": "gemma3:1b"})
+        assert rejected.status_code == 422
+    finally:
+        # Restore the default so the shared model_control singleton doesn't leak state.
+        mc.model_control.set_active_model("dolphin-mixtral:8x7b")
+
+
 def test_stream_reuses_authoritative_runtime_stream(monkeypatch, tmp_path):
     response = build_client(monkeypatch, tmp_path).post(
         "/api/mobile/v1/conversations/active/messages",

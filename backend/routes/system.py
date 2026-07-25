@@ -74,8 +74,10 @@ def get_model_control() -> Dict[str, Any]:
 
 @router.post("/model-control")
 def set_model_control(req: ActiveModelRequest) -> Dict[str, Any]:
+    # set_selected_model enforces the selectable allowlist and records the change
+    # through Model Lock telemetry as an explicit operator selection.
     try:
-        model_control.set_active_model(req.model)
+        model_control.set_selected_model(req.model)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return model_control.status()

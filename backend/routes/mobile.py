@@ -136,6 +136,35 @@ def runtime_status() -> dict[str, Any]:
     return build_runtime_status()
 
 
+class MobileModelRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=200)
+
+
+def _model_payload() -> dict[str, Any]:
+    control = model_control.status()
+    return {
+        "current_model": control.get("active_model"),
+        "available_models": control.get("available_models", []),
+        "model_lock": bool(control.get("model_lock")),
+    }
+
+
+@router.get("/model")
+def runtime_model() -> dict[str, Any]:
+    return _model_payload()
+
+
+@router.post("/model")
+def set_runtime_model(request: MobileModelRequest) -> dict[str, Any]:
+    # Explicit operator selection from the mobile console. Enforces the selectable
+    # allowlist and records the change through Model Lock telemetry.
+    try:
+        model_control.set_selected_model(request.model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _model_payload()
+
+
 def build_runtime_status() -> dict[str, Any]:
     started = time.perf_counter()
     control = model_control.status()
@@ -143,6 +172,7 @@ def build_runtime_status() -> dict[str, Any]:
     return {
         "online": True,
         "current_model": control.get("active_model"),
+        "available_models": control.get("available_models", []),
         "model_lock": bool(control.get("model_lock")),
         "uptime_seconds": max(0, int(time.monotonic() - PROCESS_STARTED_AT)),
         "latency_ms": round((time.perf_counter() - started) * 1000, 3),

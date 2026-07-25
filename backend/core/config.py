@@ -12,6 +12,17 @@ class Settings:
     active_chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
     # Backwards-compatible name for integrations that still read chat_model.
     chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    # Curated set of conversational models an operator may select from the consoles.
+    # The selector enforces this allowlist so an operator cannot pick an unavailable
+    # model and trip the provider-substitution guard. Empty disables enforcement.
+    selectable_chat_models: tuple = tuple(
+        model.strip()
+        for model in os.getenv(
+            "SELECTABLE_CHAT_MODELS",
+            "dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
+        ).split(",")
+        if model.strip()
+    )
     reasoning_model: str = os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b")
     vision_model: str = os.getenv("OLLAMA_VISION_MODEL", "llava:7b")
     router_model: str = os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b")
