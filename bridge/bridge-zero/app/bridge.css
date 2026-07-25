@@ -282,6 +282,21 @@ body,
   overflow-wrap: anywhere;
 }
 
+.model-control-select {
+  color: #b7d8ed;
+  background: #15232b;
+  border: 1px solid var(--border-main);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.model-control-select:focus {
+  outline: 1px solid #7aa8c8;
+}
+
 .system-badge {
   padding: 8px;
 }

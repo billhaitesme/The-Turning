@@ -178,6 +178,7 @@ export function useBridgeData() {
   const [modelControl, setModelControl] = useState({
     state: "INITIALIZING",
     activeModel: "unknown",
+    availableModels: [],
     modelLock: true,
     topicRouting: false,
     secondaryRewrite: false,
@@ -374,6 +375,10 @@ export function useBridgeData() {
         ...prev,
         state: inferSubsystemState(connected, stale, !statusRes.ok || !hasModelControl),
         activeModel: modelPayload.active_model || prev.activeModel,
+        availableModels:
+          Array.isArray(modelPayload.available_models) && modelPayload.available_models.length
+            ? modelPayload.available_models
+            : prev.availableModels,
         modelLock: hasModelControl ? Boolean(modelPayload.model_lock) : prev.modelLock,
         topicRouting: hasModelControl ? Boolean(modelPayload.topic_routing) : prev.topicRouting,
         secondaryRewrite: hasModelControl ? Boolean(modelPayload.secondary_rewrite) : prev.secondaryRewrite,
@@ -521,6 +526,34 @@ export function useBridgeData() {
     return epochRecords.find((item) => item.epoch.includes("IX")) || null;
   }, []);
 
+  const selectModel = async (model) => {
+    // Explicit operator model selection. POSTs to the runtime's model-control
+    // endpoint, which enforces the allowlist and records the change under Model
+    // Lock. Local state updates optimistically; the next poll reconciles.
+    if (!model || model === modelControl.activeModel) return;
+    try {
+      const response = await fetch(`${API_BASE}/system/model-control`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model }),
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      setModelControl((prev) => ({
+        ...prev,
+        activeModel: payload.active_model || prev.activeModel,
+        availableModels:
+          Array.isArray(payload.available_models) && payload.available_models.length
+            ? payload.available_models
+            : prev.availableModels,
+        userSelected: Boolean(payload.user_selected),
+        activity_at: nowIso(),
+      }));
+    } catch (error) {
+      // Leave state unchanged on failure; the next poll reconciles.
+    }
+  };
+
   return {
     conversation,
     identity,
@@ -530,6 +563,7 @@ export function useBridgeData() {
     deliberation,
     tools,
     modelControl,
+    selectModel,
     busActive,
     connection,
     activityMap,

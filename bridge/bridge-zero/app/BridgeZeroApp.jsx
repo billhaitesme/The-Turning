@@ -52,7 +52,7 @@ export default function BridgeZeroApp() {
         </section>
 
         <section className="bridge-column-right">
-          <ModelControlPanel accent="#7aa8c8" data={bridge.modelControl} />
+          <ModelControlPanel accent="#7aa8c8" data={bridge.modelControl} onSelect={bridge.selectModel} />
           <VersionPlate metadata={metadata} />
           <ChroniclePanel
             accent="#7c8d9a"

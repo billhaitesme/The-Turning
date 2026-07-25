@@ -6,7 +6,10 @@ function enabledLabel(value, enabled, disabled) {
   return value ? enabled : disabled;
 }
 
-export default function ModelControlPanel({ accent, data }) {
+export default function ModelControlPanel({ accent, data, onSelect }) {
+  const options = Array.isArray(data.availableModels) ? data.availableModels : [];
+  const canSelect = typeof onSelect === "function" && options.length > 0;
+
   return (
     <PanelShell
       title="Model Control"
@@ -16,7 +19,22 @@ export default function ModelControlPanel({ accent, data }) {
     >
       <div className="model-control-active">
         <span>ACTIVE MODEL</span>
-        <strong>{data.activeModel || "Unknown"}</strong>
+        {canSelect ? (
+          <select
+            className="model-control-select"
+            value={data.activeModel || ""}
+            onChange={(event) => onSelect(event.target.value)}
+            aria-label="Active conversational model"
+          >
+            {options.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <strong>{data.activeModel || "Unknown"}</strong>
+        )}
       </div>
       <div className="badge-grid">
         <SystemBadge label="Model Lock" value={enabledLabel(data.modelLock, "ENGAGED", "DISENGAGED")} />
