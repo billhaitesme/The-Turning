@@ -158,6 +158,28 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun selectModel(model: String) {
+        val client = api ?: return
+        if (model.isBlank() || model == mutableState.value.status?.currentModel) return
+        viewModelScope.launch {
+            try {
+                val result = client.selectModel(model)
+                mutableState.update { current ->
+                    val existing = current.status
+                    current.copy(
+                        status = existing?.copy(
+                            currentModel = result.currentModel,
+                            availableModels = result.availableModels ?: existing.availableModels,
+                        )
+                    )
+                }
+                log("Active model set to ${result.currentModel}")
+            } catch (error: Exception) {
+                log("Model switch failed: ${safeMessage(error)}")
+            }
+        }
+    }
+
     fun disconnect(clearCredentials: Boolean = true) {
         eventStream?.cancel()
         streaming?.cancel()

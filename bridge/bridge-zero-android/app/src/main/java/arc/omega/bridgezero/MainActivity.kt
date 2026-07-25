@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -335,7 +336,14 @@ private fun SettingsScreen(state: OperatorUiState, viewModel: OperatorViewModel)
     var showLogs by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().background(Void).padding(BridgeDesign.Spacing.Lg), verticalArrangement = Arrangement.spacedBy(BridgeDesign.Spacing.Md)) {
         item { InstrumentPanel("CONNECTION") { Metric("Server", state.server); Metric("Authentication", if (state.hasToken) "ENCRYPTED" else "NOT STORED") } }
-        item { InstrumentPanel("MODEL INFORMATION") { Metric("Model", state.status?.currentModel ?: "UNAVAILABLE"); Metric("Model Lock", if (state.status?.modelLock == true) "ENGAGED" else "UNAVAILABLE"); Metric("Runtime", state.status?.version ?: "UNAVAILABLE"); Metric("Mobile", MobileVersion.CURRENT) } }
+        item {
+            InstrumentPanel("MODEL INFORMATION") {
+                ModelSelector(state.status?.currentModel, state.status?.availableModels.orEmpty(), viewModel::selectModel)
+                Metric("Model Lock", if (state.status?.modelLock == true) "ENGAGED" else "UNAVAILABLE")
+                Metric("Runtime", state.status?.version ?: "UNAVAILABLE")
+                Metric("Mobile", MobileVersion.CURRENT)
+            }
+        }
         item {
             InstrumentPanel("ARCHIVE") {
                 OutlinedButton(onClick = { showChronicle = !showChronicle }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Book, null); Text("  CHRONICLE") }
@@ -370,6 +378,32 @@ private fun InstrumentPanel(title: String, content: @Composable ColumnScope.() -
 @Composable
 private fun Metric(label: String, value: String, color: Color = Color.White) {
     Row(Modifier.fillMaxWidth()) { Text(label, color = Color.Gray); Spacer(Modifier.weight(1f)); Text(value, color = color, fontFamily = FontFamily.Monospace) }
+}
+
+@Composable
+private fun ModelSelector(current: String?, models: List<String>, onSelect: (String) -> Unit) {
+    if (models.isEmpty()) {
+        Metric("Model", current ?: "UNAVAILABLE")
+        return
+    }
+    Text("ACTIVE MODEL", color = Color.Gray, fontFamily = FontFamily.Monospace)
+    models.forEach { model ->
+        val selected = model == current
+        Row(
+            Modifier.fillMaxWidth()
+                .background(
+                    if (selected) Signal.copy(alpha = 0.12f) else Color.Transparent,
+                    RoundedCornerShape(BridgeDesign.Radius.Control),
+                )
+                .clickable { onSelect(model) }
+                .padding(BridgeDesign.Spacing.Sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(model, color = if (selected) Signal else Color.White, fontFamily = FontFamily.Monospace)
+            Spacer(Modifier.weight(1f))
+            if (selected) Text("ACTIVE", color = Signal, fontFamily = FontFamily.Monospace)
+        }
+    }
 }
 
 @Composable

@@ -26,6 +26,7 @@ interface RuntimeService {
     @GET("api/mobile/v1/conversations/{id}") suspend fun conversation(@Path("id") id: String): Conversation
     @POST("api/mobile/v1/conversations") suspend fun createConversation(@Body request: ConversationRequest): Conversation
     @GET("api/mobile/v1/chronicle") suspend fun chronicle(): List<ChronicleEntry>
+    @POST("api/mobile/v1/model") suspend fun selectModel(@Body request: ModelSelection): ModelState
 
     @Streaming
     @Headers("Accept: text/event-stream")
@@ -46,6 +47,7 @@ class RuntimeApi private constructor(private val service: RuntimeService) {
     suspend fun createConversation() = service.createConversation(ConversationRequest())
     suspend fun conversation(id: String) = service.conversation(id)
     suspend fun chronicle() = service.chronicle()
+    suspend fun selectModel(model: String) = service.selectModel(ModelSelection(model))
 
     fun streamRuntimeEvents(emit: (RuntimeStoreEvent) -> Unit) {
         val response = service.runtimeEvents().execute()

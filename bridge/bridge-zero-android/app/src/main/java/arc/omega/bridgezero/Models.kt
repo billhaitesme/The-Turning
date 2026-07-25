@@ -11,11 +11,20 @@ data class Compatibility(
 data class RuntimeStatus(
     val online: Boolean,
     @SerializedName("current_model") val currentModel: String?,
+    @SerializedName("available_models") val availableModels: List<String>? = null,
     @SerializedName("model_lock") val modelLock: Boolean,
     @SerializedName("uptime_seconds") val uptimeSeconds: Long,
     @SerializedName("latency_ms") val latencyMs: Double,
     val version: String,
     @SerializedName("chronicle_count") val chronicleCount: Int,
+)
+
+data class ModelSelection(val model: String)
+
+data class ModelState(
+    @SerializedName("current_model") val currentModel: String?,
+    @SerializedName("available_models") val availableModels: List<String>? = null,
+    @SerializedName("model_lock") val modelLock: Boolean = true,
 )
 
 data class RuntimeTelemetry(
