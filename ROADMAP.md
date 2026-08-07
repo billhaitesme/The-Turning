@@ -61,10 +61,10 @@ Capability gaps, not defects, deliberately excluded from IX-B scope.
 
 - **In-app "New Conversation" control** — now implemented (see In progress above). The console no
   longer needs a relaunch to start a fresh conversation.
-- **No default/pre-filled server address.** Credentials persist across launches, but tapping
-  Disconnect clears both server and token, forcing full re-entry. IX-C should offer a debug-only
-  `buildConfigField` default (never a hardcoded LAN address in shared source) and/or retain the
-  non-secret server address while still clearing the token on disconnect.
+- **Server address on disconnect** — now retained. Disconnect clears only the bearer token; the
+  non-secret server address persists and pre-fills the login screen, so the operator no longer
+  re-types it. (A debug-only `buildConfigField` default remains possible later but is unnecessary
+  now.)
 
 ## Epoch IX-D — Command Console (future 0.2.x)
 
