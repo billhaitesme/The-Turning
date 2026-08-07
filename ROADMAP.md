@@ -62,4 +62,17 @@ Both are capability gaps, not defects, and are deliberately excluded from IX-B s
 
 Promote the operations surface into the full command console after IX-B telemetry and IX-C approval signals are authoritative. No IX-D behavior is active in IX-B.
 
+## Epoch X — Memory (future, scope not yet committed)
+
+Durable, scoped, benchmarked long-term memory. The substrate the learning pillar depends on. See
+[`docs/architecture/epoch-x-memory-and-retrieval.md`](docs/architecture/epoch-x-memory-and-retrieval.md).
+
+## Future — Tutelage and Learning (proposed, unscheduled)
+
+The epoch where OMEGA-ARC begins studying: a runtime-driven, review-gated study loop with two-tier
+learning (reversible memory + gated LoRA consolidation) and a recall benchmark so growth is measured.
+Sequenced after Epoch X — a learner must remember reliably first. See ADR
+[`0013-learning-and-tutelage.md`](docs/decisions/0013-learning-and-tutelage.md) and
+[`docs/architecture/epoch-tutelage-learning.md`](docs/architecture/epoch-tutelage-learning.md).
+
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.
