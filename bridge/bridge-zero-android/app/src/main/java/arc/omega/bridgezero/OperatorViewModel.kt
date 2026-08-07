@@ -109,6 +109,22 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun newConversation() {
+        val client = api ?: return
+        if (streaming != null) return
+        viewModelScope.launch {
+            try {
+                val conversation = client.createConversation()
+                mutableState.update {
+                    it.copy(conversation = conversation, streamingText = "", runtimePhase = null)
+                }
+                log("Started a new conversation")
+            } catch (error: Exception) {
+                log("Could not start a new conversation: ${safeMessage(error)}")
+            }
+        }
+    }
+
     fun sendMessage(content: String) {
         val client = api ?: return
         val conversation = mutableState.value.conversation ?: return

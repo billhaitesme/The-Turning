@@ -144,6 +144,21 @@ final class OperatorConsoleState: ObservableObject {
         }
     }
 
+    func newConversation() {
+        guard let api, isConnected, streamTask == nil else { return }
+        Task {
+            do {
+                let created = try await api.createConversation()
+                self.conversation = created
+                self.streamingText = ""
+                self.runtimePhase = nil
+                appendLog("Started a new conversation")
+            } catch {
+                appendLog("Could not start a new conversation: \(safeDescription(error))")
+            }
+        }
+    }
+
     func sendMessage() {
         let content = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty, let api, let conversation, streamTask == nil, isConnected else { return }

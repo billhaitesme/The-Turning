@@ -41,18 +41,18 @@ Push notifications, short-lived approval challenges, approve/deny flows, and bio
   `set_selected_model` → `set_active_model`, recorded in telemetry. Backend (344 tests) and Android
   (compiled + unit-tested) are validated; desktop is built; iOS awaits a CI compile and a device
   pass. Kept off the IX-B checkpoint branch so `epoch-ix-a` stays a clean IX-B baseline.
+- **New Conversation control.** An operator action on both mobile consoles (iOS toolbar, Android
+  composer) that creates a fresh conversation via `POST /api/mobile/v1/conversations` and rebinds
+  the console live, without a relaunch. Android compiled; iOS awaits a CI compile and device pass.
+  (Desktop Bridge Zero has no chat by design, so no control there.)
 
 ### Deferred operator-convenience items
 
 Discovered during IX-B physical-device validation (2026-07-23, moto g15 power / Android 15).
-Both are capability gaps, not defects, and are deliberately excluded from IX-B scope.
+Capability gaps, not defects, deliberately excluded from IX-B scope.
 
-- **No in-app "New Conversation" control.** The native console binds to whatever the runtime
-  reports as the active conversation (the most recently updated one). Starting a new conversation
-  currently requires `POST /api/mobile/v1/conversations` plus an app relaunch, because the client
-  resolves the active conversation only at connect time and session events publish only when a
-  stream begins. IX-C should provide an operator-initiated conversation action and a way to switch
-  the bound conversation without relaunching.
+- **In-app "New Conversation" control** — now implemented (see In progress above). The console no
+  longer needs a relaunch to start a fresh conversation.
 - **No default/pre-filled server address.** Credentials persist across launches, but tapping
   Disconnect clears both server and token, forcing full re-entry. IX-C should offer a debug-only
   `buildConfigField` default (never a hardcoded LAN address in shared source) and/or retain the

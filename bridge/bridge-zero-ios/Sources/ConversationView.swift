@@ -48,6 +48,13 @@ struct ConversationView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if state.isStreaming { ProgressView().accessibilityLabel("Runtime streaming") }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: state.newConversation) {
+                    Image(systemName: "square.and.pencil")
+                }
+                .disabled(state.isStreaming || !state.isConnected)
+                .accessibilityLabel("New conversation")
+            }
         }
     }
 }

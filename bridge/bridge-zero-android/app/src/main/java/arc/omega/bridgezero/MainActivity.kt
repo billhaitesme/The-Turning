@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -250,6 +251,10 @@ private fun ConversationScreen(state: OperatorUiState, viewModel: OperatorViewMo
         }
         Divider()
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = { viewModel.newConversation() },
+                enabled = state.connection == ConnectionState.Connected,
+            ) { Icon(Icons.Default.Add, "New conversation", tint = Nominal) }
             OutlinedTextField(
                 value = composer, onValueChange = { composer = it }, modifier = Modifier.weight(1f),
                 label = { Text("Operator command") }, maxLines = 5,
