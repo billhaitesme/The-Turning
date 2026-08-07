@@ -175,7 +175,25 @@ def main():
           '    <gradient android:type="linear" android:angle="270"\n'
           '        android:startColor="#0E171D" android:endColor="#05090C" />\n'
           '</shape>\n')
-    print("Regenerated iOS + Android icon assets and the shared master SVG.")
+
+    # Desktop Bridge Zero (web tab favicon + installable PWA / desktop icons)
+    pub = "bridge/bridge-zero/public"
+    write(f"{pub}/favicon.svg", master_svg(True))
+    for name, size in [("favicon-16.png", 16), ("favicon-32.png", 32),
+                       ("pwa-192.png", 192), ("pwa-512.png", 512)]:
+        write(f"{pub}/{name}", render_png(master_svg(True), size), binary=True)
+    # apple-touch-icon: full-bleed, alpha stripped (iOS/macOS mask their own corners)
+    at = Image.open(io.BytesIO(render_png(master_svg(False), 180))).convert("RGB")
+    b = io.BytesIO(); at.save(b, format="PNG")
+    write(f"{pub}/apple-touch-icon.png", b.getvalue(), binary=True)
+    write(f"{pub}/site.webmanifest", json.dumps({
+        "name": "OMEGA-ARC Bridge Zero", "short_name": "Bridge Zero",
+        "icons": [{"src": "/pwa-192.png", "sizes": "192x192", "type": "image/png"},
+                  {"src": "/pwa-512.png", "sizes": "512x512", "type": "image/png"}],
+        "theme_color": "#071016", "background_color": "#071016", "display": "standalone",
+    }, indent=2))
+
+    print("Regenerated iOS + Android + desktop icon assets and the shared master SVG.")
 
 if __name__ == "__main__":
     main()
