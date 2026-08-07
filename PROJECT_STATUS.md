@@ -6,11 +6,12 @@
 |---|---|
 | Last updated | 2026-08-07 |
 | Current epoch | Epoch IX |
-| Current version | 0.2.0 |
+| Current version | 0.2.1 |
 | Release line | 0.2.x |
 | Status | Active Development |
-| Current phase | IX-B complete — checkpoint tagged `epoch-ix-a`; IX-C in progress |
+| Current phase | IX-C released as **0.2.1** (tag `epoch-ix-c`), merged to `main` — with an Android on-device validation exception |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
+| IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
 | Theme | “The Runtime Becomes Visible” |
 
 ## Completed
@@ -44,20 +45,24 @@ for the full before/after.
 
 IX-C (Operator Actions) continues on `feature/epoch-ix-c-model-selector` from this baseline.
 
-## Epoch IX-C progress — 2026-08-07
+## Epoch IX-C — released as 0.2.1 (2026-08-07)
 
-Operator Actions are building on `feature/epoch-ix-c-model-selector` (52 commits ahead of `main`),
-backend suite **345 passing**, hermetic. No IX-C behavior is present in the `epoch-ix-a` checkpoint;
-the branch is kept off that baseline.
+Operator Actions shipped from `feature/epoch-ix-c-model-selector`, tagged **`epoch-ix-c`** and merged
+to `main`. Backend suite **345 passing**, hermetic. Built on the `epoch-ix-a` baseline (no IX-C
+behavior is present in that checkpoint).
 
 - ✓ Operator **model selector** — allowlisted, Model-Lock-recorded; backend, desktop, iOS, Android
 - ✓ In-app **New Conversation** control on both mobile consoles
 - ✓ **Operator approvals** with on-device biometric — iOS approve→Face ID validated on a physical
-  iPhone (2026-08-07); **Android device pass owed**; push delivery (APNs/FCM) infra-blocked
+  iPhone (2026-08-07); push delivery (APNs/FCM) infra-blocked
 - ✓ **App icon** (fisheye Aurebesh `0M3-G4`) on iOS, Android, and the desktop tab / PWA; desktop
-  **Aurebesh Utility** now renders real OFL glyphs; branded Windows launcher shortcut. **On-device
-  icon confirmation owed** on the next iOS re-sideload and Android reinstall
+  **Aurebesh Utility** renders real OFL glyphs; branded Windows launcher shortcut
 - ✓ iOS console: keyboard-dismiss fix and "Console" rename
+
+> **Release exception (owed):** the **Android** approve/deny biometric round-trip was **not** run on
+> hardware before this release, by the release owner's decision to keep momentum toward Epoch X. Run
+> it and record the result here; until then, Android operator-approvals are unverified on-device. The
+> Android debug APK is built at `bridge/bridge-zero-android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Native Device Validation Gate
 

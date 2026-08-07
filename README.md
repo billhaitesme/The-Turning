@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch IX / Version 0.2.0
+**Current release:** Epoch IX / Version 0.2.1
 **Active series:** Version 0.2.x
-**Active milestone:** Epoch IX-C — Operator Actions (IX-B complete, tagged `epoch-ix-a`)
+**Active milestone:** Epoch IX-C — Operator Actions (released as 0.2.1, tagged `epoch-ix-c`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch IX / 0.2.0 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch IX / 0.2.0 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch IX / 0.2.0 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch IX / 0.2.0 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch IX / 0.2.0 |
+| Core Runtime | `backend/` | Epoch IX / 0.2.1 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch IX / 0.2.1 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch IX / 0.2.1 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch IX / 0.2.1 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch IX / 0.2.1 |
 
 ## Epoch IX
 
@@ -37,7 +37,7 @@ Epoch IX-A established authenticated native operator consoles, synchronized conv
 
 Epoch IX-B is complete and tagged `epoch-ix-a`. It introduced an authoritative RuntimeStore, typed runtime events, an event bus, live telemetry, an Operations Dashboard, and shared design tokens.
 
-Epoch IX-C (Operator Actions) is in progress on `feature/epoch-ix-c-model-selector`: an allowlisted operator model selector, an in-app New Conversation control, and operator approvals with on-device biometric confirmation (iOS Face ID, Android BiometricPrompt). It also adds the OMEGA-ARC app icon across iOS, Android, and the desktop browser tab / PWA, and a real Aurebesh utility rendered from a bundled OFL font. IX-D command-console evolution remains future work.
+Epoch IX-C (Operator Actions) shipped as **0.2.1** (tagged `epoch-ix-c`): an allowlisted operator model selector, an in-app New Conversation control, and operator approvals with on-device biometric confirmation (iOS Face ID, Android BiometricPrompt). It also adds the OMEGA-ARC app icon across iOS, Android, and the desktop browser tab / PWA, and a real Aurebesh utility rendered from a bundled OFL font. It shipped with a documented **Android on-device validation exception** (owed as a follow-up; iOS was validated on hardware). IX-D command-console evolution remains future work.
 
 ## Start here
 - [Current project status](PROJECT_STATUS.md)

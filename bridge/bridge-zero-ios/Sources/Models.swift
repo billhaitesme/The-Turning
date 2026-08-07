@@ -183,7 +183,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
 }
 
 enum MobileVersion {
-    static let current = "0.2.0"
+    static let current = "0.2.1"
     static let apiMajor = "1"
 
     static func isCompatible(_ compatibility: Compatibility) -> Bool {

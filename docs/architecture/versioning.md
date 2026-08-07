@@ -7,9 +7,9 @@ This document is the single source of truth for OMEGA-ARC release identity.
 | Field | Value |
 |---|---|
 | Epoch | Epoch IX |
-| Release | 0.2.0 |
+| Release | 0.2.1 |
 | Active series | 0.2.x |
-| Active milestone | Epoch IX-C — Operator Actions (IX-B complete) |
+| Active milestone | Epoch IX-C — Operator Actions (released as 0.2.1; tag `epoch-ix-c`) |
 | Mobile API major | 1 |
 | IX-B checkpoint tag | `epoch-ix-a` (created; on `release/epoch-ix-0.2.0`) |
 
@@ -17,7 +17,7 @@ The Epoch communicates architectural continuity. Semantic versioning communicate
 
 ## Component sources
 
-Every active component must report Epoch IX / 0.2.0 until the release version is advanced here.
+Every active component must report Epoch IX / 0.2.1 until the release version is advanced here.
 
 | Component | Authoritative field |
 |---|---|
@@ -29,7 +29,7 @@ Every active component must report Epoch IX / 0.2.0 until the release version is
 | Shared contract | OpenAPI `info.version` |
 | Documentation | root `README.md`, `CHANGELOG.md`, and `ROADMAP.md` |
 
-The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.2.0`.
+The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.2.1`.
 
 ## Compatibility rules
 

@@ -1,7 +1,7 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch IX
-**Current release:** 0.2.0
+**Current release:** 0.2.1
 **Active release line:** 0.2.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
@@ -28,11 +28,17 @@ Status: complete — checkpoint committed on `release/epoch-ix-0.2.0` and tagged
 
 Both native clients passed the physical-device checklist in [`PROJECT_STATUS.md`](PROJECT_STATUS.md) (Android 8/8, iOS 8/8). The checkpoint was committed from an intentionally scoped clean tree on `release/epoch-ix-0.2.0` and tagged `epoch-ix-a`. IX-C proceeds from that baseline.
 
-## Epoch IX-C — Operator Actions (future 0.2.x)
+## Epoch IX-C — Operator Actions (released as 0.2.1)
 
-Push notifications, short-lived approval challenges, approve/deny flows, and biometric confirmation. No IX-C behavior is active in the IX-B checkpoint.
+Status: **released — tagged `epoch-ix-c`, merged to `main`**, with a documented Android on-device
+validation exception (below). Short-lived approval challenges, approve/deny flows, and biometric
+confirmation. No IX-C behavior is present in the `epoch-ix-a` (IX-B) checkpoint.
 
-### In progress (feature/epoch-ix-c-model-selector)
+> **Release exception (owed):** the Android approve/deny biometric round-trip was not run on hardware
+> before 0.2.1, by the release owner's decision to keep momentum toward Epoch X. iOS approve→Face ID
+> was validated on a physical iPhone (2026-08-07). Record the Android device pass as a follow-up.
+
+### Shipped in 0.2.1 (feature/epoch-ix-c-model-selector)
 
 - **Operator model selector.** An allowlisted, Model-Lock-recorded model selector across backend,
   desktop, Android, and iOS. The model changes only on explicit operator action, routed through

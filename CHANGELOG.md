@@ -1,9 +1,20 @@
 # Changelog
 
-## [Unreleased] — Epoch IX-C (Operator Actions)
+## [Unreleased]
 
-In progress on `feature/epoch-ix-c-model-selector`, built on the tagged `epoch-ix-a` IX-B baseline.
-No IX-C behavior is present in that checkpoint. Backend suite: **345 passing**, hermetic.
+Next: Epoch IX-D (Command Console, designed) and Epoch X (Memory). IX-D build remains gated on the
+deferred Android on-device approval validation (see 0.2.1 below).
+
+## [0.2.1] - 2026-08-07 — Epoch IX-C (Operator Actions)
+
+Released from `feature/epoch-ix-c-model-selector`, built on the tagged `epoch-ix-a` IX-B baseline;
+tagged `epoch-ix-c`. Backend suite: **345 passing**, hermetic.
+
+> **Release exception — Android on-device validation deferred.** This milestone shipped by the
+> release owner's decision with the Android approve/deny biometric round-trip **not yet run on
+> hardware**. iOS approve→Face ID was validated on a physical iPhone (2026-08-07). The Android
+> device pass is owed as a follow-up; until it is recorded, treat Android operator-approvals as
+> unverified on-device.
 
 ### Added
 
@@ -33,9 +44,10 @@ No IX-C behavior is present in that checkpoint. Backend suite: **345 passing**, 
 - Android `processDebugResources` resolves the adaptive icon.
 - iOS approve→Face ID validated on a physical iPhone (2026-08-07).
 
-### Pending
+### Deferred / follow-up
 
-- Android on-device pass for approvals/biometric; on-device icon confirmation on both platforms.
+- **Android on-device approval/biometric validation** (approve + deny round-trip) — the documented
+  release exception above.
 - Push notification delivery (APNs/FCM) — designed, infra-blocked (paid Apple account + Firebase).
 
 ## [0.2.0] - In Development (IX-B checkpoint tagged `epoch-ix-a`)
