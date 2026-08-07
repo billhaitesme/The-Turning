@@ -47,6 +47,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
     implementation("androidx.security:security-crypto:1.1.0")
+    implementation("androidx.biometric:biometric:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.1.0")

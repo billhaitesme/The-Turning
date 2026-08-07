@@ -27,6 +27,20 @@ data class ModelState(
     @SerializedName("model_lock") val modelLock: Boolean = true,
 )
 
+data class ApprovalRequest(
+    @SerializedName("request_id") val requestId: String,
+    @SerializedName("approval_id") val approvalId: String? = null,
+    @SerializedName("tool_name") val toolName: String? = null,
+    @SerializedName("requested_by") val requestedBy: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("expires_at") val expiresAt: String? = null,
+    val status: String? = null,
+)
+
+data class ApprovalList(val approvals: List<ApprovalRequest> = emptyList())
+
+data class ApprovalDecision(val confirmed: Boolean)
+
 data class RuntimeTelemetry(
     @SerializedName("observed_at") val observedAt: String,
     @SerializedName("uptime_seconds") val uptimeSeconds: Long,
@@ -154,4 +168,5 @@ data class OperatorUiState(
     val logs: List<String> = emptyList(),
     val server: String = "",
     val hasToken: Boolean = false,
+    val approvals: List<ApprovalRequest> = emptyList(),
 )

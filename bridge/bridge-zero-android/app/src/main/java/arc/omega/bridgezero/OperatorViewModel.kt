@@ -196,6 +196,43 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun loadApprovals() {
+        val client = api ?: return
+        viewModelScope.launch {
+            try {
+                mutableState.update { it.copy(approvals = client.approvals().approvals) }
+            } catch (error: Exception) {
+                log("Approvals unavailable: ${safeMessage(error)}")
+            }
+        }
+    }
+
+    fun approveConfirmed(request: ApprovalRequest) {
+        val client = api ?: return
+        viewModelScope.launch {
+            try {
+                client.approve(request.requestId)
+                log("Approved ${request.toolName ?: request.requestId}")
+                loadApprovals()
+            } catch (error: Exception) {
+                log("Approve failed: ${safeMessage(error)}")
+            }
+        }
+    }
+
+    fun denyApproval(request: ApprovalRequest) {
+        val client = api ?: return
+        viewModelScope.launch {
+            try {
+                client.deny(request.requestId)
+                log("Denied ${request.toolName ?: request.requestId}")
+                loadApprovals()
+            } catch (error: Exception) {
+                log("Deny failed: ${safeMessage(error)}")
+            }
+        }
+    }
+
     fun disconnect(clearCredentials: Boolean = true) {
         eventStream?.cancel()
         streaming?.cancel()

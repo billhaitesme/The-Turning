@@ -5,6 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +36,7 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -72,7 +78,7 @@ private val Nominal = BridgeDesign.Colors.Nominal
 private val Warning = BridgeDesign.Colors.Warning
 private val Failure = BridgeDesign.Colors.Failure
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private val runtimeStore by viewModels<RuntimeStore>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -149,7 +155,7 @@ private fun LoginScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
     }
 }
 
-private enum class Tab { Runtime, Console, Diagnostics, Settings }
+private enum class Tab { Runtime, Console, Approvals, Diagnostics, Settings }
 
 @Composable
 private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
@@ -161,6 +167,7 @@ private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) 
                 listOf(
                     Triple(Tab.Runtime, "Runtime", Icons.Default.Home),
                     Triple(Tab.Console, "Console", Icons.Default.Send),
+                    Triple(Tab.Approvals, "Approvals", Icons.Default.CheckCircle),
                     Triple(Tab.Diagnostics, "Diagnostics", Icons.Default.Info),
                     Triple(Tab.Settings, "Settings", Icons.Default.Settings),
                 ).forEach { (value, label, icon) ->
@@ -176,6 +183,7 @@ private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) 
             when (tab) {
                 Tab.Runtime -> DashboardScreen(state, viewModel)
                 Tab.Console -> ConversationScreen(state, viewModel)
+                Tab.Approvals -> ApprovalsScreen(state, viewModel)
                 Tab.Diagnostics -> DiagnosticsScreen(state)
                 Tab.Settings -> SettingsScreen(state, viewModel)
             }
@@ -317,6 +325,64 @@ private fun inlineMarkdown(value: String) = buildAnnotatedString {
             index = end + 1
         }
     }
+}
+
+@Composable
+private fun ApprovalsScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) { viewModel.loadApprovals() }
+    LazyColumn(
+        Modifier.fillMaxSize().background(Void).padding(BridgeDesign.Spacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(BridgeDesign.Spacing.Md),
+    ) {
+        items(state.approvals, key = { it.requestId }) { approval ->
+            InstrumentPanel(approval.toolName?.uppercase() ?: "RUNTIME ACTION") {
+                Metric("Requested by", approval.requestedBy ?: "runtime")
+                approval.expiresAt?.let { Metric("Expires", it, Warning) }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(BridgeDesign.Spacing.Md),
+                ) {
+                    Button(
+                        onClick = {
+                            confirmBiometric(context, "Approve ${approval.toolName ?: "action"}") {
+                                viewModel.approveConfirmed(approval)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("APPROVE") }
+                    OutlinedButton(
+                        onClick = { viewModel.denyApproval(approval) },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("DENY") }
+                }
+            }
+        }
+        if (state.approvals.isEmpty()) {
+            item { Text("No pending approvals.", color = Color.Gray) }
+        }
+    }
+}
+
+private fun confirmBiometric(context: android.content.Context, subtitle: String, onSuccess: () -> Unit) {
+    val activity = context as? FragmentActivity ?: return
+    val prompt = BiometricPrompt(
+        activity,
+        ContextCompat.getMainExecutor(activity),
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                onSuccess()
+            }
+        },
+    )
+    val info = BiometricPrompt.PromptInfo.Builder()
+        .setTitle("Confirm approval")
+        .setSubtitle(subtitle)
+        .setAllowedAuthenticators(
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+        )
+        .build()
+    prompt.authenticate(info)
 }
 
 @Composable

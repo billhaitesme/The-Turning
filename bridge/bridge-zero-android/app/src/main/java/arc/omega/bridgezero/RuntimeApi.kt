@@ -27,6 +27,9 @@ interface RuntimeService {
     @POST("api/mobile/v1/conversations") suspend fun createConversation(@Body request: ConversationRequest): Conversation
     @GET("api/mobile/v1/chronicle") suspend fun chronicle(): List<ChronicleEntry>
     @POST("api/mobile/v1/model") suspend fun selectModel(@Body request: ModelSelection): ModelState
+    @GET("api/mobile/v1/approvals") suspend fun approvals(): ApprovalList
+    @POST("api/mobile/v1/approvals/{id}/approve") suspend fun approve(@Path("id") id: String, @Body decision: ApprovalDecision): ResponseBody
+    @POST("api/mobile/v1/approvals/{id}/deny") suspend fun deny(@Path("id") id: String): ResponseBody
 
     @Streaming
     @Headers("Accept: text/event-stream")
@@ -48,6 +51,9 @@ class RuntimeApi private constructor(private val service: RuntimeService) {
     suspend fun conversation(id: String) = service.conversation(id)
     suspend fun chronicle() = service.chronicle()
     suspend fun selectModel(model: String) = service.selectModel(ModelSelection(model))
+    suspend fun approvals() = service.approvals()
+    suspend fun approve(id: String) { service.approve(id, ApprovalDecision(true)).close() }
+    suspend fun deny(id: String) { service.deny(id).close() }
 
     fun streamRuntimeEvents(emit: (RuntimeStoreEvent) -> Unit) {
         val response = service.runtimeEvents().execute()
