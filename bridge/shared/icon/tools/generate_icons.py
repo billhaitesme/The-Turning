@@ -145,6 +145,12 @@ def main():
     # shared master
     write("bridge/shared/icon/omega-arc-icon.svg", master_svg(True))
 
+    # Windows launcher icon: multi-resolution .ico (for the desktop shortcut)
+    ico = Image.open(io.BytesIO(render_png(master_svg(True), 256))).convert("RGBA")
+    ico_path = os.path.join(REPO, "bridge/shared/icon/OMEGA-ARC.ico")
+    os.makedirs(os.path.dirname(ico_path), exist_ok=True)
+    ico.save(ico_path, sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
+
     # iOS: full-bleed 1024, alpha stripped (App Store requires no alpha)
     png = render_png(master_svg(False), 1024)
     img = Image.open(io.BytesIO(png)).convert("RGB")
