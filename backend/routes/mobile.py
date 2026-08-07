@@ -28,6 +28,13 @@ from services.model_control import model_control
 from services.plan_store import load_plan_store
 from services.tool_request_store import load_tool_request_store
 from services.tool_result_store import load_tool_result_store
+from services.tool_approval import (
+    approve_request,
+    expire_approvals,
+    list_tool_approvals,
+    list_tool_requests as list_all_tool_requests,
+    reject_request,
+)
 
 
 MOBILE_PREFIX = "/api/mobile/v1"
@@ -163,6 +170,69 @@ def set_runtime_model(request: MobileModelRequest) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _model_payload()
+
+
+class ApprovalDecision(BaseModel):
+    confirmed: bool = False
+
+
+_PENDING_REQUEST_STATES = {"proposed", "awaiting_approval", "pending"}
+
+
+def _pending_approvals() -> list[dict[str, Any]]:
+    """Operator-facing view of runtime action requests awaiting approval.
+
+    Enforces the short-lived approval window (expire_approvals) before surfacing,
+    then joins each awaiting tool request to its still-pending approval challenge.
+    """
+    expire_approvals()
+    approvals_by_request = {str(a.get("request_id") or ""): a for a in list_tool_approvals()}
+    pending: list[dict[str, Any]] = []
+    for request in list_all_tool_requests():
+        if str(request.get("status") or "") not in _PENDING_REQUEST_STATES:
+            continue
+        approval = approvals_by_request.get(str(request.get("request_id") or ""))
+        if not approval or str(approval.get("status") or "") != "pending":
+            continue
+        pending.append({
+            "request_id": request.get("request_id"),
+            "approval_id": approval.get("approval_id"),
+            "tool_name": request.get("tool_name"),
+            "arguments": request.get("arguments") or {},
+            "requested_by": request.get("requested_by"),
+            "created_at": approval.get("created_at"),
+            "expires_at": approval.get("expires_at"),
+            "status": approval.get("status"),
+        })
+    return pending
+
+
+@router.get("/approvals")
+def list_operator_approvals() -> dict[str, Any]:
+    return {"approvals": _pending_approvals()}
+
+
+@router.post("/approvals/{request_id}/approve")
+def approve_operator_request(request_id: str, decision: ApprovalDecision) -> dict[str, Any]:
+    # The operator confirms with a device biometric client-side; the runtime records
+    # that an explicit, confirmed operator action authorized the request.
+    if not decision.confirmed:
+        raise HTTPException(status_code=400, detail="Operator biometric confirmation is required.")
+    expire_approvals()
+    try:
+        approval = approve_request(request_id, approved_by="operator")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"approval": approval, "pending": _pending_approvals()}
+
+
+@router.post("/approvals/{request_id}/deny")
+def deny_operator_request(request_id: str) -> dict[str, Any]:
+    try:
+        approval = reject_request(request_id, rejected_by="operator")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"approval": approval, "pending": _pending_approvals()}
 
 
 def build_runtime_status() -> dict[str, Any]:

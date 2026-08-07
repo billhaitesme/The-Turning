@@ -164,6 +164,36 @@ def test_model_selector_switches_within_allowlist(monkeypatch, tmp_path):
         mc.model_control.set_active_model("dolphin-mixtral:8x7b")
 
 
+def test_operator_approvals_list_and_decide(monkeypatch, tmp_path):
+    client = build_client(monkeypatch, tmp_path)
+    import routes.mobile as mobile
+
+    request = {"request_id": "r1", "tool_name": "backend_health_check", "arguments": {},
+               "requested_by": "runtime", "status": "awaiting_approval"}
+    approval = {"approval_id": "a1", "request_id": "r1", "status": "pending",
+                "created_at": "2026-08-07T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}
+    monkeypatch.setattr(mobile, "expire_approvals", lambda *a, **k: None)
+    monkeypatch.setattr(mobile, "list_all_tool_requests", lambda *a, **k: [request])
+    monkeypatch.setattr(mobile, "list_tool_approvals", lambda *a, **k: [approval])
+
+    listed = client.get("/api/mobile/v1/approvals", headers=auth()).json()
+    assert [a["request_id"] for a in listed["approvals"]] == ["r1"]
+    assert listed["approvals"][0]["expires_at"] == "2099-01-01T00:00:00Z"
+
+    # Approve requires explicit operator (biometric) confirmation.
+    unconfirmed = client.post("/api/mobile/v1/approvals/r1/approve", headers=auth(), json={"confirmed": False})
+    assert unconfirmed.status_code == 400
+
+    monkeypatch.setattr(
+        mobile, "approve_request",
+        lambda rid, **k: {"approval_id": "a1", "request_id": rid, "status": "approved", "approved_by": k.get("approved_by")},
+    )
+    approved = client.post("/api/mobile/v1/approvals/r1/approve", headers=auth(), json={"confirmed": True})
+    assert approved.status_code == 200
+    assert approved.json()["approval"]["status"] == "approved"
+    assert approved.json()["approval"]["approved_by"] == "operator"
+
+
 def test_stream_reuses_authoritative_runtime_stream(monkeypatch, tmp_path):
     response = build_client(monkeypatch, tmp_path).post(
         "/api/mobile/v1/conversations/active/messages",

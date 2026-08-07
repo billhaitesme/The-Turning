@@ -45,6 +45,12 @@ Push notifications, short-lived approval challenges, approve/deny flows, and bio
   composer) that creates a fresh conversation via `POST /api/mobile/v1/conversations` and rebinds
   the console live, without a relaunch. Android compiled; iOS awaits a CI compile and device pass.
   (Desktop Bridge Zero has no chat by design, so no control there.)
+- **Operator approvals (the IX-C headline).** The runtime's short-lived action-gate requests are
+  surfaced to the mobile operator via `/api/mobile/v1/approvals`; approve/deny requires client-side
+  biometric confirmation and is recorded through the existing approval engine (no new authority).
+  Backend done + tested (11 mobile tests). Mobile UI + biometric next. Push delivery (APNs/FCM) is
+  designed but **infra-blocked** — needs a paid Apple Developer account and a Firebase project. See
+  ADR [`0014-operator-approvals.md`](docs/decisions/0014-operator-approvals.md).
 
 ### Deferred operator-convenience items
 
