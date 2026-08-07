@@ -1,28 +1,4 @@
 {
   "version": 1,
-  "results": [
-    {
-      "request_id": "toolreq-a87677ba67774f589c5a35fe263b670a",
-      "tool_name": "backend_health_check",
-      "status": "completed",
-      "success": true,
-      "started_at": "2026-07-16T21:38:53.093109+00:00",
-      "completed_at": "2026-07-16T21:38:53.093109+00:00",
-      "duration_ms": 6.385,
-      "output": {
-        "target": "backend",
-        "checked_url": "http://127.0.0.1:8001/",
-        "success": true,
-        "status_code": 200,
-        "latency_ms": 6.385,
-        "checked_at": "2026-07-16T21:38:53.093109+00:00",
-        "error": null
-      },
-      "error": null,
-      "evidence_candidates": [],
-      "side_effects_observed": [],
-      "executor": "local_adapter",
-      "execution_mode": "live"
-    }
-  ]
+  "results": []
 }
