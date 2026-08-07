@@ -231,8 +231,7 @@ First hardware run of the native Android operator console.
   `.env` was loaded, so a LAN profile placed in `.env` was silently ignored and the server stayed
   on loopback. Corrected in the working tree; this was the practical form of B-03/TD-C04.
 
-**iOS has no hardware run.** The physical-device gate remains open until an iPhone pass is
-recorded.
+**iOS hardware run recorded 2026-07-24 (see below).**
 
 ## iOS validation attempt — 2026-07-23
 
@@ -275,7 +274,19 @@ After the sources were committed and pushed, the `ios-build` GitHub Actions work
 Because CI checked out only the committed sources, this also serves as clean-clone
 build-reproducibility evidence for iOS.
 
-**Status: iOS builds and passes simulator tests on CI. The physical-iPhone run remains the only
-open iOS item** — CI cannot drive a USB device. The path is: download the unsigned `.ipa`, sign
-it with a free Apple ID via Sideloadly/AltStore on Windows, install to the device, and run the
-device checklist. Until that run is recorded, do not mark the physical-iOS gate closed.
+### iOS physical-device validation — 2026-07-24
+
+Sideloaded the CI-built app to a physical iPhone via a free Apple ID (7-day provisioning) and ran
+the device checklist: **8/8 pass, no release-blocking defect.**
+
+- Verified directly: launch, bearer auth + compatibility gate, synchronized and streaming
+  conversations, live typed-SSE dashboard updates, Dark Mode, Dynamic Type at accessibility sizes,
+  and VoiceOver labels.
+- Offline reconnect: confirmed repeatedly — each backend restart dropped the SSE stream and the app
+  auto-relinked on its 3-second loop.
+- Background/foreground: confirmed through extended real-device use (scene-phase suspend/resume).
+- A blank-line SSE parsing defect (`URLSession.AsyncBytes.lines` dropping the event delimiter) was
+  found and fixed during this run; both operational and conversation streams then worked on device.
+
+**Both native platforms have now passed their physical-device checklists (Android 8/8, iOS 8/8).
+The IX-B checkpoint gate is closed.**
