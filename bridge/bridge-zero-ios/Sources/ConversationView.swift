@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConversationView: View {
     @EnvironmentObject private var state: OperatorConsoleState
+    @FocusState private var composerFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +26,7 @@ struct ConversationView: View {
                     if let id = state.conversation?.messages.last?.id { proxy.scrollTo(id, anchor: .bottom) }
                 }
                 .onChange(of: state.streamingText) { _, _ in proxy.scrollTo("stream", anchor: .bottom) }
+                .scrollDismissesKeyboard(.interactively)
             }
 
             Divider()
@@ -34,6 +36,7 @@ struct ConversationView: View {
                     .padding(11)
                     .background(BridgeTheme.raised, in: RoundedRectangle(cornerRadius: 10))
                     .accessibilityLabel("Operator message")
+                    .focused($composerFocused)
                 Button(action: state.sendMessage) {
                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 32))
                 }
@@ -42,7 +45,7 @@ struct ConversationView: View {
             }.padding(12)
         }
         .background(BridgeTheme.void)
-        .navigationTitle("Conversation")
+        .navigationTitle("Console")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -53,7 +56,11 @@ struct ConversationView: View {
                     Image(systemName: "square.and.pencil")
                 }
                 .disabled(state.isStreaming || !state.isConnected)
-                .accessibilityLabel("New conversation")
+                .accessibilityLabel("New session")
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { composerFocused = false }
             }
         }
     }
