@@ -30,6 +30,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: arc.omega.bridgezero.mobile
         CODE_SIGN_STYLE: Automatic
         ENABLE_USER_SCRIPT_SANDBOXING: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     scheme:
       testTargets:
         - BridgeZeroMobileTests
