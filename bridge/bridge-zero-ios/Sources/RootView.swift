@@ -85,6 +85,8 @@ struct ConsoleTabView: View {
                 .tabItem { Label("Runtime", systemImage: "waveform.path.ecg") }
             NavigationStack { ConversationView() }
                 .tabItem { Label("Console", systemImage: "terminal") }
+            NavigationStack { ApprovalsView() }
+                .tabItem { Label("Approvals", systemImage: "checkmark.shield") }
             NavigationStack { DiagnosticsView() }
                 .tabItem { Label("Diagnostics", systemImage: "scope") }
             NavigationStack { SettingsView() }

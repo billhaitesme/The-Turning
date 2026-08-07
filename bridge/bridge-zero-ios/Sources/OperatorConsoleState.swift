@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import LocalAuthentication
 
 @MainActor
 final class OperatorConsoleState: ObservableObject {
@@ -14,6 +15,7 @@ final class OperatorConsoleState: ObservableObject {
     @Published private(set) var runtimePhase: String?
     @Published private(set) var roundTripLatencyMs: Double?
     @Published private(set) var logs: [String] = []
+    @Published private(set) var approvals: [ApprovalRequest] = []
     @Published var composerText = ""
     @Published var theme: AppTheme {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
@@ -140,6 +142,52 @@ final class OperatorConsoleState: ObservableObject {
                 appendLog("Active model set to \(result.currentModel ?? model)")
             } catch {
                 appendLog("Model switch unavailable: \(safeDescription(error))")
+            }
+        }
+    }
+
+    func loadApprovals() async {
+        guard let api, isConnected else { return }
+        do { approvals = try await api.listApprovals() }
+        catch { appendLog("Approvals unavailable: \(safeDescription(error))") }
+    }
+
+    func approve(_ request: ApprovalRequest) {
+        Task {
+            guard await confirmBiometric(reason: "Approve \(request.toolName ?? "runtime action")") else {
+                appendLog("Approval cancelled — not confirmed")
+                return
+            }
+            guard let api else { return }
+            do {
+                try await api.decideApproval(requestId: request.requestId, approve: true)
+                appendLog("Approved \(request.toolName ?? request.requestId)")
+                await loadApprovals()
+            } catch { appendLog("Approve failed: \(safeDescription(error))") }
+        }
+    }
+
+    func deny(_ request: ApprovalRequest) {
+        Task {
+            guard let api else { return }
+            do {
+                try await api.decideApproval(requestId: request.requestId, approve: false)
+                appendLog("Denied \(request.toolName ?? request.requestId)")
+                await loadApprovals()
+            } catch { appendLog("Deny failed: \(safeDescription(error))") }
+        }
+    }
+
+    private func confirmBiometric(reason: String) async -> Bool {
+        let context = LAContext()
+        var policyError: NSError?
+        // Prefer biometrics; fall back to the device passcode if unavailable.
+        let policy: LAPolicy = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &policyError)
+            ? .deviceOwnerAuthenticationWithBiometrics
+            : .deviceOwnerAuthentication
+        return await withCheckedContinuation { continuation in
+            context.evaluatePolicy(policy, localizedReason: reason) { success, _ in
+                continuation.resume(returning: success)
             }
         }
     }

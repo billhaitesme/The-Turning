@@ -24,6 +24,21 @@ struct ModelState: Codable, Equatable {
     let modelLock: Bool
 }
 
+struct ApprovalRequest: Codable, Equatable, Identifiable {
+    let requestId: String
+    let approvalId: String?
+    let toolName: String?
+    let requestedBy: String?
+    let createdAt: String?
+    let expiresAt: String?
+    let status: String?
+    var id: String { requestId }
+}
+
+struct ApprovalList: Codable, Equatable {
+    let approvals: [ApprovalRequest]
+}
+
 struct RuntimeTelemetry: Codable, Equatable {
     let observedAt: String
     let uptimeSeconds: Int

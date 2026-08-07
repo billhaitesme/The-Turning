@@ -172,6 +172,19 @@ actor RuntimeAPIClient {
         }
     }
 
+    func listApprovals() async throws -> [ApprovalRequest] {
+        let list: ApprovalList = try await get("api/mobile/v1/approvals")
+        return list.approvals
+    }
+
+    func decideApproval(requestId: String, approve: Bool) async throws {
+        let path = "api/mobile/v1/approvals/\(requestId)/\(approve ? "approve" : "deny")"
+        var request = self.request(path, method: "POST")
+        if approve { request.httpBody = try encoder.encode(["confirmed": true]) }
+        let (_, response) = try await session.data(for: request)
+        try Self.validate(response)
+    }
+
     func selectModel(_ model: String) async throws -> ModelState {
         var request = self.request("api/mobile/v1/model", method: "POST")
         request.httpBody = try encoder.encode(["model": model])
