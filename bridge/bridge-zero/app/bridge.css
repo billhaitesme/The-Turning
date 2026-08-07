@@ -1,3 +1,10 @@
+/* Aurebesh (SilvinoR, OFL-1.1) — the genuine Star Wars nod. Latin letters render as Aurebesh glyphs. */
+@font-face {
+  font-family: "Aurebesh";
+  src: url("./AurebeshNL.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   --bg-main: #101316;
@@ -561,9 +568,21 @@ body,
 }
 
 .translator-output {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: "Aurebesh", var(--font-mono);
+  font-size: 1.6rem;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
   color: #9db4ca;
+  word-break: break-word;
+  min-height: 1.4em;
+}
+
+.translator-roman {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
 
 .radar-grid {
