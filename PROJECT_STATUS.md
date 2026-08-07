@@ -9,8 +9,8 @@
 | Current version | 0.2.0 |
 | Release line | 0.2.x |
 | Status | Active Development |
-| Current phase | IX-B — Runtime Operations (RC hardening) |
-| IX-B validation | Hardened; checkpoint committed, not yet tagged — see `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
+| Current phase | IX-B complete — checkpoint tagged `epoch-ix-a`; IX-C in progress |
+| IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | Theme | “The Runtime Becomes Visible” |
 
 ## Completed
@@ -35,13 +35,14 @@
 - ✓ Defects found on-device and fixed: iOS SSE blank-line parsing, evidence/deliberation
   diagnostics, and the `launch_backend.py` `.env` bind-order bug
 
-## Remaining before the checkpoint tag
+## Checkpoint closed — 2026-07-24
 
-- iOS physical-device checklist tail (appearance, dynamic type, VoiceOver) or explicit acceptance
-- Decide the `backend/data/` runtime records: clean fixture or move behind an ignored path
-- Create the annotated `epoch-ix-a` tag on the reviewed checkpoint commit
+All gates resolved. Both native platforms passed their physical-device checklists (Android 8/8,
+iOS 8/8); generated runtime stores reset to clean fixtures; the reviewed checkpoint is committed on
+`release/epoch-ix-0.2.0` and tagged **`epoch-ix-a`**. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md`
+for the full before/after.
 
-See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` for the full before/after.
+IX-C (Operator Actions) continues on `feature/epoch-ix-c-model-selector` from this baseline.
 
 ## Native Device Validation Gate
 
@@ -49,14 +50,25 @@ IX-B remains active until both native clients pass this gate on physical hardwar
 
 ### iOS
 
-- [ ] Launch on a physical iPhone
-- [ ] Verify server connection and bearer authentication
-- [ ] Verify synchronized and streaming conversations
-- [ ] Verify RuntimeStore and Operations Dashboard updates
-- [ ] Verify background-to-foreground transitions
-- [ ] Confirm offline recovery and reconnect behavior
-- [ ] Check Dark Mode
-- [ ] Check Dynamic Type at accessibility sizes
+Run record — physical iPhone, tester: Bill H, date: **2026-07-24**. Debug build sideloaded via a
+free Apple ID (7-day provisioning). Sources build green on CI (macos-14 / Xcode 16 / iOS 17 SDK /
+Swift 5.10).
+
+- [x] Launch on a physical iPhone
+- [x] Verify server connection and bearer authentication
+- [x] Verify synchronized and streaming conversations
+- [x] Verify RuntimeStore and Operations Dashboard updates
+- [x] Verify background-to-foreground transitions
+- [x] Confirm offline recovery and reconnect behavior
+- [x] Check Dark Mode
+- [x] Check Dynamic Type at accessibility sizes
+
+iOS device checklist: **8/8 pass, no release-blocking defect.** Live SSE, streaming, dark mode,
+Dynamic Type, and VoiceOver confirmed directly. Reconnect was confirmed repeatedly through backend
+restarts (the app went offline and auto-relinked on the 3-second loop); background/foreground was
+confirmed through extended real-device use with scene-phase suspend/resume. A blank-line SSE
+parsing defect was found and fixed during this validation. Streaming used an operator-selected
+`llama2-uncensored:7b`; model selection does not affect the transport under test.
 
 ### Android
 
@@ -85,10 +97,10 @@ tokens in a usable time; the model selection does not affect the streaming trans
 
 ### Exit criteria
 
-- [ ] Both platform checklists pass without a release-blocking defect
-- [ ] Any device-specific limitations are documented
-- [ ] Version 0.2.0 is committed from an intentionally scoped clean tree
-- [ ] The checkpoint commit is tagged `epoch-ix-a`
+- [x] Both platform checklists pass without a release-blocking defect
+- [x] Any device-specific limitations are documented
+- [x] Version 0.2.0 is committed from an intentionally scoped clean tree
+- [x] The checkpoint commit is tagged `epoch-ix-a`
 
 ## Future
 
