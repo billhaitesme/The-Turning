@@ -4,13 +4,13 @@
 
 | Field | Current value |
 |---|---|
-| Last updated | 2026-07-22 |
+| Last updated | 2026-07-24 |
 | Current epoch | Epoch IX |
 | Current version | 0.2.0 |
 | Release line | 0.2.x |
 | Status | Active Development |
-| Current phase | IX-B — Runtime Operations |
-| IX-B validation | Blocked — see `docs/governance/IX_B_VALIDATION_REPORT.md` |
+| Current phase | IX-B — Runtime Operations (RC hardening) |
+| IX-B validation | Hardened; checkpoint committed, not yet tagged — see `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | Theme | “The Runtime Becomes Visible” |
 
 ## Completed
@@ -24,15 +24,24 @@
   - Operations Dashboard foundation
   - shared mobile design tokens and native components
 
-## In progress
+## Hardened since RC1 (2026-07-23/24)
 
-- Operations Dashboard polish
-- Telemetry refinement
-- Native-device validation
-- Clean Epoch IX 0.2.0 checkpoint commit and release tag
-- Resolve the IX-B blockers recorded in the validation report
-- Make Android builds reproducible with a committed Gradle wrapper
-- Connect native operational state to typed SSE
+- ✓ Reviewed checkpoint committed on `release/epoch-ix-0.2.0` (mobile + shared sources now tracked)
+- ✓ Backend suite 344 passing, hermetic
+- ✓ Android build reproducible (committed Gradle wrapper 9.5.0); clean `assembleDebug` + unit tests
+- ✓ Android physical-device validation: 8/8 on moto g15 power / Android 15
+- ✓ iOS builds green on CI (Xcode 16 / iOS 17); live SSE + streaming validated on a physical iPhone
+- ✓ Design-token foundation aligned across platforms
+- ✓ Defects found on-device and fixed: iOS SSE blank-line parsing, evidence/deliberation
+  diagnostics, and the `launch_backend.py` `.env` bind-order bug
+
+## Remaining before the checkpoint tag
+
+- iOS physical-device checklist tail (appearance, dynamic type, VoiceOver) or explicit acceptance
+- Decide the `backend/data/` runtime records: clean fixture or move behind an ignored path
+- Create the annotated `epoch-ix-a` tag on the reviewed checkpoint commit
+
+See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` for the full before/after.
 
 ## Native Device Validation Gate
 
