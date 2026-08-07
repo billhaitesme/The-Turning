@@ -68,7 +68,13 @@ Capability gaps, not defects, deliberately excluded from IX-B scope.
 
 ## Epoch IX-D — Command Console (future 0.2.x)
 
-Promote the operations surface into the full command console after IX-B telemetry and IX-C approval signals are authoritative. No IX-D behavior is active in IX-B.
+Promote the operator consoles from observe + approve to *initiate*: an operator command surface where
+every command flows through the existing gates — a risk registry, Model Lock, and the IX-C approval
+challenge (biometric) for anything above a threshold. No command bypasses the deterministic runtime.
+**Build is gated on IX-C approvals being validated on-device** — the approval signal must be
+trustworthy before real actions depend on it. Designed in ADR
+[`0015-command-console.md`](docs/decisions/0015-command-console.md) and
+[`docs/architecture/epoch-ix-d-command-console.md`](docs/architecture/epoch-ix-d-command-console.md).
 
 ## Epoch X — Memory (future, scope not yet committed)
 
