@@ -32,7 +32,15 @@ IX-B runtime infrastructure is implemented. Dashboard polish, telemetry refineme
 
 ## Epoch IX-C — Operator Actions (future 0.2.x)
 
-Push notifications, short-lived approval challenges, approve/deny flows, and biometric confirmation. No IX-C behavior is active in IX-B.
+Push notifications, short-lived approval challenges, approve/deny flows, and biometric confirmation. No IX-C behavior is active in the IX-B checkpoint.
+
+### In progress (feature/epoch-ix-c-model-selector)
+
+- **Operator model selector.** An allowlisted, Model-Lock-recorded model selector across backend,
+  desktop, Android, and iOS. The model changes only on explicit operator action, routed through
+  `set_selected_model` → `set_active_model`, recorded in telemetry. Backend (344 tests) and Android
+  (compiled + unit-tested) are validated; desktop is built; iOS awaits a CI compile and a device
+  pass. Kept off the IX-B checkpoint branch so `epoch-ix-a` stays a clean IX-B baseline.
 
 ### Deferred operator-convenience items
 
