@@ -5,6 +5,11 @@
 This records the arc from the independent engineering review to the current state, so a future
 steward can see what changed and why.
 
+> **Closure note (2026-08-07).** Any "pending/partial/not-yet-tagged" language below was resolved
+> after this retrospective was drafted: the annotated `epoch-ix-a` tag was created on
+> `release/epoch-ix-0.2.0`, and iOS passed its 8/8 physical-device checklist. The authoritative
+> current record is [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md).
+
 ## Where we started
 
 An independent review of the RC1 working tree concluded **NO — not eligible for checkpoint**, with

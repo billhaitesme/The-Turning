@@ -1,5 +1,9 @@
 # OMEGA-ARC IX-B Release Candidate Matrix
 
+> **Superseded (2026-08-07).** Point-in-time RC assessment. IX-B has since closed (both platforms
+> passed 8/8 on hardware) and was tagged `epoch-ix-a`. For current state see
+> [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md). Retained as a historical record.
+
 **Epoch:** IX ·
 **Version:** 0.2.0 ·
 **Assessment date:** 2026-07-23 ·

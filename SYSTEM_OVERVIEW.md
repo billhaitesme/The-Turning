@@ -1,5 +1,10 @@
 # OMEGA-ARC System Overview
 
+> **Historical snapshot.** This overview reflects an earlier epoch (through roughly Epoch VI) and is
+> kept for narrative continuity. It is **not** the current state — for the active epoch, version, and
+> status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md), [`ROADMAP.md`](ROADMAP.md), and the versioning
+> authority [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
+
 ## Mission
 
 OMEGA-ARC is a conversational, evidence-aware architecture for building reliable software assistants. Its purpose is not to imitate human intuition, but to provide a structured system for observing, storing, and reasoning over facts with clear provenance.

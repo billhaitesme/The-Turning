@@ -2,6 +2,10 @@
 
 This is not a changelog. It is a historical map of how OMEGA-ARC evolved.
 
+> **Note (2026-08-07):** entries for Epoch VII and later use earlier working names/status that have
+> since been superseded. For authoritative epoch, version, and status see [`ROADMAP.md`](ROADMAP.md),
+> [`CHANGELOG.md`](CHANGELOG.md), and [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
+
 ## Genesis
 
 - Repository established

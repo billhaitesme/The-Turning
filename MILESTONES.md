@@ -1,5 +1,8 @@
 # OMEGA-ARC Milestones
 
+> **Historical snapshot** (through Epoch VI). For current milestones, epoch, and status see
+> [`ROADMAP.md`](ROADMAP.md) and [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+
 ## Genesis
 
 Established repository and continuity foundation.

@@ -1,5 +1,9 @@
 # Epoch IX-C Readiness Assessment
 
+> **Superseded (2026-08-07).** This is a point-in-time gate assessment. Its decision has since been
+> resolved: IX-B closed and was tagged `epoch-ix-a`, and IX-C (Operator Actions) is in progress. For
+> current state see [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md). Retained as a historical record.
+
 | Field | Value |
 |---|---|
 | Assessment date | 2026-07-22 |

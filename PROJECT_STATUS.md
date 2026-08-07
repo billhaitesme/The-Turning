@@ -4,7 +4,7 @@
 
 | Field | Current value |
 |---|---|
-| Last updated | 2026-07-24 |
+| Last updated | 2026-08-07 |
 | Current epoch | Epoch IX |
 | Current version | 0.2.0 |
 | Release line | 0.2.x |
@@ -43,6 +43,21 @@ iOS 8/8); generated runtime stores reset to clean fixtures; the reviewed checkpo
 for the full before/after.
 
 IX-C (Operator Actions) continues on `feature/epoch-ix-c-model-selector` from this baseline.
+
+## Epoch IX-C progress — 2026-08-07
+
+Operator Actions are building on `feature/epoch-ix-c-model-selector` (52 commits ahead of `main`),
+backend suite **345 passing**, hermetic. No IX-C behavior is present in the `epoch-ix-a` checkpoint;
+the branch is kept off that baseline.
+
+- ✓ Operator **model selector** — allowlisted, Model-Lock-recorded; backend, desktop, iOS, Android
+- ✓ In-app **New Conversation** control on both mobile consoles
+- ✓ **Operator approvals** with on-device biometric — iOS approve→Face ID validated on a physical
+  iPhone (2026-08-07); **Android device pass owed**; push delivery (APNs/FCM) infra-blocked
+- ✓ **App icon** (fisheye Aurebesh `0M3-G4`) on iOS, Android, and the desktop tab / PWA; desktop
+  **Aurebesh Utility** now renders real OFL glyphs; branded Windows launcher shortcut. **On-device
+  icon confirmation owed** on the next iOS re-sideload and Android reinstall
+- ✓ iOS console: keyboard-dismiss fix and "Console" rename
 
 ## Native Device Validation Gate
 
@@ -104,11 +119,11 @@ tokens in a usable time; the model selection does not affect the streaming trans
 
 ## Future
 
-- Epoch IX-C — Operator Actions
-- Epoch IX-D — Command Console
-- Epoch X — scope not yet committed
+- Epoch IX-C — Operator Actions (in progress; see the IX-C progress section above)
+- Epoch IX-D — Command Console (designed in ADR 0015; build gated on IX-C on-device approval validation)
+- Epoch X — Memory (scope not yet committed)
 
-IX-C and IX-D are documented future work only. Major feature work should not begin until the native-device gate and checkpoint exit criteria are satisfied.
+The IX-B native-device gate and checkpoint exit criteria are satisfied, so IX-C feature work is under way. IX-D build remains gated on IX-C operator approvals being validated on physical hardware.
 
 ## Authorities
 

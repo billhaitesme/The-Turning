@@ -9,9 +9,9 @@ This document is the single source of truth for OMEGA-ARC release identity.
 | Epoch | Epoch IX |
 | Release | 0.2.0 |
 | Active series | 0.2.x |
-| Active milestone | Epoch IX-B |
+| Active milestone | Epoch IX-C — Operator Actions (IX-B complete) |
 | Mobile API major | 1 |
-| Planned checkpoint tag | `epoch-ix-a` (pending clean checkpoint commit) |
+| IX-B checkpoint tag | `epoch-ix-a` (created; on `release/epoch-ix-0.2.0`) |
 
 The Epoch communicates architectural continuity. Semantic versioning communicates compatibility and delivery. They are related but independent: Epoch IX can contain multiple compatible Version 0.2.x releases.
 

@@ -16,6 +16,8 @@ Only the mobile message adapter calls `begin_stream` and `end_stream`. Desktop/f
 
 The checkout cannot reproduce Android builds without external, undocumented Gradle setup. Generate and commit the supported wrapper, then validate unit, instrumentation, and debug assembly tasks.
 
+**Resolved:** the Gradle wrapper (9.5.0, SHA-256 pinned) is committed; clean `assembleDebug` and unit tests pass on the pinned toolchain. Instrumentation tests remain a separate pending item.
+
 ### TD-C04 — Standard launch path is not device reachable
 
 All standard backend launch helpers bind to loopback. Add a deliberate, documented LAN validation profile with secure token and firewall guidance; keep the default local-only posture.
@@ -59,6 +61,8 @@ Both clients treat the entire `172.0.0.0/8` range as local rather than only `172
 ### TD-L01 — Native release assets are absent
 
 No iOS asset catalog or Android launcher-icon resources are present. Physical debug installation may still work, but release packaging is incomplete.
+
+**Resolved (2026-08-07, IX-C):** the OMEGA-ARC app icon is wired into iOS (`AppIcon.appiconset`), Android (adaptive icon at all densities), and the desktop browser tab / PWA, reproducible from `bridge/shared/icon/tools/generate_icons.py`. On-device icon confirmation on both platforms is still owed.
 
 ### TD-L02 — IX-C permission and placeholder text are present in IX-B
 

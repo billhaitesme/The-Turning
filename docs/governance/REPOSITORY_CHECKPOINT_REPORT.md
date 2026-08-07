@@ -1,5 +1,9 @@
 # Repository Checkpoint Report
 
+> **Superseded (2026-08-07).** Point-in-time audit (from `feature/epoch8-tools`). The checkpoint has
+> since been completed and tagged `epoch-ix-a` on `release/epoch-ix-0.2.0`. For current state see
+> [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md). Retained as a historical record.
+
 | Field | Value |
 |---|---|
 | Audit branch | `feature/epoch8-tools` |

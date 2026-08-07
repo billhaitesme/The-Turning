@@ -16,7 +16,7 @@ Status: complete.
 
 ## Epoch IX-B — Runtime Operations (0.2.x)
 
-Status: active.
+Status: complete — checkpoint committed on `release/epoch-ix-0.2.0` and tagged `epoch-ix-a`.
 
 - Authoritative RuntimeStore
 - Typed SSE events and event bus
@@ -24,11 +24,9 @@ Status: active.
 - Operations Dashboard
 - Shared colors, typography, spacing, badges, and cards
 
-### IX-B validation gate
+### IX-B validation gate — cleared
 
-Before IX-B is complete and IX-C begins, both native clients must pass the physical-device checklist in [`PROJECT_STATUS.md`](PROJECT_STATUS.md). The checkpoint must then be committed from an intentionally scoped clean tree and tagged `epoch-ix-a`.
-
-IX-B runtime infrastructure is implemented. Dashboard polish, telemetry refinement, native-device validation, and the reproducible checkpoint remain active work.
+Both native clients passed the physical-device checklist in [`PROJECT_STATUS.md`](PROJECT_STATUS.md) (Android 8/8, iOS 8/8). The checkpoint was committed from an intentionally scoped clean tree on `release/epoch-ix-0.2.0` and tagged `epoch-ix-a`. IX-C proceeds from that baseline.
 
 ## Epoch IX-C — Operator Actions (future 0.2.x)
 
@@ -50,9 +48,18 @@ Push notifications, short-lived approval challenges, approve/deny flows, and bio
   biometric confirmation and is recorded through the existing approval engine (no new authority).
   Backend + both mobile UIs built: an Approvals tab on iOS (Face ID) and Android (BiometricPrompt),
   approve/deny gated by a real device biometric. Backend tested (11 mobile tests); Android compiled;
-  iOS pending CI + device pass. Push delivery (APNs/FCM) is designed but **infra-blocked** — needs a
-  paid Apple Developer account and a Firebase project. See ADR
+  iOS approve→Face ID **validated on a physical iPhone (2026-08-07)**; Android device pass still owed.
+  Push delivery (APNs/FCM) is designed but **infra-blocked** — needs a paid Apple Developer account
+  and a Firebase project. See ADR
   [`0014-operator-approvals.md`](docs/decisions/0014-operator-approvals.md).
+- **Brand mark, app icon, and real Aurebesh.** The OMEGA-ARC app icon — a red Ω/arc ring with the
+  machine identity `0M3-G4` in genuine Aurebesh under a fisheye lens — is wired into iOS (`AppIcon`),
+  Android (adaptive icon, all densities), and the desktop Bridge Zero browser tab and PWA
+  (`bridge/bridge-zero/public/`). The desktop Aurebesh Utility now renders real glyphs from a bundled
+  OFL font (SilvinoR) instead of the ASCII stub. A branded Windows launcher shortcut wraps the
+  existing `START-OMEGA-ARC.cmd`. Assets are reproducible from the font via
+  `bridge/shared/icon/tools/generate_icons.py`; see [`bridge/shared/icon/README.md`](bridge/shared/icon/README.md).
+  On-device icon confirmation is owed on the next iOS re-sideload and Android reinstall.
 
 ### Deferred operator-convenience items
 
