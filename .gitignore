@@ -37,3 +37,9 @@ backend/data/*.db
 backend/*.db
 diagnostics_report.txt
 runtime-backup/
+# OMEGA-ARC runtime state
+runtime-backup/
+backend/data/approvals.json
+backend/data/assumptions.json
+backend/data/deliberations.json
+backend/data/tool_approvals.json

@@ -6,9 +6,14 @@ class Tests(unittest.TestCase):
     def test_vision(self):
         self.assertEqual(choose_route("image", has_image=True).task_type, TaskType.VISION)
     def test_current(self):
-        self.assertEqual(choose_route("latest AI news").task_type, TaskType.CURRENT_INFO)
+        route = choose_route("latest AI news")
+        self.assertEqual(route.task_type, TaskType.GENERAL)
+        self.assertEqual(route.reason, "User Selection")
     def test_technical(self):
-        self.assertEqual(choose_route("Explain FastAPI").task_type, TaskType.TECHNICAL)
+        self.assertEqual(
+            choose_route("Explain FastAPI").model,
+            choose_route("Discuss philosophy").model,
+        )
 
 if __name__ == "__main__":
     unittest.main()

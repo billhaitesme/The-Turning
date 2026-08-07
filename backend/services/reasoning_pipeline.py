@@ -130,3 +130,17 @@ def run_reasoning_pipeline(
     )
 
     return result
+
+
+def rebuild_reasoning_after_evidence_ingestion(
+    *,
+    evidence_store: Dict[str, Any],
+    goal_store: Optional[Dict[str, Any]] = None,
+    previous_evidence_store: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    return run_reasoning_pipeline(
+        evidence_store=evidence_store,
+        goal_store=goal_store,
+        previous_evidence_store=previous_evidence_store,
+        dependency_map=None,
+    )

@@ -1,80 +1,86 @@
 # VERSION HISTORY
 
-This is not a changelog. It is a historical map of how OMEGA-ARC evolved.
+This is not a changelog. It is a historical map of how OMEGA-ARC evolved, epoch by epoch. For the
+authoritative current state see [`ROADMAP.md`](ROADMAP.md), [`CHANGELOG.md`](CHANGELOG.md), and the
+versioning authority [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
 
-## Genesis
+## Genesis — v0.0.0
 
-- Repository established
-- Continuity-first philosophy
-- Initial backend/frontend structure
-- Early conversation handling and persistence foundations
+- Repository and continuity-first philosophy established (Covenant, Constitution, Charter)
+- Initial backend/frontend structure; early conversation handling and persistence foundations
+
+## Epoch I — Continuity and Modular Backend
+
+- Conversation entry point and stable prompt/response behavior
+- Initial persistence conventions
+- Modular backend refactor that preserved the working runtime
+- Tag: `epoch-2` (identity engine + modular architecture)
 
 ## Epoch II — Identity
 
-- Identity Engine
-- User facts
-- Identity persistence
-- Age handling
-- Modular backend boundaries
+- Identity Engine; explicit user facts; identity persistence; age handling
+- Restrictions on unsupported inference
+- Tag: `epoch-2`
 
 ## Epoch III — Cognition
 
-- Knowledge Graph
-- Goal Engine
-- Reflection
-- Curiosity
-- Prompt pipeline
-- Structured candidate extraction from conversation
+- Knowledge graph, goal engine, reflection, curiosity, prompt pipeline
+- Deterministic extraction of structured candidates from conversation
+- Tag: `epoch-3-foundation`
 
 ## Epoch IV — Evidence
 
-- Evidence Engine
-- Evidence lifecycle
-- Dependency graph
-- Confidence model
-- Evidence philosophy
-- Operational awareness split from configuration
-- 59 backend tests
+- Evidence engine and lifecycle; provenance and dependency graph; confidence/freshness model
+- Configuration, inference, observation, and verification made distinct
+- 59 backend tests. Tags: `epoch-4-evidence`, `foundation-docs`
 
 ## Epoch V — Reasoning
 
-- Deterministic reasoning pipeline
-- Conflict and uncertainty handling
-- Blocked-goal reasoning
-- Runtime-aware deterministic summaries
-- Developer console foundation
+- Deterministic reasoning over the evidence graph; contradiction and uncertainty handling
+- Blocked-goal reasoning; runtime-aware deterministic summaries; developer-console foundation
+- **Released as v0.1.0 ("Cognitive Foundation").** Tag: `epoch-5-reasoning` (same commit as `v0.1.0`)
 
 ## Epoch VI — Persistent Planning and Decision Architecture
 
-- Persistent plan lifecycle
-- Deterministic plan templates and canonical goal normalization
-- Session-focused active goal and plan selection
-- Evidence-driven step evaluation and deterministic next-action selection
-- Deterministic plan revision and duplicate-plan normalization
-- Decision provenance records with explicit choice handling
-- Read-only system endpoints for plans and decisions
-- Console inspection commands: plan, plans, decisions
-- 250 passing backend tests
+- Persistent plan lifecycle and deterministic plan templates; canonical goal normalization
+- Session-focused active goal/plan selection; evidence-driven step advancement and next-action
+- Deterministic plan revision and duplicate normalization
+- Decision-provenance records with explicit model-choice capture; read-only plan/decision endpoints
+- 250 backend tests. Tag: `epoch-6-planning`
 
-## Epoch VII — Perception
+## Epoch VII — Deliberation
 
-- Future work
-- Internet evidence
-- Vision evidence
-- Document evidence
-- External observation channels
+- Deterministic comparison of competing candidate plans; risk analysis (low/medium/high)
+- Persistent assumption tracking; decision-matrix generation
+- Explicit approval lifecycle (proposed → recommended → approved → implemented → archived)
+- Proposal-only — the system never executes. Tag: `epoch-7-deliberation`
 
-## Epoch VIII — World Interaction
+## Epoch VIII — Trusted Diagnostics (Bounded Tools and Verified Execution)
 
-- Future work
-- Tool use
-- Autonomous test loops
-- Bounded execution against the environment
+- Bounded tool framework: explicit schemas, approval-bound and scoped requests, narrow adapters
+- Structured tool results converted to evidence; deterministic audit trail; execution off by default
+- Tag: `epoch-8a-trusted-diagnostics`
 
-## Epoch IX — Stewardship
+## Epoch IX — Runtime Operations ("The Runtime Becomes Visible")
 
-- Future work
-- Monitoring
-- Auditability
-- Long-term maintenance
-- System durability and governance
+The single Core Runtime made observable and operable from native mobile operator consoles and desktop
+Bridge Zero (Mission Control), with authoritative measured telemetry and a deterministic runtime
+boundary. Release line 0.2.x.
+
+- **IX-A — Mobile Operator Console:** authenticated mobile runtime API; native iOS (SwiftUI) and
+  Android (Jetpack Compose) consoles; runtime status, Model Lock, diagnostics, Chronicle; synchronized
+  history and SSE conversation streaming; version-compatibility gates and secure credential storage.
+- **IX-B — Runtime Operations:** authoritative RuntimeStore; typed SSE runtime events and event bus;
+  measured telemetry; Operations Dashboard; shared cross-platform design tokens. Validated on hardware
+  (Android 8/8, iOS 8/8); 344 backend tests. Committed on `release/epoch-ix-0.2.0` and tagged
+  `epoch-ix-a`.
+- **IX-C — Operator Actions (in progress):** operator model selector, in-app New Conversation control,
+  operator approvals with on-device biometric confirmation, and the OMEGA-ARC app icon / real Aurebesh
+  branding. 345 backend tests. Push delivery (APNs/FCM) designed but infra-blocked.
+- **IX-D — Command Console (designed):** operator-initiated commands through the existing gates. ADR 0015.
+
+## Future
+
+- **Epoch X — Memory:** durable, scoped, benchmarked long-term memory (scope not yet committed).
+- **Tutelage and Learning (proposed):** a runtime-driven, review-gated study loop, sequenced after
+  Memory. ADR 0013.

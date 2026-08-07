@@ -119,13 +119,13 @@ function Invoke-OmegaLaunch {
         Write-OmegaWarning "Backend did not respond within timeout window"
     }
 
-    Start-OmegaFrontend -Port 5173 -BackendPort 8001 | Out-Null
+    Start-OmegaBridge -Port 5173 -BackendPort 8001 | Out-Null
 
-    Start-Process "http://localhost:5173"
+    Start-Process "http://127.0.0.1:5173"
 
     $git = Get-OmegaGitInfo
     $backend = Get-OmegaBackendStatus -Port 8001
-    $frontend = Get-OmegaFrontendStatus -Port 5173
+    $bridge = Get-OmegaBridgeStatus -Port 5173
     $testCount = Get-OmegaBackendTestCount
     $acceptanceCount = Get-OmegaAcceptanceCount
 
@@ -145,14 +145,14 @@ function Invoke-OmegaLaunch {
     Write-Host "Backend:"
     if ($backend.Online) { Write-Host "ONLINE" -ForegroundColor Green } else { Write-Host "OFFLINE" -ForegroundColor Red }
     Write-Host ""
-    Write-Host "Frontend:"
-    if ($frontend.Online) { Write-Host "ONLINE" -ForegroundColor Green } else { Write-Host "OFFLINE" -ForegroundColor Red }
+    Write-Host "Bridge Zero:"
+    if ($bridge.Online) { Write-Host "ONLINE" -ForegroundColor Green } else { Write-Host "OFFLINE" -ForegroundColor Red }
     Write-Host ""
     Write-Host "Backend URL:"
     Write-Host $backend.Url
     Write-Host ""
-    Write-Host "Frontend URL:"
-    Write-Host $frontend.Url
+    Write-Host "Bridge Zero URL:"
+    Write-Host $bridge.Url
     Write-Host ""
     Write-Host "Backend Tests:"
     Write-Host "$testCount Passing"
@@ -164,7 +164,7 @@ function Invoke-OmegaLaunch {
 
 function Stop-OmegaStack {
     Write-OmegaInfo "Stopping OMEGA-ARC processes tracked by PID files..."
-    Stop-OmegaFrontend
+    Stop-OmegaBridge
     Stop-OmegaBackend
 }
 
@@ -178,7 +178,7 @@ function Show-OmegaStatus {
     $git = Get-OmegaGitInfo
     $tools = Get-OmegaToolVersions
     $backend = Get-OmegaBackendStatus -Port 8001
-    $frontend = Get-OmegaFrontendStatus -Port 5173
+    $bridge = Get-OmegaBridgeStatus -Port 5173
     $testCount = Get-OmegaBackendTestCount
     $acceptanceCount = Get-OmegaAcceptanceCount
 
@@ -191,9 +191,9 @@ function Show-OmegaStatus {
     Write-Host "Dirty/Clean: $($git.Status)"
     Write-Host "Latest Tag: $($git.LatestTag)"
     Write-Host "Backend Online: $($backend.Online)"
-    Write-Host "Frontend Online: $($frontend.Online)"
+    Write-Host "Bridge Zero Online: $($bridge.Online)"
     Write-Host "Backend URL: $($backend.Url)"
-    Write-Host "Frontend URL: $($frontend.Url)"
+    Write-Host "Bridge Zero URL: $($bridge.Url)"
     Write-Host "Python Version: $($tools.Python)"
     Write-Host "Node Version: $($tools.Node)"
     Write-Host "Uvicorn Version: $($tools.Uvicorn)"
@@ -650,6 +650,85 @@ function Show-OmegaCompare {
     }
 }
 
+function Get-OmegaToolApiBase {
+    $backend = Get-OmegaBackendStatus -Port 8001
+    return $backend.Url
+}
+
+function Show-OmegaTools {
+    $apiBase = Get-OmegaToolApiBase
+    Write-Host ""
+    Write-Host "Registered Tools"
+    Write-Host "-------------------------------------"
+
+    try {
+        $response = Invoke-RestMethod -Method Get -Uri "$apiBase/system/tools"
+    }
+    catch {
+        Write-OmegaWarning "Could not query tool registry from backend."
+        return
+    }
+
+    Write-Host "Framework Enabled: $($response.enabled)"
+    Write-Host "Execution Enabled: $($response.execution_enabled)"
+    Write-Host "Dry-Run Enabled: $($response.dry_run_enabled)"
+    Write-Host "Critical Tools Enabled: $($response.critical_tools_enabled)"
+    Write-Host "Approval TTL: $($response.approval_ttl_seconds) seconds"
+    Write-Host ""
+
+    foreach ($tool in @($response.tools)) {
+        Write-Host "Name: $($tool.name)"
+        Write-Host "- Category: $($tool.category)"
+        Write-Host "- Risk: $($tool.risk_level)"
+        Write-Host "- Approval Required: $($tool.requires_approval)"
+        Write-Host "- Dry-Run Support: $($tool.supports_dry_run)"
+        Write-Host "- Enabled: $($tool.enabled)"
+        Write-Host ""
+    }
+}
+
+function Show-OmegaToolStatus {
+    $apiBase = Get-OmegaToolApiBase
+    Write-Host ""
+    Write-Host "Tool Framework Status"
+    Write-Host "-------------------------------------"
+
+    try {
+        $response = Invoke-RestMethod -Method Get -Uri "$apiBase/system/tools"
+    }
+    catch {
+        Write-OmegaWarning "Could not query tool framework status from backend."
+        return
+    }
+
+    Write-Host "Framework Enabled: $($response.enabled)"
+    Write-Host "Execution Enabled: $($response.execution_enabled)"
+    Write-Host "Dry-Run Enabled: $($response.dry_run_enabled)"
+    Write-Host "Critical Tools Enabled: $($response.critical_tools_enabled)"
+    Write-Host "Registered Tools: $(@($response.tools).Count)"
+    Write-Host "Approval TTL Seconds: $($response.approval_ttl_seconds)"
+}
+
+function Show-OmegaBridge {
+    $status = Get-OmegaBridgeStatus -Port 5173
+
+    Write-Host ""
+    Write-Host "Bridge Zero"
+    Write-Host "-------------------------------------"
+    Write-Host "Online: $($status.Online)"
+    Write-Host "URL: $($status.Url)"
+    if ($status.PortOwner) {
+        Write-Host "Port Owner: PID $($status.PortOwner.Pid) ($($status.PortOwner.ProcessName))"
+    }
+    else {
+        Write-Host "Port Owner: none"
+    }
+}
+
+function Show-OmegaBridgeStatus {
+    Show-OmegaBridge
+}
+
 function Show-OmegaFutureHook {
     param([Parameter(Mandatory = $true)][string]$Name)
     Write-OmegaWarning "Future hook '$Name' is reserved but not yet implemented."
@@ -677,6 +756,10 @@ function Show-OmegaCommandHelp {
     Write-Host "  risks"
     Write-Host "  assumptions"
     Write-Host "  compare"
+    Write-Host "  bridge"
+    Write-Host "  bridge-status"
+    Write-Host "  tools"
+    Write-Host "  tool-status"
 }
 
 Export-ModuleMember -Function @(
@@ -694,6 +777,10 @@ Export-ModuleMember -Function @(
     "Show-OmegaRisks",
     "Show-OmegaAssumptions",
     "Show-OmegaCompare",
+    "Show-OmegaBridge",
+    "Show-OmegaBridgeStatus",
+    "Show-OmegaTools",
+    "Show-OmegaToolStatus",
     "Show-OmegaFutureHook",
     "Show-OmegaCommandHelp"
 )

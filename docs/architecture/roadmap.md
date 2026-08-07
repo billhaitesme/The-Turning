@@ -1,5 +1,9 @@
 # Roadmap
 
+> This is the origin architecture roadmap, kept for narrative continuity and updated to the real epoch
+> names. The **living** delivery roadmap is [`../../ROADMAP.md`](../../ROADMAP.md); current status is in
+> [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md).
+
 ## Foundational Era
 
 ### Genesis
@@ -63,45 +67,56 @@ Completion criteria:
 Purpose: turn goals and evidence into action sequences.
 
 Deliverables:
-- planning layer
+- persistent planning layer
 - next-best-action reasoning
-- dependency-aware execution planning
+- dependency-aware, proposal-only plans and decision provenance
 
 Reference:
 - [Epoch VI Planning](epoch6_planning.md)
 
 Completion criteria:
-- the system can support goal-directed action
+- the system can support goal-directed action without executing it
 
-### Epoch VII: Perception
-Purpose: broaden the system’s view of the world.
-
-Deliverables:
-- internet and document awareness
-- vision and multimodal perception
-- richer environment sensing
-
-Completion criteria:
-- the system can ingest new evidence from external sources
-
-### Epoch VIII: World Interaction
-Purpose: let the system act beyond conversation.
+### Epoch VII: Deliberation
+Purpose: choose deliberately among competing plans.
 
 Deliverables:
-- tool and workflow integration
-- testing and execution loops
-- more autonomous operation
+- deterministic comparison of candidate plans
+- risk analysis and assumption tracking
+- an explicit approval lifecycle
 
 Completion criteria:
-- the system can interact with the world in bounded and auditable ways
+- a recommendation is reproducible and its rationale is inspectable
 
-### Epoch IX: Stewardship
-Purpose: make the system durable and maintainable.
+### Epoch VIII: Trusted Diagnostics (Bounded Tools and Verified Execution)
+Purpose: let the system interact with its environment in bounded, auditable ways.
 
 Deliverables:
-- monitoring
-- audit trails
-- long-term memory and governance
+- explicit tool schemas and approval-bound, scoped tool requests
+- narrow adapters (health check, git status, filesystem inspection, model status, test runner)
+- tool results converted to evidence with a deterministic audit trail
 
 Completion criteria:
-- the system remains understandable, observable, and safe over time
+- the environment can be observed through narrow, approval-gated adapters; execution stays off by default
+
+## Operations Era
+
+### Epoch IX: Runtime Operations — "The Runtime Becomes Visible"
+Purpose: make the single Core Runtime observable and operable.
+
+Deliverables:
+- authenticated native mobile operator consoles (iOS, Android) and desktop Bridge Zero (Mission Control)
+- authoritative RuntimeStore, typed SSE events, measured telemetry, and an Operations Dashboard
+- Model Lock and a deterministic runtime boundary
+- operator actions (IX-C): model selector, new conversation, and approvals with on-device biometric
+
+Completion criteria:
+- the runtime's real state is visible and operable, and operator actions flow through explicit gates
+
+## Future
+
+### Epoch X: Memory
+Durable, scoped, benchmarked long-term memory — the substrate the learning pillar depends on.
+
+### Tutelage and Learning (proposed)
+A runtime-driven, review-gated study loop with measured recall, sequenced after Memory.

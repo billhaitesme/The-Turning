@@ -202,7 +202,7 @@ def record_health_check_result(
     return {
         "key": key,
         "value": "online" if success else "offline",
-        "state_type": "verified" if success else "observed",
+        "state_type": "verified",
         "source": source,
         "confidence": 1.0,
         "observed_at": checked_at,
@@ -212,6 +212,45 @@ def record_health_check_result(
         "scope": "runtime",
         "notes": "Trusted health-check adapter result.",
     }
+
+
+def apply_trusted_health_check_result(store: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(result, dict):
+        return deepcopy(store)
+
+    output = result.get("output") if isinstance(result.get("output"), dict) else {}
+    checked_url = output.get("checked_url") or result.get("checked_url")
+    if not checked_url:
+        return deepcopy(store)
+
+    state_type = str(result.get("status") or "")
+    if state_type == "endpoint_mismatch":
+        return set_evidence(
+            store,
+            key="backend_health",
+            record={
+                "key": "backend_health",
+                "value": None,
+                "state_type": "unknown",
+                "source": "health_check",
+                "confidence": 1.0,
+                "observed_at": output.get("checked_at") or result.get("completed_at"),
+                "dependencies": ["backend_port"],
+                "scope": "runtime",
+                "notes": "endpoint mismatch",
+            },
+        )
+
+    record = record_health_check_result(
+        target="backend",
+        url=str(checked_url),
+        success=bool(result.get("success")),
+        checked_at=str(output.get("checked_at") or result.get("completed_at") or ""),
+        source="health_check",
+    )
+    if not record.get("checked_url"):
+        record["checked_url"] = str(checked_url)
+    return set_evidence(store, key=record["key"], record=record)
 
 
 def rank_state_type(state_type: str) -> int:

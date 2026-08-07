@@ -1,0 +1,25 @@
+# Gradle build state and caches
+.gradle/
+build/
+*/build/
+
+# Machine-specific SDK location. Never commit: it encodes a local absolute path.
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.cxx/
+
+# Build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# Keystores and signing material must never be committed.
+*.jks
+*.keystore

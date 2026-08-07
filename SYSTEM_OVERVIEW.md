@@ -1,132 +1,118 @@
 # OMEGA-ARC System Overview
 
+This overview reflects the current epoch (**Epoch IX — Runtime Operations**, release 0.2.1). For
+delivery status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`ROADMAP.md`](ROADMAP.md); the
+release-identity authority is [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
+
 ## Mission
 
-OMEGA-ARC is a conversational, evidence-aware architecture for building reliable software assistants. Its purpose is not to imitate human intuition, but to provide a structured system for observing, storing, and reasoning over facts with clear provenance.
+OMEGA-ARC is a conversational, evidence-aware architecture for a persistent local intelligence. Its
+purpose is not to imitate human intuition, but to provide a structured, local-first system for
+observing, storing, and reasoning over facts with clear provenance — with a deterministic runtime
+boundary and reviewable growth.
 
 ## Project Vision
 
 The long-term vision is a system that can:
 
 - understand identity and context without overclaiming certainty
-- preserve goals, memory, and knowledge separately
+- preserve goals, memory, and knowledge separately, with provenance
 - reason over structured evidence rather than raw assumptions
-- route work to the most appropriate model or capability
-- remain legible to future contributors
+- change the active model only through an explicit, recorded operator action (Model Lock)
+- be observed and operated from native operator consoles without a redeploy
+- eventually remember durably and learn under review (future Epochs X and Tutelage)
+- remain legible and reversible for future contributors
 
-## Current Repository Structure
+## Repository Structure
 
-- backend/app.py — FastAPI entry point and conversation orchestration
-- backend/awareness_engine.py — separation of configuration and runtime health
-- backend/services/ — modular services for cognition, identity, goals, knowledge, reflection, curiosity, and evidence
-- backend/tests/ — regression and acceptance tests
-- backend/data/ — stored state such as goals, knowledge, evidence, and constitution
-- backend/docs/decisions/ — architecture decisions and design rationale
-- docs/ — living architecture and philosophy documentation
+- `backend/` — FastAPI Core Runtime: conversation orchestration, cognition/identity/goals/knowledge,
+  the evidence and reasoning engines, planning and deliberation, the bounded-tool framework, the
+  authoritative RuntimeStore, and the mobile runtime API
+- `bridge/bridge-zero/` — desktop Bridge Zero (Mission Control), a read-only operations console
+- `bridge/bridge-zero-ios/`, `bridge/bridge-zero-android/` — native operator consoles
+- `bridge/shared/` — the shared mobile contract, design tokens, fonts, and the app-icon source
+- `frontend/` — the Command Deck web UI (chat surface)
+- `docs/` — living architecture, governance, and decision records (ADRs)
+- `scripts/` — launch, health-check, and backup tooling
 
-## Current Architecture Diagram
+## Cognition Pipeline
 
 ```mermaid
 flowchart TD
-    User[User] --> Frontend[Frontend]
-    Frontend --> FastAPI[FastAPI]
+    User[User] --> Frontend[Frontend / Operator Console]
+    Frontend --> FastAPI[FastAPI Core Runtime]
     FastAPI --> Conversation[Conversation Pipeline]
     Conversation --> Evidence[Evidence Engine]
+    Evidence --> Reasoning[Reasoning]
+    Reasoning --> Planning[Planning]
+    Planning --> Deliberation[Deliberation]
+    Deliberation --> Decisions[Decision Records]
     Evidence --> Cognition[Cognition Engine]
     Cognition --> Identity[Identity]
-    Cognition --> Memory[Memory]
     Cognition --> Goals[Goals]
     Cognition --> Knowledge[Knowledge]
-    Identity --> Reflection[Reflection]
-    Goals --> Reflection
-    Knowledge --> Reflection
-    Reflection --> Curiosity[Curiosity]
-    Curiosity --> Prompt[Prompt Composer]
-    Prompt --> Router[Model Router]
-    Router --> Models[Language Models]
+    Decisions --> Prompt[Prompt Composer]
+    Prompt --> Control[Model Control / Model Lock]
+    Control --> ActiveModel[Operator-Selected Chat Model]
+    ActiveModel --> DirectResponse[Unmodified Model Response]
 ```
 
-## Epoch VI Additions
+## Runtime Operations (Epoch IX)
 
-Epoch VI introduces persistent deterministic planning and decision provenance.
+Epoch IX makes the runtime observable and operable rather than adding a new cognition layer.
 
-- Plans are first-class persistent objects under backend/data/plans.json.
-- Decisions are first-class provenance records under backend/data/decisions.json.
-- Planning consumes goals, evidence, and reasoning output.
-- Planning proposes steps but never executes them.
-- Decisions preserve concise rationale and evidence references.
+- An authoritative **RuntimeStore** is the single source of live runtime state.
+- Typed **SSE events** and an in-process event bus replace polling; native clients consume
+  `/api/mobile/v1/events`.
+- **Measured telemetry** (CPU, RAM, latency, tool queue, streaming state, connected clients, current
+  session, Chronicle) feeds an **Operations Dashboard**.
+- **Model Lock** guarantees the active model changes only on an explicit, recorded operator action.
+- **Operator actions (IX-C)** — model selector, new conversation, and approvals with on-device
+  biometric confirmation — flow through existing gates; nothing bypasses the deterministic boundary.
 
-### Updated Logical Flow
+## Epoch Timeline
 
-```mermaid
-flowchart TD
-  Evidence[Evidence] --> Reasoning[Reasoning]
-  Reasoning --> Planning[Planning]
-  Planning --> Decisions[Decision Records]
-  Decisions --> Response[Response]
-```
-
-## Current Epoch Timeline
-
-- Foundational Era
-  - Identity
-  - Cognition
-  - Evidence
-  - Goals
-  - Knowledge Graph
-  - Reflection
-  - Curiosity
-  - Model Routing
-  - Tests
-  - ADRs
-
-- Systems Era (next)
-  - Reasoning over evidence
-  - Planning and action selection
-  - Perception and environment awareness
-  - Broader world interaction
-  - Stewardship and long-term maintenance
+- **Foundational Era** — Continuity/modular backend (I), Identity (II), Cognition (III), Evidence (IV)
+- **Systems Era** — Reasoning (V), Planning (VI), Deliberation (VII), Trusted Diagnostics / bounded
+  tools (VIII)
+- **Operations Era** — Runtime Operations (IX): mobile + desktop operator consoles, telemetry,
+  operator actions
+- **Next** — Memory (Epoch X), then Tutelage and Learning (proposed)
 
 ## Subsystem Summary
 
-- Identity: tracks explicit user identity facts and avoids over-inference
-- Cognition: extracts candidate goals, projects, corrections, and configuration from conversation
-- Evidence: records provenance, confidence, freshness, and dependency relationships
-- Goals: stores persistent goals with update semantics
-- Knowledge Graph: stores structured knowledge and relationships
-- Reflection: converts observed behavior into signals for later use
-- Curiosity: offers optional follow-up questions without dominating the conversation
-- Model Routing: selects an appropriate model for general, technical, and vision workloads
+- Identity — tracks explicit user identity facts and avoids over-inference
+- Cognition — extracts candidate goals, projects, corrections, and configuration from conversation
+- Evidence — records provenance, confidence, freshness, and dependency relationships
+- Reasoning — deterministic reasoning over the evidence graph, with contradiction/uncertainty handling
+- Planning & Deliberation — persistent, proposal-only plans; deterministic comparison and approval
+- Bounded Tools — approval-gated, scoped adapters that turn results into evidence (execution off by default)
+- Model Control — Model Lock and Direct Model mode; the operator selects the active chat model
+- Runtime Operations — RuntimeStore, typed events, telemetry, and the operator consoles
 
 ## Persistence Summary
 
-OMEGA-ARC persists structured state in JSON-backed files under backend/data/ and a local SQLite-backed runtime store when needed.
+OMEGA-ARC persists structured state in JSON-backed files under `backend/data/` and a local
+SQLite-backed runtime store when needed.
 
-- backend/data/goals.json — goal state
-- backend/data/knowledge_graph.json — knowledge graph state
-- backend/data/evidence.json — evidence records
-- backend/data/plans.json — persistent plan records
-- backend/data/decisions.json — persistent decision records
-- backend/data/constitution.json — operating principles
-- backend/omega_arc.db — runtime persistence used by the application
+- `goals.json`, `knowledge_graph.json`, `evidence.json` — cognition and evidence state
+- `plans.json`, `decisions.json` — persistent plans and decision provenance
+- `deliberations.json`, `assumptions.json`, `approvals.json` — deliberation state
+- `tool_requests.json`, `tool_results.json` — bounded-tool requests and results
+- `constitution.json` — operating principles
+- `omega_arc.db` — runtime persistence used by the application
 
 ## Testing Summary
 
-The backend uses unittest-based regression and acceptance tests.
+The backend uses regression and acceptance tests run under `pytest`, hermetic (tests redirect mutable
+stores to a temporary data directory and leave tracked runtime data unchanged).
 
-- backend/tests/ — service and integration tests
-- Current suite count: 59 tests passing
+- `backend/tests/` — service and integration tests
+- Current suite count: **345 passing** on the IX-C branch (344 at the `epoch-ix-a` checkpoint)
 
 ## Roadmap Summary
 
-The immediate roadmap is to deepen reasoning over structured evidence before introducing more autonomous behaviors. The next major phase is a Reasoning Engine that reasons over the evidence graph and produces actionable insights.
-
-## Future Modules
-
-Planned future work includes:
-
-- Reasoning Engine
-- Planning and action selection
-- Web and document perception
-- Vision and multimodal reasoning
-- Broader runtime diagnostics and stewardship
+Reasoning, planning, deliberation, and bounded tools are delivered; Epoch IX has made the runtime
+observable and operable. The next major phase is **Epoch X — Memory**: durable, scoped, benchmarked
+long-term memory, which the proposed **Tutelage and Learning** work depends on. See
+[`ROADMAP.md`](ROADMAP.md) for the living plan.

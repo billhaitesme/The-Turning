@@ -1,16 +1,49 @@
 from dataclasses import dataclass
 import os
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    return os.getenv(name, str(default)).lower() == "true"
+
+
 @dataclass(frozen=True)
 class Settings:
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-    chat_model: str = os.getenv("OLLAMA_CHAT_MODEL", "llama2-uncensored:7b")
+    active_chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    # Backwards-compatible name for integrations that still read chat_model.
+    chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    # Curated set of conversational models an operator may select from the consoles.
+    # The selector enforces this allowlist so an operator cannot pick an unavailable
+    # model and trip the provider-substitution guard. Empty disables enforcement.
+    selectable_chat_models: tuple = tuple(
+        model.strip()
+        for model in os.getenv(
+            "SELECTABLE_CHAT_MODELS",
+            "dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
+        ).split(",")
+        if model.strip()
+    )
     reasoning_model: str = os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b")
     vision_model: str = os.getenv("OLLAMA_VISION_MODEL", "llava:7b")
     router_model: str = os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b")
     embedding_model: str = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma:latest")
     network_mode: str = os.getenv("NETWORK_MODE", "offline")
     personality_mode: str = os.getenv("ACTIVE_PERSONALITY_MODE", "default")
+    model_lock: bool = _env_bool("MODEL_LOCK", True)
+    # These policy safeguards are intentionally fail-closed. Environment values
+    # cannot reactivate forbidden conversational routing or response rewriting.
+    allow_topic_routing: bool = False
+    allow_secondary_rewrite: bool = False
+    allow_automatic_model_fallback: bool = _env_bool("ALLOW_AUTOMATIC_MODEL_FALLBACK", False)
+    automatic_model_fallback_model: str = os.getenv("AUTOMATIC_MODEL_FALLBACK_MODEL", os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b"))
+    enable_tool_framework: bool = os.getenv("ENABLE_TOOL_FRAMEWORK", "true").lower() == "true"
+    enable_tool_execution: bool = os.getenv("ENABLE_TOOL_EXECUTION", "false").lower() == "true"
+    enable_tool_dry_run: bool = os.getenv("ENABLE_TOOL_DRY_RUN", "true").lower() == "true"
+    enable_critical_tools: bool = os.getenv("ENABLE_CRITICAL_TOOLS", "false").lower() == "true"
+    enable_backend_health_check: bool = os.getenv("ENABLE_BACKEND_HEALTH_CHECK", "true").lower() == "true"
+    backend_health_check_timeout_seconds: int = int(os.getenv("BACKEND_HEALTH_CHECK_TIMEOUT_SECONDS", "3"))
+    backend_health_check_paths: str = os.getenv("BACKEND_HEALTH_CHECK_PATHS", "/health,/system/status,/")
+    tool_approval_ttl_seconds: int = int(os.getenv("TOOL_APPROVAL_TTL_SECONDS", "300"))
     request_timeout_seconds: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "180"))
     enable_cognition_pipeline: bool = os.getenv("ENABLE_COGNITION_PIPELINE", "true").lower() == "true"
     enable_cognition_context: bool = os.getenv("ENABLE_COGNITION_CONTEXT", "false").lower() == "true"

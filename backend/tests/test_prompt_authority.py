@@ -4,6 +4,18 @@ from app import build_backend_awareness_preferences, build_ollama_messages
 
 
 class PromptAuthorityTests(unittest.TestCase):
+    def test_current_user_input_is_not_sanitized_or_rewritten(self):
+        original = "Backend online: True — preserve this exact user statement."
+        messages = build_ollama_messages(
+            history=[],
+            user_message=original,
+            user_profile={"style": "balanced", "preferences": {}},
+            memories=[],
+            web_results=[],
+        )
+
+        self.assertEqual(messages[-1], {"role": "user", "content": original})
+
     def test_final_prompt_never_contains_backend_online_false(self):
         user_profile = {
             "style": "balanced",
