@@ -48,9 +48,11 @@ Push notifications, short-lived approval challenges, approve/deny flows, and bio
 - **Operator approvals (the IX-C headline).** The runtime's short-lived action-gate requests are
   surfaced to the mobile operator via `/api/mobile/v1/approvals`; approve/deny requires client-side
   biometric confirmation and is recorded through the existing approval engine (no new authority).
-  Backend done + tested (11 mobile tests). Mobile UI + biometric next. Push delivery (APNs/FCM) is
-  designed but **infra-blocked** — needs a paid Apple Developer account and a Firebase project. See
-  ADR [`0014-operator-approvals.md`](docs/decisions/0014-operator-approvals.md).
+  Backend + both mobile UIs built: an Approvals tab on iOS (Face ID) and Android (BiometricPrompt),
+  approve/deny gated by a real device biometric. Backend tested (11 mobile tests); Android compiled;
+  iOS pending CI + device pass. Push delivery (APNs/FCM) is designed but **infra-blocked** — needs a
+  paid Apple Developer account and a Firebase project. See ADR
+  [`0014-operator-approvals.md`](docs/decisions/0014-operator-approvals.md).
 
 ### Deferred operator-convenience items
 
