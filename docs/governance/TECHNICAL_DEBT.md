@@ -8,6 +8,8 @@ This register contains implementation debt found during the IX-B completion audi
 
 Both native clients poll status, telemetry, and diagnostics every 2.5 seconds. Neither consumes `/api/mobile/v1/events`; both event buses are write-only. Resolve before IX-B completion.
 
+**Resolved:** both native clients now consume the typed `/api/mobile/v1/events` stream (iOS `APIClient.runtimeEvents()`, Android `RuntimeApi.streamRuntimeEvents`) with a reconnect backoff; the periodic operational polling was removed. Desktop stream instrumentation remains open under TD-C02.
+
 ### TD-C02 — RuntimeStore omits desktop streams
 
 Only the mobile message adapter calls `begin_stream` and `end_stream`. Desktop/frontend `/chat/stream` activity is absent from active-stream and latency telemetry. Instrument the shared authoritative stream boundary once.
@@ -67,6 +69,8 @@ No iOS asset catalog or Android launcher-icon resources are present. Physical de
 ### TD-L02 — IX-C permission and placeholder text are present in IX-B
 
 The manifests declare biometric usage and Settings displays future notification text although IX-C behavior is inactive. Remove unused permission declarations/placeholders from the IX-B release or record a specific accepted reason to retain them.
+
+**Resolved (2026-08-07, IX-C):** the biometric permission is now used — operator approvals require on-device biometric confirmation (iOS `LAContext`, Android `BiometricPrompt`). The Settings "Notifications" copy was corrected from "become available in Epoch IX-C" to state that push (APNs/FCM) is planned and not yet enabled (it is infra-blocked). Ships on the next mobile build.
 
 ### TD-L03 — Deprecated APIs remain
 

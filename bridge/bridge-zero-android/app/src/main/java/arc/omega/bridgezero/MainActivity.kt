@@ -423,7 +423,7 @@ private fun SettingsScreen(state: OperatorUiState, viewModel: OperatorViewModel)
                 if (showLogs) state.logs.forEach { Text(it, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
             }
         }
-        item { InstrumentPanel("NOTIFICATIONS") { Text("Runtime push notifications become available in Epoch IX-C.", color = Color.Gray) } }
+        item { InstrumentPanel("NOTIFICATIONS") { Text("Runtime push notifications are planned (APNs/FCM) and not yet enabled.", color = Color.Gray) } }
         item { Button(onClick = { viewModel.disconnect() }, modifier = Modifier.fillMaxWidth()) { Text("DISCONNECT") } }
     }
 }

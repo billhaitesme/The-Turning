@@ -32,7 +32,7 @@ struct SettingsView: View {
                 NavigationLink("Logs") { LogsView() }
             }
             Section("Notifications") {
-                Text("Runtime push notifications become available in Epoch IX-C.")
+                Text("Runtime push notifications are planned (APNs/FCM) and not yet enabled.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section {
