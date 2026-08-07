@@ -38,6 +38,22 @@ The mobile protocol remains API major `1`. A protocol major is not the product v
 3. Patch and minor releases within 0.2.x must preserve the deterministic runtime boundary and Model Lock behavior.
 4. Release metadata must never claim functionality that is not backed by an authoritative runtime signal.
 
+## Milestone versioning
+
+Within an epoch, each shippable milestone increments the **patch** — Epoch IX-C releases as `0.2.1`,
+IX-D as `0.2.2`. Crossing into a new epoch increments the **minor** — Epoch X begins at `0.3.0`. The
+major stays `0` for the pre-1.0 line.
+
+Product compatibility is governed by the **mobile API major** and the runtime compatibility gate, not
+by the patch number. A breaking change is signaled by an API-major bump (and trips the gate); it is
+never hidden inside a milestone patch — which is precisely why additive, API-compatible milestones may
+advance only the patch.
+
+A milestone version advances only when the milestone is committed from a clean tree, has passed its
+validation gate, and is tagged (`epoch-<roman>-<milestone>`). Advance in this order: update this
+document, then the component sources in the table above, then the changelog, then run the version
+consistency check (`scripts/check_versions.py`).
+
 ## Tags
 
 Milestone tags use `epoch-<roman>-<milestone>`, in lowercase. Epoch IX-A uses `epoch-ix-a`.
@@ -52,4 +68,4 @@ Active UI labels, build metadata, compatibility defaults, setup instructions, an
 
 ## Release advancement
 
-When advancing the release, update this document first, then update all component sources in the table above, add a changelog entry, and run the repository version consistency check.
+When advancing the release, update this document first, then update all component sources in the table above, add a changelog entry, and run the version consistency check: `python scripts/check_versions.py`. The check reads the declared `Release` value here and fails if any component source disagrees.
