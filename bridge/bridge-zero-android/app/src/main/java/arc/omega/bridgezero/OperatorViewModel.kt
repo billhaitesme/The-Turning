@@ -239,8 +239,9 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
         eventStream = null
         streaming = null
         api = null
-        if (clearCredentials) secureStore.clear()
-        mutableState.value = OperatorUiState()
+        // Retain the non-secret server address for convenience; clear only the token.
+        if (clearCredentials) secureStore.clearToken()
+        mutableState.value = OperatorUiState(server = secureStore.server(), hasToken = secureStore.token() != null)
     }
 
     fun resumeEvents() {

@@ -34,4 +34,9 @@ class SecureStore(context: Context) {
         secrets.edit().clear().apply()
         settings.edit().remove("server_url").apply()
     }
+
+    /** Clear only the bearer token; retain the non-secret server address. */
+    fun clearToken() {
+        secrets.edit().remove("bearer_token").apply()
+    }
 }

@@ -261,8 +261,8 @@ final class OperatorConsoleState: ObservableObject {
         runtimePhase = nil
         streamingText = ""
         if clearCredentials {
+            // Retain the non-secret server address for convenience; clear only the token.
             try? credentials.deleteToken()
-            defaults.removeObject(forKey: Keys.server)
         }
         connection = .disconnected
     }
