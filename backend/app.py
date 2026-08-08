@@ -220,9 +220,11 @@ def init_db() -> None:
         user_id TEXT,
         title TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        scope TEXT
     )
     """)
+    _ensure_column(cur, "conversations", "scope", "TEXT")
     cur.execute("""
     CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -262,6 +264,18 @@ def init_db() -> None:
     _ensure_column(cur, "memories", "superseded", "INTEGER DEFAULT 0")
     _ensure_column(cur, "memories", "superseded_by", "TEXT")
     _ensure_column(cur, "memories", "superseded_at", "TEXT")
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS supersession_candidates (
+        id TEXT PRIMARY KEY,
+        new_id TEXT NOT NULL,
+        old_id TEXT NOT NULL,
+        similarity REAL NOT NULL,
+        declared INTEGER DEFAULT 0,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+    )
+    """)
     conn.commit()
     conn.close()
 
@@ -276,18 +290,29 @@ def utc_now() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
-def create_conversation(user_id: Optional[str] = None, title: Optional[str] = None) -> str:
+def create_conversation(user_id: Optional[str] = None, title: Optional[str] = None, scope: Optional[str] = None) -> str:
     cid = str(uuid.uuid4())
     now = utc_now()
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        (cid, user_id, title, now, now),
+        "INSERT INTO conversations (id, user_id, title, created_at, updated_at, scope) VALUES (?, ?, ?, ?, ?, ?)",
+        (cid, user_id, title, now, now, scope),
     )
     conn.commit()
     conn.close()
     return cid
+
+
+def set_conversation_scope(conversation_id: str, scope: Optional[str]) -> None:
+    """Assign (or clear, with None) the conversation's memory room. Explicit operator/API
+    action — scope is never inferred (ADR 0020)."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE conversations SET scope = ?, updated_at = ? WHERE id = ?",
+                (scope, utc_now(), conversation_id))
+    conn.commit()
+    conn.close()
 
 
 def touch_conversation(conversation_id: str) -> None:
@@ -427,44 +452,120 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-# Epoch X — write-time supersession (ADR 0018). When a new memory closely matches an existing one of
-# the same kind and scope (cosine >= threshold), the older one is flagged superseded (kept in the DB,
-# reversible) and dropped from active recall — so the store stays current at the source, not just via
-# a read-time recency nudge. OFF by default: distinguishing "replaces" from "complements" by
-# similarity alone is unreliable, so enabling is an operator choice with a calibrated threshold.
+# Epoch X — write-time supersession, robust form (ADR 0021, upgrading ADR 0018). Similarity alone
+# cannot separate "replaces" (port 8000 -> 8001) from "complements" (backend is FastAPI; backend is
+# Python), so the runtime never hides a memory on similarity alone. Two dispositions:
+#   AUTO   — the new text itself DECLARES the change ("is now", "changed to", "no longer", ...):
+#            same kind + same room + cosine >= threshold -> the old row is flagged superseded.
+#   PROPOSE — high similarity but no declared change: a pending supersession candidate is recorded
+#            for operator review; NOTHING is hidden from recall until it is approved.
+# All decisions are recorded in supersession_candidates (auto/pending/approved/rejected), reversible.
+# Threshold 0 disables scanning entirely.
+#
+# Two-tier floors (calibrated in benchmarks/supersession_benchmark.py): a replaced VALUE drags the
+# embedding away from the old fact, so true declared replacements often score LOWER similarity than
+# unrelated complements. The declared-change marker is itself the strong signal; it therefore gets a
+# lower similarity floor than undeclared collisions (which rely on similarity alone and stay high).
+# MEMORY_SUPERSEDE_DECLARED_THRESHOLD=0 (default) falls back to the main threshold.
 MEMORY_SUPERSEDE_THRESHOLD = float(os.getenv("MEMORY_SUPERSEDE_THRESHOLD", "0.0"))
+MEMORY_SUPERSEDE_DECLARED_THRESHOLD = float(os.getenv("MEMORY_SUPERSEDE_DECLARED_THRESHOLD", "0.0"))
+
+_CHANGE_MARKERS = re.compile(
+    r"\b(is|are|was|were)\s+now\b|\bnow\s+(uses?|runs?|lives?|listens?)\b"
+    r"|\b(changed|switched|moved|updated|renamed|upgraded|downgraded)\s+(to|from)\b"
+    r"|\bno\s+longer\b|\binstead\s+of\b|\breplaced?\s+(by|with)\b",
+    re.IGNORECASE,
+)
 
 
-def _supersede_prior_memories(cur: sqlite3.Cursor, *, new_id: str, embedding: List[float], kind: str,
-                              user_id: Optional[str], conversation_id: Optional[str]) -> int:
-    """Flag older, non-superseded memories of the same kind/scope that the new one replaces.
-    Reversible: rows are marked, never deleted. Returns the count superseded."""
+def _declares_change(text: str) -> bool:
+    """True when the text itself announces a change of fact — the deterministic signal that a
+    same-subject prior memory is being replaced rather than complemented."""
+    return bool(_CHANGE_MARKERS.search(str(text)))
+
+
+def _scan_supersession(cur: sqlite3.Cursor, *, new_id: str, embedding: List[float], kind: str,
+                       scope: Optional[str], user_id: Optional[str], conversation_id: Optional[str],
+                       summary_text: str) -> Dict[str, int]:
+    """Scan same-kind, same-room prior memories: auto-supersede on declared change, otherwise
+    record a pending candidate for review. Returns counts. Rows are marked, never deleted."""
     if user_id:
         rows = cur.execute(
             "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND IFNULL(scope, '') = IFNULL(?, '') "
             "AND (superseded IS NULL OR superseded = 0) AND (user_id = ? OR conversation_id = ?)",
-            (new_id, kind, user_id, conversation_id),
+            (new_id, kind, scope, user_id, conversation_id),
         ).fetchall()
     else:
         rows = cur.execute(
             "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND IFNULL(scope, '') = IFNULL(?, '') "
             "AND (superseded IS NULL OR superseded = 0) AND conversation_id = ?",
-            (new_id, kind, conversation_id),
+            (new_id, kind, scope, conversation_id),
         ).fetchall()
     now = utc_now()
-    count = 0
+    declared = _declares_change(summary_text)
+    declared_floor = MEMORY_SUPERSEDE_DECLARED_THRESHOLD or MEMORY_SUPERSEDE_THRESHOLD
+    floor = declared_floor if declared else MEMORY_SUPERSEDE_THRESHOLD
+    counts = {"auto": 0, "pending": 0}
     for row in rows:
         try:
             old_embedding = json.loads(row["embedding_json"])
         except Exception:
             continue
-        if cosine_similarity(embedding, old_embedding) >= MEMORY_SUPERSEDE_THRESHOLD:
+        similarity = cosine_similarity(embedding, old_embedding)
+        if similarity < floor:
+            continue
+        if declared:
             cur.execute(
                 "UPDATE memories SET superseded = 1, superseded_by = ?, superseded_at = ? WHERE id = ?",
                 (new_id, now, row["id"]),
             )
-            count += 1
-    return count
+            status = "auto"
+        else:
+            status = "pending"
+        cur.execute(
+            "INSERT INTO supersession_candidates (id, new_id, old_id, similarity, declared, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (str(uuid.uuid4()), new_id, row["id"], similarity, 1 if declared else 0, status, now),
+        )
+        counts[status] += 1
+    return counts
+
+
+def list_supersession_candidates(status: str = "pending") -> List[Dict[str, Any]]:
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT c.*, old.summary_text AS old_summary, new.summary_text AS new_summary "
+        "FROM supersession_candidates c "
+        "LEFT JOIN memories old ON old.id = c.old_id "
+        "LEFT JOIN memories new ON new.id = c.new_id "
+        "WHERE c.status = ? ORDER BY c.created_at DESC",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def resolve_supersession_candidate(candidate_id: str, approve: bool) -> bool:
+    """Approve (old row becomes superseded) or reject a pending candidate. Returns False if the
+    candidate does not exist or is not pending."""
+    conn = get_db()
+    cur = conn.cursor()
+    row = cur.execute("SELECT * FROM supersession_candidates WHERE id = ? AND status = 'pending'",
+                      (candidate_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return False
+    now = utc_now()
+    if approve:
+        cur.execute("UPDATE memories SET superseded = 1, superseded_by = ?, superseded_at = ? WHERE id = ?",
+                    (row["new_id"], now, row["old_id"]))
+    cur.execute("UPDATE supersession_candidates SET status = ?, resolved_at = ? WHERE id = ?",
+                ("approved" if approve else "rejected", now, candidate_id))
+    conn.commit()
+    conn.close()
+    return True
 
 
 def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0, scope: Optional[str] = None) -> None:
@@ -477,8 +578,9 @@ def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind:
         (new_id, conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now(), scope),
     )
     if 0.0 < MEMORY_SUPERSEDE_THRESHOLD <= 1.0:
-        _supersede_prior_memories(cur, new_id=new_id, embedding=embedding, kind=kind,
-                                  user_id=user_id, conversation_id=conversation_id)
+        _scan_supersession(cur, new_id=new_id, embedding=embedding, kind=kind, scope=scope,
+                           user_id=user_id, conversation_id=conversation_id,
+                           summary_text=summary_text)
     conn.commit()
     conn.close()
 
@@ -566,12 +668,14 @@ def _rank_memories(scored: List[Dict[str, Any]]) -> None:
     scored.sort(key=lambda item: item["ranking_score"], reverse=True)
 
 
-def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS, scope: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS, scope: Optional[str] = None, include_global: bool = True) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
     query_tokens = _tokenize(query) if MEMORY_LEXICAL_WEIGHT > 0 else set()
     query_trigrams = _char_trigrams(query) if MEMORY_FUZZY_WEIGHT > 0 else set()
     # Scope = MemPalace's "room": recall within a topic/subject when a scope is given (ADR 0019).
     # Omitting scope preserves prior behavior (recall across all of the user's/conversation's rooms).
+    # With a scope, unscoped ("global wing") memories are included by default — room-agnostic facts
+    # like operator preferences stay recallable in every room; OTHER rooms stay excluded (ADR 0020).
     clauses = ["(superseded IS NULL OR superseded = 0)"]
     params: List[Any] = []
     if user_id:
@@ -581,7 +685,10 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
         clauses.append("conversation_id = ?")
         params.append(conversation_id)
     if scope is not None:
-        clauses.append("scope = ?")
+        if include_global:
+            clauses.append("(scope = ? OR scope IS NULL)")
+        else:
+            clauses.append("scope = ?")
         params.append(scope)
     conn = get_db()
     cur = conn.cursor()
@@ -1325,7 +1432,8 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
         },
     )
 
-    # Memory summaries
+    # Memory summaries — memories born in a scoped conversation inherit its room (ADR 0020).
+    conversation_scope = (get_conversation_meta(conversation_id) or {}).get("scope")
     user_summary = f"User asked: {user_message[:1000]}"
     assistant_summary = f"Assistant answered: {assistant_message[:1000]}"
 
@@ -1359,6 +1467,7 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
             save_memory(
                 conversation_id=conversation_id,
                 user_id=user_id,
+                scope=conversation_scope,
                 **kwargs,
             )
         except Exception:
@@ -1376,6 +1485,20 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
 class CreateConversationRequest(BaseModel):
     user_id: Optional[str] = None
     title: Optional[str] = None
+    scope: Optional[str] = None
+
+
+class ConversationScopeRequest(BaseModel):
+    scope: Optional[str] = None  # None clears the room
+
+
+class SupersessionResolveRequest(BaseModel):
+    action: str  # "approve" | "reject"
+
+
+class ConversationScopeResponse(BaseModel):
+    conversation_id: str
+    scope: Optional[str]
 
 
 class CreateConversationResponse(BaseModel):
@@ -1408,7 +1531,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="0.3.0")
+app = FastAPI(title=f"{APP_NAME} API", version="0.3.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -1494,10 +1617,36 @@ def get_system_assumptions() -> Dict[str, Any]:
     return {"assumptions": load_assumption_store()}
 
 
+@app.get("/system/memory/supersession-candidates")
+def get_supersession_candidates(status: str = "pending") -> Dict[str, Any]:
+    """Supersession review surface (ADR 0021): undeclared high-similarity collisions wait here
+    for an explicit operator decision; nothing is hidden from recall until approved."""
+    return {"candidates": list_supersession_candidates(status=status)}
+
+
+@app.post("/system/memory/supersession-candidates/{candidate_id}/resolve")
+def post_resolve_supersession(candidate_id: str, req: SupersessionResolveRequest) -> Dict[str, Any]:
+    if req.action not in ("approve", "reject"):
+        raise HTTPException(status_code=422, detail="action must be 'approve' or 'reject'.")
+    if not resolve_supersession_candidate(candidate_id, approve=req.action == "approve"):
+        raise HTTPException(status_code=404, detail="Pending candidate not found.")
+    return {"candidate_id": candidate_id, "status": "approved" if req.action == "approve" else "rejected"}
+
+
 @app.post("/conversations", response_model=CreateConversationResponse)
 def new_conversation(req: CreateConversationRequest) -> CreateConversationResponse:
-    cid = create_conversation(user_id=req.user_id, title=req.title)
+    cid = create_conversation(user_id=req.user_id, title=req.title, scope=req.scope)
     return CreateConversationResponse(conversation_id=cid)
+
+
+@app.post("/conversations/{conversation_id}/scope", response_model=ConversationScopeResponse)
+def assign_conversation_scope(conversation_id: str, req: ConversationScopeRequest) -> ConversationScopeResponse:
+    """Assign or clear (scope=null) the conversation's memory room — an explicit operator
+    action; scope is never inferred (ADR 0020)."""
+    if not conversation_exists(conversation_id):
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    set_conversation_scope(conversation_id, req.scope)
+    return ConversationScopeResponse(conversation_id=conversation_id, scope=req.scope)
 
 
 @app.get("/conversations/{conversation_id}", response_model=ConversationHistoryResponse)
@@ -1512,7 +1661,7 @@ def get_conversation_memories(conversation_id: str, q: str) -> MemorySearchRespo
     if not conversation_exists(conversation_id):
         raise HTTPException(status_code=404, detail="Conversation not found.")
     meta = get_conversation_meta(conversation_id)
-    memories = search_memories(query=q, conversation_id=conversation_id, user_id=meta.get("user_id") if meta else None)
+    memories = search_memories(query=q, conversation_id=conversation_id, user_id=meta.get("user_id") if meta else None, scope=meta.get("scope") if meta else None)
     sanitized = [{"kind": m["kind"], "summary_text": m["summary_text"], "similarity": m["similarity"], "created_at": m["created_at"]} for m in memories]
     return MemorySearchResponse(conversation_id=conversation_id, memories=sanitized)
 
@@ -1580,7 +1729,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     effective_user_id = req.user_id or meta.get("user_id")
     user_profile = get_user_profile(effective_user_id)
     user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
-    memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
+    memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id, scope=meta.get("scope"))
     summary_intent = detect_summary_intent(req.message)
     planning_intent = detect_planning_intent(req.message)
     deliberation_intent = detect_deliberation_intent(req.message)
@@ -1898,6 +2047,7 @@ def chat_stream(req: ChatRequest):
         query=req.message,
         conversation_id=conversation_id,
         user_id=effective_user_id,
+        scope=meta.get("scope"),
     )
     summary_intent = detect_summary_intent(req.message)
 

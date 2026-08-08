@@ -2,9 +2,35 @@
 
 ## [Unreleased]
 
-Next: Epoch X continues (scope assignment, validity-window supersession) and Epoch IX-D (Command
+Next: Epoch X continues (memory consolidation, richer review surfaces) and Epoch IX-D (Command
 Console, designed). IX-D build remains gated on the deferred Android on-device approval validation
 (see 0.2.1 below).
+
+## [0.3.1] - 2026-08-08 — Epoch X-B (Rooms and Revision)
+
+Released from `feature/epoch-x-memory`, tagged `epoch-x-b`. Patch-per-milestone within Epoch X.
+Backend suite: **372 passing**, hermetic.
+
+### Added
+
+- **Scope assignment** (ADR 0020) — the conversation carries the memory room, set only by explicit
+  action (`POST /conversations {scope}` or `POST /conversations/{id}/scope`; never inferred).
+  Memories persisted from a scoped conversation inherit its room; recall in it searches the room
+  **plus the global wing** (unscoped memories stay recallable everywhere, other rooms excluded).
+  Measured on `recall_scoped_v2`: hit@1 1.000, room isolation and global recall both hold. This is
+  the curriculum hook: *a lesson is a scoped conversation.*
+- **Robust supersession** (ADR 0021, upgrading ADR 0018; still off by default) — two dispositions:
+  AUTO only when the new text *declares* the change ("is now", "moved to", "no longer", …) with
+  same kind/room and a calibrated similarity floor; undeclared collisions become **pending
+  candidates** reviewed via `GET /system/memory/supersession-candidates` + resolve endpoint — the
+  first operator review surface over memory. Nothing is hidden until approved; everything is
+  reversible and audited. Calibration (real embedder) overturned the single-floor design (5/9) in
+  favor of two-tier floors (recommended 0.80/0.45 → 8/9), with the residual ambiguity measured and
+  documented.
+- **Embedder bake-off** (recorded in `backend/benchmarks/README.md`) — `embeddinggemma` retained:
+  challengers (`nomic-embed-text`, `mxbai-embed-large`) lost recall (0.867–0.895 hit@1 vs 1.000)
+  and did not dominate supersession. Pre-registered decision rule; re-run if the corpus or embedder
+  landscape changes.
 
 ## [0.3.0] - 2026-08-07 — Epoch X-A (Memory Foundation)
 
