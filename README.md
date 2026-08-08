@@ -67,3 +67,10 @@ future Tutelage/Learning epoch depends on. Techniques adapted from
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
+
+## License
+
+Dual-licensed under either the [MIT License](LICENSE-MIT) or the
+[Apache License 2.0](LICENSE-APACHE), at your option (`MIT OR Apache-2.0`). Unless you explicitly
+state otherwise, contributions you submit are dual-licensed the same way. The bundled Aurebesh font
+retains its own [SIL OFL 1.1 license](bridge/shared/fonts/LICENSE.md).

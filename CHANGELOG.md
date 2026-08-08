@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The repository is now dual-licensed **MIT OR Apache-2.0** (previously a license placeholder). See
+  `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`.
+
 Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substrate) and Epoch IX-D
 (Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
 validation (see 0.2.1 below).

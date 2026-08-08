@@ -1,3 +1,15 @@
-OMEGA-ARC SOURCE LICENSE PLACEHOLDER
+OMEGA-ARC (The Turning) is dual-licensed.
 
-A final license has not yet been selected.
+SPDX-License-Identifier: MIT OR Apache-2.0
+
+You may use this software under the terms of either license, at your option:
+
+  * MIT License          — see LICENSE-MIT
+  * Apache License 2.0   — see LICENSE-APACHE
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this work by you shall be dual-licensed as above, without any
+additional terms or conditions.
+
+Bundled third-party assets keep their own licenses:
+  * Aurebesh font (SilvinoR) — SIL Open Font License 1.1, see bridge/shared/fonts/LICENSE.md
