@@ -19,7 +19,7 @@ class Settings:
         model.strip()
         for model in os.getenv(
             "SELECTABLE_CHAT_MODELS",
-            "richardyoung/llama-3.1-8b-instruct-abliterated:latest,dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
+            "richardyoung/llama-3.1-8b-instruct-abliterated:latest,mo-shakib/gemma4-e4b-uncensored:q4_k_m,dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
         ).split(",")
         if model.strip()
     )

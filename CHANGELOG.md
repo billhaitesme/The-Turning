@@ -12,6 +12,7 @@ deferred Android on-device approval validation (see 0.2.1 below).
   Direct Model mode, and the operator selector allowlist (dolphin-mixtral remains selectable). Keeps
   the uncensored posture while running far faster than the 26 GB mixtral on a CPU host. Model Lock is
   unchanged; the active model still changes only by explicit operator action.
+- Added `mo-shakib/gemma4-e4b-uncensored:q4_k_m` to the operator model-selector allowlist.
 
 ## [0.2.1] - 2026-08-07 — Epoch IX-C (Operator Actions)
 
