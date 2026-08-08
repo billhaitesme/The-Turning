@@ -6,18 +6,18 @@ This document is the single source of truth for OMEGA-ARC release identity.
 
 | Field | Value |
 |---|---|
-| Epoch | Epoch IX |
-| Release | 0.2.1 |
-| Active series | 0.2.x |
-| Active milestone | Epoch IX-C — Operator Actions (released as 0.2.1; tag `epoch-ix-c`) |
+| Epoch | Epoch X — Memory |
+| Release | 0.3.0 |
+| Active series | 0.3.x |
+| Active milestone | Epoch X-A — Memory Foundation (released as 0.3.0; tag `epoch-x-a`) |
 | Mobile API major | 1 |
-| IX-B checkpoint tag | `epoch-ix-a` (created; on `release/epoch-ix-0.2.0`) |
+| Prior milestone tags | `epoch-ix-a` (IX-B, 0.2.0) · `epoch-ix-c` (IX-C, 0.2.1) |
 
-The Epoch communicates architectural continuity. Semantic versioning communicates compatibility and delivery. They are related but independent: Epoch IX can contain multiple compatible Version 0.2.x releases.
+The Epoch communicates architectural continuity. Semantic versioning communicates compatibility and delivery. They are related but independent: an epoch can contain multiple compatible releases in its series (Epoch IX spanned 0.2.0–0.2.1; Epoch X begins the 0.3.x series per the milestone-versioning rule below).
 
 ## Component sources
 
-Every active component must report Epoch IX / 0.2.1 until the release version is advanced here.
+Every active component must report Epoch X / 0.3.0 until the release version is advanced here.
 
 | Component | Authoritative field |
 |---|---|
@@ -29,13 +29,13 @@ Every active component must report Epoch IX / 0.2.1 until the release version is
 | Shared contract | OpenAPI `info.version` |
 | Documentation | root `README.md`, `CHANGELOG.md`, and `ROADMAP.md` |
 
-The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.2.1`.
+The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.3.0`.
 
 ## Compatibility rules
 
 1. A client may connect only when its supported API major matches the backend API major.
 2. A client version lower than `required_mobile_version` must show **Update Required** and disable runtime operations.
-3. Patch and minor releases within 0.2.x must preserve the deterministic runtime boundary and Model Lock behavior.
+3. Patch and minor releases within the active series must preserve the deterministic runtime boundary and Model Lock behavior.
 4. Release metadata must never claim functionality that is not backed by an authoritative runtime signal.
 
 ## Milestone versioning

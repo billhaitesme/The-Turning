@@ -5,14 +5,14 @@
 | Field | Current value |
 |---|---|
 | Last updated | 2026-08-07 |
-| Current epoch | Epoch IX |
-| Current version | 0.2.1 |
-| Release line | 0.2.x |
+| Current epoch | Epoch X — Memory |
+| Current version | 0.3.0 |
+| Release line | 0.3.x |
 | Status | Active Development |
-| Current phase | IX-C released as **0.2.1** (tag `epoch-ix-c`), merged to `main` — with an Android on-device validation exception |
+| Current phase | Epoch X-A (Memory Foundation) released as **0.3.0** (tag `epoch-x-a`), merged to `main` |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
-| Theme | “The Runtime Becomes Visible” |
+| Theme | Epoch X: “The Runtime Remembers” (Epoch IX was “The Runtime Becomes Visible”) |
 
 ## Completed
 
@@ -63,6 +63,19 @@ behavior is present in that checkpoint).
 > hardware before this release, by the release owner's decision to keep momentum toward Epoch X. Run
 > it and record the result here; until then, Android operator-approvals are unverified on-device. The
 > Android debug APK is built at `bridge/bridge-zero-android/app/build/outputs/apk/debug/app-debug.apk`.
+
+## Epoch X-A — Memory Foundation, released as 0.3.0 (2026-08-07)
+
+Epoch X (Memory) began and its foundation shipped from `feature/epoch-x-memory`, tagged **`epoch-x-a`**
+and merged to `main`. Backend suite **366 passing**, hermetic. Five measured slices (ADRs 0016–0019;
+MemPalace-derived techniques credited): recall benchmark, temporal-aware retrieval (on; hit@1
+0.933 → 1.000), hybrid lexical/typo-fuzzy knobs (off by default — honest neutral measurement),
+write-time supersession (off pending threshold calibration; reversible), and scoped retrieval
+("rooms"; hit@1 0.500 → 1.000 vs flat recall). Remaining Epoch X work: scope assignment, robust
+supersession, consolidation/review surfaces — see [`ROADMAP.md`](ROADMAP.md).
+
+Carried-forward obligations (unchanged by this release): the **Android on-device approval/biometric
+pass** (0.2.1 release exception; also gates IX-D) and on-device icon confirmation on both platforms.
 
 ## Native Device Validation Gate
 
