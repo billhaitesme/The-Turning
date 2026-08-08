@@ -1,0 +1,272 @@
+{
+  "fixture": "recall_v1",
+  "ks": [
+    1,
+    3,
+    5
+  ],
+  "aggregate": {
+    "queries": 12,
+    "hit@1": 0.9166666666666666,
+    "mrr": 0.9583333333333334,
+    "recall@k": {
+      "1": 0.9166666666666666,
+      "3": 1.0,
+      "5": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "query": "What color theme does the operator like?",
+      "gold": [
+        "m01"
+      ],
+      "top": [
+        "m01",
+        "m13",
+        "m03",
+        "m09",
+        "m02"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "Which text editor does the operator use?",
+      "gold": [
+        "m02"
+      ],
+      "top": [
+        "m02",
+        "m13",
+        "m01",
+        "m03",
+        "m10"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "Does the operator want long or short answers?",
+      "gold": [
+        "m03"
+      ],
+      "top": [
+        "m03",
+        "m01",
+        "m10",
+        "m13",
+        "m09"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "What does OMEGA-ARC use to run its models?",
+      "gold": [
+        "m04"
+      ],
+      "top": [
+        "m04",
+        "m05",
+        "m14",
+        "m11",
+        "m06"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "What framework is the backend written in?",
+      "gold": [
+        "m06"
+      ],
+      "top": [
+        "m06",
+        "m07",
+        "m04",
+        "m13",
+        "m02"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "What are the phone apps built with?",
+      "gold": [
+        "m07"
+      ],
+      "top": [
+        "m07",
+        "m06",
+        "m18",
+        "m02",
+        "m16"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "What is the operator's pet called?",
+      "gold": [
+        "m09"
+      ],
+      "top": [
+        "m09",
+        "m13",
+        "m15",
+        "m03",
+        "m01"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "Which model currently generates chat responses right now?",
+      "gold": [
+        "m12"
+      ],
+      "top": [
+        "m11",
+        "m12",
+        "m14",
+        "m06",
+        "m04"
+      ],
+      "first_gold_rank": 2,
+      "hit@1": false,
+      "recall@k": {
+        "1": 0.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 0.5
+    },
+    {
+      "query": "What language does the operator most enjoy coding in?",
+      "gold": [
+        "m13"
+      ],
+      "top": [
+        "m13",
+        "m02",
+        "m03",
+        "m01",
+        "m10"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "How are operator approvals confirmed on mobile?",
+      "gold": [
+        "m16"
+      ],
+      "top": [
+        "m16",
+        "m10",
+        "m03",
+        "m07",
+        "m01"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "How does the operator take their coffee?",
+      "gold": [
+        "m15"
+      ],
+      "top": [
+        "m15",
+        "m09",
+        "m13",
+        "m03",
+        "m01"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "query": "What model produces the embeddings?",
+      "gold": [
+        "m14"
+      ],
+      "top": [
+        "m14",
+        "m11",
+        "m06",
+        "m04",
+        "m12"
+      ],
+      "first_gold_rank": 1,
+      "hit@1": true,
+      "recall@k": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0
+      },
+      "rr": 1.0
+    }
+  ]
+}

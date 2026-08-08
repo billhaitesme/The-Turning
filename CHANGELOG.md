@@ -2,11 +2,39 @@
 
 ## [Unreleased]
 
-Next: Epoch IX-D (Command Console, designed) and Epoch X (Memory). IX-D build remains gated on the
-deferred Android on-device approval validation (see 0.2.1 below).
+Next: Epoch X continues (scope assignment, validity-window supersession) and Epoch IX-D (Command
+Console, designed). IX-D build remains gated on the deferred Android on-device approval validation
+(see 0.2.1 below).
+
+## [0.3.0] - 2026-08-07 — Epoch X-A (Memory Foundation)
+
+Epoch X — Memory — begins. Released from `feature/epoch-x-memory`, tagged `epoch-x-a`. New epoch, new
+minor per the milestone-versioning rule. Backend suite: **366 passing**, hermetic. Techniques adapted
+from [MemPalace](https://github.com/MemPalace/mempalace) (MIT) are credited in the ADRs; no MemPalace
+code, no second store — everything stays behind the single deterministic memory boundary.
+
+### Added
+
+- **Recall benchmark** (`backend/benchmarks/`) — LongMemEval-style measurement (hit@1 / recall@k /
+  MRR) with real-embedder and deterministic-stub modes, so every retrieval change is judged against a
+  number. Fixtures `recall_v1/v2/v3` + `recall_scoped_v1`.
+- **Temporal-aware retrieval** (ADR 0016, **on** by default) — a bounded recency term breaks
+  similarity near-ties toward the newer fact, so a superseded fact no longer outranks its
+  replacement. Measured: hit@1 0.933 → 1.000 on `recall_v2`, no recall@3 regression.
+- **Hybrid lexical + fuzzy retrieval** (ADR 0017, **off** by default) — exact term-overlap and
+  typo-tolerant trigram signals, blended and bounded like recency. Landed disabled after honest
+  measurement showed the embedder already handles exact-term recall (a negative result, recorded).
+- **Write-time supersession** (ADR 0018, **off** by default) — a new memory can flag the fact it
+  replaces (same kind/scope, cosine ≥ threshold); superseded rows are kept and reversible, and
+  active recall excludes them. Enabling awaits threshold calibration ("replaces vs complements").
+- **Scoped retrieval** (ADR 0019) — memories carry an optional `scope` ("room"); recall can search
+  within a room. The MemPalace idea that most directly serves the future learner: recall *by
+  subject*. Measured: hit@1 0.500 → 1.000 vs flat recall on parallel cross-room facts.
 
 ### Changed
 
+- `search_memories` ranking is now `cosine + recency` (lexical/fuzzy available, off); active recall
+  filters superseded rows; `memories` schema gains `scope` + supersession columns (migrated in place).
 - Default chat model is now `richardyoung/llama-3.1-8b-instruct-abliterated` (abliterated/uncensored,
   ~8B) — replaces `dolphin-mixtral:8x7b` as the default across `active_chat_model`/`chat_model`,
   Direct Model mode, and the operator selector allowlist (dolphin-mixtral remains selectable). Keeps

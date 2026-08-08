@@ -1,6 +1,6 @@
 # OMEGA-ARC System Overview
 
-This overview reflects the current epoch (**Epoch IX — Runtime Operations**, release 0.2.1). For
+This overview reflects the current epoch (**Epoch IX — Runtime Operations**, release 0.3.0). For
 delivery status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`ROADMAP.md`](ROADMAP.md); the
 release-identity authority is [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
 

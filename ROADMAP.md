@@ -1,8 +1,8 @@
 # OMEGA-ARC Roadmap
 
-**Current epoch:** Epoch IX
-**Current release:** 0.2.1
-**Active release line:** 0.2.x
+**Current epoch:** Epoch X — Memory
+**Current release:** 0.3.0
+**Active release line:** 0.3.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
 
@@ -89,10 +89,35 @@ trustworthy before real actions depend on it. Designed in ADR
 [`0015-command-console.md`](docs/decisions/0015-command-console.md) and
 [`docs/architecture/epoch-ix-d-command-console.md`](docs/architecture/epoch-ix-d-command-console.md).
 
-## Epoch X — Memory (future, scope not yet committed)
+## Epoch X — Memory (active; X-A released as 0.3.0)
 
-Durable, scoped, benchmarked long-term memory. The substrate the learning pillar depends on. See
+Durable, scoped, benchmarked long-term memory — the substrate the learning pillar depends on. See
 [`docs/architecture/epoch-x-memory-and-retrieval.md`](docs/architecture/epoch-x-memory-and-retrieval.md).
+
+### X-A — Memory Foundation (released as 0.3.0, tagged `epoch-x-a`)
+
+Five measured slices on `feature/epoch-x-memory`, techniques credited to
+[MemPalace](https://github.com/MemPalace/mempalace) (MIT) where borrowed; backend suite 366 passing:
+
+- **Recall benchmark** — hit@1 / recall@k / MRR harness + fixtures; every retrieval change is judged
+  against a number (ADRs cite the runs).
+- **Temporal-aware retrieval** (ADR 0016, on) — bounded recency tie-break; hit@1 0.933 → 1.000.
+- **Hybrid lexical + typo-fuzzy signals** (ADR 0017, off by default) — landed disabled after honest
+  measurement showed no gain on the current corpus; available as tested, reversible knobs.
+- **Write-time supersession** (ADR 0018, off by default) — reversible superseded flags at the store
+  level; enabling awaits threshold calibration (replaces-vs-complements).
+- **Scoped retrieval** (ADR 0019) — per-memory `scope` ("rooms"); recall by subject. hit@1
+  0.500 → 1.000 vs flat recall on parallel cross-room facts — the substrate a curriculum-driven
+  learner recalls by subject with.
+
+### Epoch X remaining (unscheduled)
+
+- Scope assignment — who names the room (operator, conversation context, or a deterministic
+  classifier).
+- Robust supersession — validity windows / contradiction-aware replacement (then calibrate and enable
+  ADR 0018).
+- Memory consolidation and review surfaces (operator-visible memory, per the Covenant's
+  human-readable records).
 
 ## Future — Tutelage and Learning (proposed, unscheduled)
 
