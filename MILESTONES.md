@@ -70,4 +70,6 @@ The runtime studies: curriculum, measured study cycles, review-gated growth (ADR
   `epoch-xi-a` (389 backend tests).
 - **XI-B** — Retention and Compounding: cumulative quizzes + interference gating, spaced
   re-quizzes, retention report. Released as **0.4.1**, tagged `epoch-xi-b` (392 backend tests).
-- **XI-C** — Consolidation Gate (planned; approval-gated LoRA).
+- **XI-C** — Consolidation Gate: bounded mutation tool + single-use approvals, key-verified
+  distillation, versioned adapter registry. Released as **0.4.2**, tagged `epoch-xi-c`
+  (394 backend tests). **Epoch XI complete.**

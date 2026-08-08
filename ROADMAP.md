@@ -1,7 +1,7 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch XI — Tutelage
-**Current release:** 0.4.1
+**Current release:** 0.4.2
 **Active release line:** 0.4.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
@@ -170,9 +170,18 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
   genuine cross-lesson retrieval interference miss (review comprehension 0.917 — above threshold,
   now permanently measurable).
 
-### Epoch XI remaining
+### XI-C — Consolidation Gate (released as 0.4.2, tagged `epoch-xi-c`) — Epoch XI complete
 
-- **XI-C — Consolidation Gate:** distillation candidates from stable reviewed memory, approval-gated
-  training, versioned adapter registry with Model-Lock-style activation.
+- `tutelage_consolidation` as a bounded mutation tool: single-use operator approval consumed by the
+  consolidation endpoint; only key-verified answers from passed lessons distill; versioned adapter
+  registry with Model-Lock-style single-active activation; training stays operator-executed
+  (ADR 0024). Live run: 16 verified pairs, 1 excluded, first candidate adapter registered.
+
+### After Epoch XI (unscheduled)
+
+- Operator runbook + first actual LoRA training run from a distillation artifact (train → convert →
+  activate), surfacing consolidation approvals in the mobile Approvals tab.
+- IX-D Command Console (still gated on the deferred Android on-device approval validation).
+- Curriculum growth beyond self-knowledge; scheduled study/consolidation as reviewed maintenance.
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.

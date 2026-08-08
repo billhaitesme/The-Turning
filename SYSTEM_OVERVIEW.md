@@ -1,6 +1,6 @@
 # OMEGA-ARC System Overview
 
-This overview reflects the current epoch (**Epoch XI — Tutelage**, release 0.4.1). For
+This overview reflects the current epoch (**Epoch XI — Tutelage**, release 0.4.2). For
 delivery status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`ROADMAP.md`](ROADMAP.md); the
 release-identity authority is [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
 
@@ -114,7 +114,7 @@ The backend uses regression and acceptance tests run under `pytest`, hermetic (t
 stores to a temporary data directory and leave tracked runtime data unchanged).
 
 - `backend/tests/` — service and integration tests
-- Current suite count: **392 passing** on the Epoch XI line (see [`CHANGELOG.md`](CHANGELOG.md) for per-release counts)
+- Current suite count: **394 passing** on the Epoch XI line (see [`CHANGELOG.md`](CHANGELOG.md) for per-release counts)
 
 ## Roadmap Summary
 

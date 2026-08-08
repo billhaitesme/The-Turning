@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch XI / Version 0.4.1
+**Current release:** Epoch XI / Version 0.4.2
 **Active series:** Version 0.4.x
-**Active milestone:** Epoch XI — Tutelage (XI-B Retention and Compounding released as 0.4.1, tagged `epoch-xi-b`)
+**Active milestone:** Epoch XI — Tutelage complete (XI-C Consolidation Gate released as 0.4.2, tagged `epoch-xi-c`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch XI / 0.4.1 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.1 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.1 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.1 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.1 |
+| Core Runtime | `backend/` | Epoch XI / 0.4.2 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.2 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.2 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.2 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.2 |
 
 ## Epoch IX
 

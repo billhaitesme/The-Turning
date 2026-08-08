@@ -138,7 +138,7 @@ sealed interface ConnectionState {
 }
 
 object MobileVersion {
-    const val CURRENT = "0.4.1"
+    const val CURRENT = "0.4.2"
     const val API_MAJOR = "1"
 
     fun compatible(value: Compatibility): Boolean =

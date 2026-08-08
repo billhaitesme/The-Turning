@@ -109,4 +109,7 @@ review-gated study cycles, and measured growth (ADR 0013; anatomy is taught, ide
 - **XI-B — Retention and Compounding (0.4.1, `epoch-xi-b`):** cumulative quizzes with per-section
   interference gating, spaced re-quizzes, retention-history report. Live runs held retention at 1.0
   and surfaced one genuine cross-lesson interference miss. 392 backend tests.
-- **XI-C — Consolidation Gate:** planned (approval-gated LoRA distillation).
+- **XI-C — Consolidation Gate (0.4.2, `epoch-xi-c`):** consolidation as a bounded mutation tool
+  (single-use operator approval), key-verified distillation only, versioned adapter registry with
+  Model-Lock-style activation; training operator-executed. First artifact: 16 verified pairs.
+  394 backend tests. **Epoch XI complete.**

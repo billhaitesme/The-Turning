@@ -18,6 +18,29 @@ Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substra
 (Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
 validation (see 0.2.1 below).
 
+## [0.4.2] - 2026-08-08 — Epoch XI-C (Consolidation Gate) — Epoch XI complete
+
+Released from `main`, tagged `epoch-xi-c`. Completes Epoch XI (Tutelage). Backend suite: **394
+passing**.
+
+### Added
+
+- **The consolidation gate** (ADR 0024): `tutelage_consolidation` registered as a bounded MUTATION
+  tool (risk high, approval required, no direct adapter — its single-use approval is the ticket
+  consumed by `POST /system/tutelage/consolidations`). Only key-verified answers from PASSED
+  lessons distill into chat-format training pairs (`training/distillation/`); unverified answers
+  are counted and excluded.
+- **Versioned adapter registry** (`backend/data/adapters.json` + `/system/tutelage/adapters`):
+  candidate → trained → active → retired via explicit recorded actions; activation retires any
+  other active adapter for the subject (Model-Lock pattern). Weight training itself stays
+  operator-executed via `training/` (GGUF-vs-HF boundary documented).
+
+### Measured (live)
+
+- Real gated run: tool request → operator approval → 16 key-verified pairs from 3 passed lessons
+  (1 unverified excluded) → candidate adapter registered → approval consumed (single-use held).
+  The first distillation artifact is committed as epoch history.
+
 ## [0.4.1] - 2026-08-08 — Epoch XI-B (Retention and Compounding)
 
 Released from `feature/epoch-xi-tutelage`, tagged `epoch-xi-b`. Backend suite: **392 passing**.

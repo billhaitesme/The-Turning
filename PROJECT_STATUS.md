@@ -6,10 +6,10 @@
 |---|---|
 | Last updated | 2026-08-08 |
 | Current epoch | Epoch XI — Tutelage |
-| Current version | 0.4.1 |
+| Current version | 0.4.2 |
 | Release line | 0.4.x |
 | Status | Active Development |
-| Current phase | Epoch XI-B (Retention and Compounding) released as **0.4.1** (tag `epoch-xi-b`), merged to `main` |
+| Current phase | Epoch XI complete — XI-C (Consolidation Gate) released as **0.4.2** (tag `epoch-xi-c`) |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
 | Theme | Epoch XI: “The Runtime Learns” (X: “Remembers”, IX: “Becomes Visible”) |
@@ -128,8 +128,15 @@ per-section interference gating; spaced re-quizzes; retention report endpoint. L
 at 1.0 hours after study; the cumulative run caught one genuine cross-lesson interference miss
 (review comprehension 0.917, above threshold).
 
-Remaining Epoch XI: XI-C Consolidation Gate. Carried-forward obligations (unchanged): Android
-on-device approval pass (gates IX-D) and on-device icon checks.
+## Epoch XI-C — Consolidation Gate, released as 0.4.2 (2026-08-08) — Epoch XI complete
+
+Tagged **`epoch-xi-c`**. Backend suite **394 passing**. The ADR 0013 loop is whole: study → measure
+→ review → gated consolidation. Live: operator-approved consolidation distilled 16 key-verified
+pairs (1 unverified excluded) into the first candidate adapter; approval consumed single-use.
+Training remains operator-executed (ADR 0024).
+
+Carried-forward obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device
+icon checks.
 
 ## Native Device Validation Gate (IX-B — closed)
 
