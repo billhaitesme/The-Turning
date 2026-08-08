@@ -10,7 +10,17 @@ State as of 2026-08-08 late (first tutelage training run, ADR 0024):
   and served: the proof visibly landed — "Machine ID is O3M3G4ARC" (studied fact, slightly garbled),
   "superseded memories aren't deleted; they're hidden" (correct paraphrase). Knowledge is in the
   weights; the identity string needs the full run to come out exact.
-- **v3 IN FLIGHT, DETACHED + OFFLINE + GPU-EXCLUSIVE** (all Ollama models stopped first — the lesson
+- **CHAIN CLOSED (2026-08-09): v4 clean bf16 run completed — 320 steps, final step loss 0.060,
+  token accuracy 98.2%. PROOF: 5/5 quiz answers VERBATIM from bare weights through the full served
+  chain** (Ollama API, temperature 0). Adapter registry: marked trained, ACTIVATED. Two hard-won
+  rules for every future run:
+  1. **bf16, never fp16** on this host — both fp16 runs (v2, v3) died in native GradScaler crashes;
+     the clean bf16 run sailed through. train_adapter.py now auto-selects bf16 + saves every 25.
+  2. **Serve adapters on an fp16/high-precision base, never q4** — the v4 adapter was verbatim
+     perfect HF-side (probe_adapter_hf.py proves it) but confabulated on qwen2.5:3b-instruct (q4);
+     on qwen2.5:3b-instruct-fp16 it is verbatim perfect. A bf16-trained LoRA loses its deltas over
+     4-bit weights. Modelfile: FROM qwen2.5:3b-instruct-fp16, temperature 0 for recall-style use.
+- (superseded) **v3 WAS IN FLIGHT, DETACHED + OFFLINE + GPU-EXCLUSIVE** (all Ollama models stopped first — the lesson
   from v2): output `adapters/...-v3/`, log `train_v3_detached.log`. On `adapter saved` + `EXIT=0`,
   repeat convert→Modelfile→create→proof against -v3. RULE: never run Ollama generations while
   training.
