@@ -5,6 +5,15 @@
 Next: Epoch IX-D (Command Console, designed) and Epoch X (Memory). IX-D build remains gated on the
 deferred Android on-device approval validation (see 0.2.1 below).
 
+### Changed
+
+- Default chat model is now `richardyoung/llama-3.1-8b-instruct-abliterated` (abliterated/uncensored,
+  ~8B) — replaces `dolphin-mixtral:8x7b` as the default across `active_chat_model`/`chat_model`,
+  Direct Model mode, and the operator selector allowlist (dolphin-mixtral remains selectable). Keeps
+  the uncensored posture while running far faster than the 26 GB mixtral on a CPU host. Model Lock is
+  unchanged; the active model still changes only by explicit operator action.
+- Added `mo-shakib/gemma4-e4b-uncensored:q4_k_m` to the operator model-selector allowlist.
+
 ## [0.2.1] - 2026-08-07 — Epoch IX-C (Operator Actions)
 
 Released from `feature/epoch-ix-c-model-selector`, built on the tagged `epoch-ix-a` IX-B baseline;

@@ -119,7 +119,7 @@ DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
-DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "dolphin-mixtral:8x7b")
+DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "richardyoung/llama-3.1-8b-instruct-abliterated:latest")
 
 ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "false").lower() == "true"
 WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "5"))

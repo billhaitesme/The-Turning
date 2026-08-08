@@ -9,9 +9,9 @@ def _env_bool(name: str, default: bool) -> bool:
 @dataclass(frozen=True)
 class Settings:
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-    active_chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    active_chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "richardyoung/llama-3.1-8b-instruct-abliterated:latest"))
     # Backwards-compatible name for integrations that still read chat_model.
-    chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "dolphin-mixtral:8x7b"))
+    chat_model: str = os.getenv("ACTIVE_CHAT_MODEL", os.getenv("OLLAMA_CHAT_MODEL", "richardyoung/llama-3.1-8b-instruct-abliterated:latest"))
     # Curated set of conversational models an operator may select from the consoles.
     # The selector enforces this allowlist so an operator cannot pick an unavailable
     # model and trip the provider-substitution guard. Empty disables enforcement.
@@ -19,7 +19,7 @@ class Settings:
         model.strip()
         for model in os.getenv(
             "SELECTABLE_CHAT_MODELS",
-            "dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
+            "richardyoung/llama-3.1-8b-instruct-abliterated:latest,mo-shakib/gemma4-e4b-uncensored:q4_k_m,dolphin-mixtral:8x7b,llama2-uncensored:7b,llama3.1:8b",
         ).split(",")
         if model.strip()
     )
