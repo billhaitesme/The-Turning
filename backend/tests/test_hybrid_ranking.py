@@ -56,3 +56,35 @@ def test_stopwords_do_not_count_as_matches():
     q = app._tokenize("what is the current model")   # -> {"model"} after stopword/So removal
     assert "the" not in q and "is" not in q and "current" not in q
     assert "model" in q
+
+
+def test_fuzzy_score_tolerates_a_typo():
+    q = app._char_trigrams("prjoect orion")  # "project orion" with a transposition
+    right = app._fuzzy_score(q, {"summary_text": "Project Orion is written in Rust.", "source_text": ""})
+    wrong = app._fuzzy_score(q, {"summary_text": "Project Nova is written in Go.", "source_text": ""})
+    # despite the typo, the correct memory still scores higher (most trigrams survive)
+    assert 0.0 <= wrong < right <= 1.0
+
+
+def test_fuzzy_breaks_near_tie_under_typo(monkeypatch):
+    monkeypatch.setattr(app, "MEMORY_FUZZY_WEIGHT", 0.2)
+    monkeypatch.setattr(app, "MEMORY_LEXICAL_WEIGHT", 0.0)
+    monkeypatch.setattr(app, "MEMORY_RECENCY_WEIGHT", 0.0)
+    scored = [
+        {"id": "wrong", "similarity": 0.80, "fuzzy": 0.4, "created_at": "2026-01-01T00:00:00Z"},
+        {"id": "right", "similarity": 0.79, "fuzzy": 0.9, "created_at": "2026-01-01T00:00:00Z"},
+    ]
+    app._rank_memories(scored)
+    assert scored[0]["id"] == "right"
+
+
+def test_fuzzy_weight_zero_ignores_fuzzy(monkeypatch):
+    monkeypatch.setattr(app, "MEMORY_FUZZY_WEIGHT", 0.0)
+    monkeypatch.setattr(app, "MEMORY_LEXICAL_WEIGHT", 0.0)
+    monkeypatch.setattr(app, "MEMORY_RECENCY_WEIGHT", 0.0)
+    scored = [
+        {"id": "high_fuzzy_low_sim", "similarity": 0.70, "fuzzy": 1.0, "created_at": "2026-01-01T00:00:00Z"},
+        {"id": "low_fuzzy_high_sim", "similarity": 0.80, "fuzzy": 0.0, "created_at": "2026-01-01T00:00:00Z"},
+    ]
+    app._rank_memories(scored)
+    assert [r["id"] for r in scored] == ["low_fuzzy_high_sim", "high_fuzzy_low_sim"]

@@ -78,15 +78,19 @@ degrading. Reproduce:
   justify. A negative result is a result.
 - Two bounded knobs (lexical, recency), each unable to reorder anything but near-ties.
 
-## Future — typo robustness (why exact lexical is not the answer)
+## Typo robustness — fuzzy signal (available, off by default)
 
 Exact token overlap does **not** help misspelled queries: a typo ("Altiar") matches neither the
-embedding's nearest token *nor* an exact lexical token. Embeddings are in fact the more typo-tolerant
-signal here (subword tokenization). If typo robustness becomes a measured need, the right tool is a
-**fuzzy** lexical signal — character n-gram (trigram) Jaccard or edit-distance-tolerant overlap —
-which degrades gracefully under misspellings, evaluated against a **typo-injected** benchmark
-(perturb `recall_v3` queries with transpositions / dropped / doubled / adjacent-key errors) before
-adopting. Tracked as a candidate slice; not built here.
+embedding's nearest token *nor* an exact lexical token (embeddings are actually the more typo-tolerant
+signal, via subword tokenization). The right tool for typos is a **fuzzy** term — character-trigram
+overlap, which survives a misspelling because only the few trigrams around the changed character are
+disturbed.
+
+This is implemented as a third bounded term, `MEMORY_FUZZY_WEIGHT` (default **0**, off), blended the
+same way as lexical/recency and skipped entirely when off. It ships **available but disabled** — the
+capability exists and is unit-tested for typo tolerance, without changing default behavior. Deliberately
+*not* accompanied by a full typo-injected benchmark sweep yet (avoiding scope creep); tuning/enabling it
+should be gated on a typo-perturbed `recall_v3` measurement if/when typo'd recall becomes a real need.
 
 Remaining MemPalace ideas — scoped retrieval (#1), explicit temporal validity windows (#2), LLM
 rerank (#4) — remain open, to be taken only where a measured case demands them.

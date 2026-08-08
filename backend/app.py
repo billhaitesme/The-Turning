@@ -432,10 +432,13 @@ def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind:
 #   - lexical (default OFF): exact query/memory term overlap. Evaluated in ADR 0017 (a technique from
 #     MemPalace, MIT) and found to give no measured gain on the current corpus — embeddinggemma
 #     already handles exact-term recall — so it ships available-but-disabled. NOTE: exact lexical does
-#     NOT help typos (a misspelled token won't match either); typo robustness is a separate, future
-#     fuzzy-matching question (ADR 0017, "Future").
+#     NOT help typos (a misspelled token won't match either) — that is what the fuzzy term below is for.
+#   - fuzzy (default OFF): character-trigram overlap, typo-tolerant. Available knob; see ADR 0017.
 MEMORY_RECENCY_WEIGHT = float(os.getenv("MEMORY_RECENCY_WEIGHT", "0.05"))
 MEMORY_LEXICAL_WEIGHT = float(os.getenv("MEMORY_LEXICAL_WEIGHT", "0.0"))
+# Fuzzy (character-trigram overlap): typo-tolerant term — a misspelling keeps most of its trigrams,
+# so it still matches. Available but OFF by default; enable if typo'd recall becomes a measured need.
+MEMORY_FUZZY_WEIGHT = float(os.getenv("MEMORY_FUZZY_WEIGHT", "0.0"))
 
 _LEXICAL_STOPWORDS = {
     "the", "a", "an", "is", "are", "was", "were", "be", "of", "to", "in", "on", "for",
@@ -462,6 +465,20 @@ def _lexical_score(query_tokens: set, record: Dict[str, Any]) -> float:
     return len(overlap) / len(query_tokens)
 
 
+def _char_trigrams(text: Any) -> set:
+    s = re.sub(r"\s+", " ", str(text).lower()).strip()
+    return {s[i:i + 3] for i in range(len(s) - 2)} if len(s) >= 3 else ({s} if s else set())
+
+
+def _fuzzy_score(query_trigrams: set, record: Dict[str, Any]) -> float:
+    """Fraction of the query's character trigrams present in the memory text — [0, 1].
+    Typo-tolerant: a misspelling only disturbs the few trigrams around the changed char."""
+    if not query_trigrams:
+        return 0.0
+    text = f"{record.get('summary_text', '')} {record.get('source_text', '')}"
+    return len(query_trigrams & _char_trigrams(text)) / len(query_trigrams)
+
+
 def _memory_timestamp(value: Any) -> Optional[datetime]:
     if not value:
         return None
@@ -484,6 +501,7 @@ def _rank_memories(scored: List[Dict[str, Any]]) -> None:
         record["ranking_score"] = (
             record["similarity"]
             + MEMORY_LEXICAL_WEIGHT * record.get("lexical", 0.0)
+            + MEMORY_FUZZY_WEIGHT * record.get("fuzzy", 0.0)
             + MEMORY_RECENCY_WEIGHT * recency_norm
         )
     scored.sort(key=lambda item: item["ranking_score"], reverse=True)
@@ -492,6 +510,7 @@ def _rank_memories(scored: List[Dict[str, Any]]) -> None:
 def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
     query_tokens = _tokenize(query) if MEMORY_LEXICAL_WEIGHT > 0 else set()
+    query_trigrams = _char_trigrams(query) if MEMORY_FUZZY_WEIGHT > 0 else set()
     conn = get_db()
     cur = conn.cursor()
     if user_id:
@@ -510,6 +529,8 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
         record["similarity"] = cosine_similarity(query_embedding, emb)
         if MEMORY_LEXICAL_WEIGHT > 0:
             record["lexical"] = _lexical_score(query_tokens, record)
+        if MEMORY_FUZZY_WEIGHT > 0:
+            record["fuzzy"] = _fuzzy_score(query_trigrams, record)
         scored.append(record)
     _rank_memories(scored)
     return scored[:k]
