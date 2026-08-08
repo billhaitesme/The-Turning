@@ -69,3 +69,8 @@ Active UI labels, build metadata, compatibility defaults, setup instructions, an
 ## Release advancement
 
 When advancing the release, update this document first, then update all component sources in the table above, add a changelog entry, and run the version consistency check: `python scripts/check_versions.py`. The check reads the declared `Release` value here and fails if any component source disagrees.
+
+After tagging and creating the GitHub Release, rebuild the Windows install bundle
+(`installer/build_installer.ps1` — bump `AppVersion` in `OMEGA-ARC.iss` first) and upload the fresh
+`OMEGA-ARC-<version>-Windows.zip` to the Release (`gh release upload <tag> <zip> --clobber`). The
+attached bundle must always match the released code and current defaults.

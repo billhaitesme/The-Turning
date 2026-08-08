@@ -339,14 +339,12 @@ function toAurebeshGlyphText(text) {
   return String(text || "").toUpperCase().trim();
 }
 
-function EvidenceStack({ results }) {
+function EvidenceStack({ candidates }) {
   const stats = { declared: 0, configured: 0, observed: 0, verified: 0, unknown: 0 };
-  for (const result of results || []) {
-    for (const c of result?.evidence_candidates || []) {
-      const key = String(c?.state_type || "observed").toLowerCase();
-      if (Object.prototype.hasOwnProperty.call(stats, key)) stats[key] += 1;
-      else stats.observed += 1;
-    }
+  for (const c of candidates || []) {
+    const key = String(c?.state_type || "observed").toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(stats, key)) stats[key] += 1;
+    else stats.observed += 1;
   }
 
   return (
@@ -941,6 +939,7 @@ export default function App() {
         ["plans", `${API_BASE}/system/plans`],
         ["decisions", `${API_BASE}/system/decisions`],
         ["reasoning", `${API_BASE}/system/reasoning`],
+        ["deliberation", `${API_BASE}/system/deliberation`],
         ["toolRequests", `${API_BASE}/system/tool-requests?limit=50`],
         ["toolResults", `${API_BASE}/system/tool-results?limit=50`],
       ];
@@ -976,6 +975,7 @@ export default function App() {
         plans: nextData.plans?.plans || prev.plans,
         decisions: nextData.decisions?.decisions || prev.decisions,
         reasoning: nextData.reasoning?.reasoning || nextData.reasoning || prev.reasoning,
+        deliberation: nextData.deliberation?.deliberation || prev.deliberation,
         toolRequests: nextData.toolRequests?.requests || nextData.toolRequests || prev.toolRequests,
         toolResults: nextData.toolResults?.results || nextData.toolResults || prev.toolResults,
         errors: nextErrors,
@@ -1232,7 +1232,12 @@ export default function App() {
   const lastToolResult = runtime.toolResults?.[runtime.toolResults.length - 1] || null;
   const lastToolRequest = runtime.toolRequests?.[runtime.toolRequests.length - 1] || null;
   const activePlan = runtime.plans?.find?.((p) => p?.status === "active") || runtime.plans?.[0] || null;
-  const evidenceCandidates = runtime.toolResults.flatMap((r) => r?.evidence_candidates || []);
+  const deliberationRecords = runtime.deliberation?.records || [];
+  const latestDeliberation = deliberationRecords[deliberationRecords.length - 1];
+  const evidenceBeliefs = runtime.reasoning?.resolved_beliefs || [];
+  const evidenceCandidates = evidenceBeliefs.length
+    ? evidenceBeliefs
+    : runtime.toolResults.flatMap((r) => r?.evidence_candidates || []);
   const verifiedEvidence = evidenceCandidates.filter((c) => String(c?.state_type || "").toLowerCase() === "verified").length;
 
   const coreRuntimeState = useMemo(() => {
@@ -1571,8 +1576,8 @@ export default function App() {
           <SystemBadge label="Core Runtime" value={coreRuntimeState} />
           <SystemBadge label="Power State" value={powerState} />
           <SystemBadge label="Phase" value={phaseLabel(currentPhase)} />
-          <SystemBadge label="Build" value={runtime.systemStatus?.version || "v0.2.0"} />          <SystemBadge label="Branch" value={runtime.systemStatus?.branch || "feature/epoch8-tools"} />
-          <SystemBadge label="Tag" value={runtime.systemStatus?.tag || "epoch-8a-trusted-diagnostics"} />
+          <SystemBadge label="Build" value={runtime.systemStatus?.version || "--"} />          <SystemBadge label="Branch" value={runtime.systemStatus?.branch || "--"} />
+          <SystemBadge label="Tag" value={runtime.systemStatus?.tag || "--"} />
           <SystemBadge label="Tests" value={runtime.systemStatus?.tests_run || "310"} />
           <SystemBadge label="Active Adapters" value={runtime.tools.length} />
           <SystemBadge label="Poll" value={`${runtime.telemetry.poll_ms} ms`} />
@@ -1684,7 +1689,7 @@ export default function App() {
                 <DataPlate label="Style" value={learning?.style || "--"} />
                 <DataPlate label="Strategy" value={learning?.strategy || "--"} />
                 <DataPlate label="Project" value={conversationId ? "ACTIVE" : "IDLE"} />
-                <DataPlate label="CAL" value="07-2026" />
+                <DataPlate label="CAL" value={new Date().toISOString().slice(0, 7).split("-").reverse().join("-")} />
               </div>
             </div>
           </PanelFrame>
@@ -1705,7 +1710,7 @@ export default function App() {
             band={evidenceBand}
             sparkValues={panelHistory.evidence}
           >
-            <EvidenceStack results={runtime.toolResults} />
+            <EvidenceStack candidates={evidenceCandidates} />
             <MeterStack
               values={[
                 { label: "VER", value: evidenceVerifiedPct },
@@ -1718,7 +1723,7 @@ export default function App() {
               <div className="list-stack">
                 <DataPlate label="Verified" value={verifiedEvidence} />
                 <DataPlate label="Total Evidence" value={evidenceCandidates.length} />
-                <DataPlate label="Freshness" value={fmtTime(lastToolResult?.completed_at)} />
+                <DataPlate label="Freshness" value={fmtTime(runtime.lastSeen?.reasoning || lastToolResult?.completed_at)} />
               </div>
             </div>
             <div className="provenance-line">Latest provenance: {lastToolResult?.tool_name || "--"}</div>
@@ -1877,8 +1882,8 @@ export default function App() {
             band={deliberationBand}
             sparkValues={panelHistory.deliberation}
           >
-            <DataPlate label="Recommendation" value={runtime.decisions?.[0]?.decision || "--"} />
-            <DataPlate label="Alternatives" value={runtime.decisions?.length || 0} />
+            <DataPlate label="Recommendation" value={runtime.decisions?.[0]?.decision || latestDeliberation?.recommendation?.plan_id || "--"} />
+            <DataPlate label="Alternatives" value={latestDeliberation?.candidate_plans?.length || runtime.decisions?.length || 0} />
             <DataPlate label="Approval Queue" value={approvedPending} />
             <SignalBar value={Math.min(100, approvedPending * 25)} />
           </PanelFrame>
