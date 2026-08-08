@@ -97,3 +97,17 @@ if ($LASTEXITCODE -ne 0) { throw 'ISCC compile failed.' }
 $Setup = Get-ChildItem (Join-Path $InstallerDir 'Output') -Filter 'OMEGA-ARC-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 Write-Host ''
 Write-Host ("== built: " + $Setup.FullName + "  (" + [math]::Round($Setup.Length/1MB,1) + " MB) ==") -ForegroundColor Green
+
+# --- 7) distribution zip: setup exe + step-by-step guide ----------------------
+$Version = ($Setup.Name -replace 'OMEGA-ARC-Setup-', '' -replace '\.exe$', '')
+$ZipDir = Join-Path $BuildDir 'zip'
+if (Test-Path $ZipDir) { Remove-Item -Recurse -Force $ZipDir }
+New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
+Copy-Item $Setup.FullName $ZipDir
+Copy-Item (Join-Path $InstallerDir 'package\START-HERE.html') $ZipDir
+Copy-Item (Join-Path $InstallerDir 'package\README.txt') $ZipDir
+$ZipPath = Join-Path $InstallerDir ('Output\OMEGA-ARC-' + $Version + '-Windows.zip')
+if (Test-Path $ZipPath) { Remove-Item -Force $ZipPath }
+Compress-Archive -Path (Join-Path $ZipDir '*') -DestinationPath $ZipPath
+$Zip = Get-Item $ZipPath
+Write-Host ("== packaged: " + $Zip.FullName + "  (" + [math]::Round($Zip.Length/1MB,1) + " MB) ==") -ForegroundColor Green

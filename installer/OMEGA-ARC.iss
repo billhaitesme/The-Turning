@@ -23,6 +23,7 @@ UninstallDisplayIcon={app}\OMEGA-ARC.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+InfoBeforeFile=package\BEFORE-INSTALL.txt
 OutputDir=Output
 
 [Tasks]
@@ -32,10 +33,12 @@ Name: "ollama"; Description: "Download and install &Ollama (required to run mode
 [Files]
 Source: "build\staging\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "..\bridge\shared\icon\OMEGA-ARC.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "package\START-HERE.html"; DestDir: "{app}"; DestName: "OMEGA-ARC Guide.html"; Flags: ignoreversion
 ; .env is created from .env.example on first launch and preserved across upgrades.
 
 [Icons]
 Name: "{userprograms}\OMEGA-ARC"; Filename: "{app}\app\OMEGA-ARC.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\OMEGA-ARC.ico"
+Name: "{userprograms}\OMEGA-ARC Guide"; Filename: "{app}\OMEGA-ARC Guide.html"
 Name: "{userdesktop}\OMEGA-ARC"; Filename: "{app}\app\OMEGA-ARC.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\OMEGA-ARC.ico"; Tasks: desktopicon
 
 [Run]

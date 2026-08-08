@@ -1,0 +1,21 @@
+Welcome to OMEGA-ARC — a private AI that runs entirely on your computer.
+
+What this setup will do:
+
+  1. Install OMEGA-ARC into your user folder (no admin rights needed).
+  2. If Ollama (the AI model engine) is missing, download and install it
+     silently. Leave its checkbox ticked unless you already use Ollama.
+  3. Put an OMEGA-ARC icon in your Start menu (and desktop, if selected).
+
+What happens on FIRST LAUNCH (not during this setup):
+
+  * A console window will ask permission to download the AI models
+    (about 6 GB, one time only). Press Enter to accept and wait.
+  * When everything is ready, your browser opens the Command Deck
+    automatically at http://127.0.0.1:5173
+
+Requirements: ~15 GB free disk, 16 GB RAM recommended, internet for the
+one-time model download. Everything you type stays on your machine.
+
+A full illustrated guide ("OMEGA-ARC Guide") is installed to your Start
+menu, and included in this package as START-HERE.html.

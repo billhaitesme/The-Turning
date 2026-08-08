@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMEGA-ARC — Install Guide</title>
+<style>
+  :root { --void:#071016; --panel:#0E171D; --raised:#15232B; --line:#24333C;
+          --text:#d5dee6; --muted:#8d9aa7; --red:#F05252; --amber:#F2AD40; --green:#57D492; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--void); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif;
+         line-height: 1.6; padding: 40px 16px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 36px; }
+  header h1 { font-size: 2rem; letter-spacing: 0.06em; }
+  header h1 .o { color: var(--red); } header h1 .a { color: var(--amber); }
+  header p { color: var(--muted); margin-top: 6px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+          padding: 22px 26px; margin-bottom: 18px; }
+  .step { display: flex; gap: 18px; align-items: flex-start; }
+  .num { flex: 0 0 44px; height: 44px; border-radius: 50%; background: var(--raised);
+         border: 2px solid var(--amber); color: var(--amber); font-size: 1.3rem; font-weight: 700;
+         display: flex; align-items: center; justify-content: center; }
+  .step h2 { font-size: 1.15rem; margin-bottom: 6px; }
+  .step p, .step li { color: var(--text); }
+  .hint { color: var(--muted); font-size: 0.95rem; margin-top: 6px; }
+  .warn { border-left: 4px solid var(--red); background: var(--raised); padding: 10px 14px;
+          border-radius: 6px; margin-top: 10px; }
+  .good { border-left: 4px solid var(--green); background: var(--raised); padding: 10px 14px;
+          border-radius: 6px; margin-top: 10px; }
+  kbd, code { background: var(--raised); border: 1px solid var(--line); border-radius: 5px;
+        padding: 1px 7px; font-family: Consolas, monospace; font-size: 0.95em; color: var(--amber); }
+  ul, ol { margin: 8px 0 0 22px; }
+  h3 { margin-bottom: 8px; font-size: 1.05rem; color: var(--amber); }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  td { padding: 6px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  td:first-child { color: var(--muted); white-space: nowrap; }
+  footer { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 28px; }
+  a { color: var(--amber); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1><span class="o">OMEGA</span>-<span class="a">ARC</span></h1>
+  <p>Install guide — from zip to running in about 6 clicks (plus one model download)</p>
+</header>
+
+<div class="card">
+  <h3>Before you begin</h3>
+  <table>
+    <tr><td>Computer</td><td>Windows 10 or 11, 64-bit</td></tr>
+    <tr><td>Disk space</td><td>About 15 GB free (the AI models are large)</td></tr>
+    <tr><td>Memory</td><td>16 GB RAM recommended</td></tr>
+    <tr><td>Internet</td><td>Needed once, during setup, to download the AI models</td></tr>
+    <tr><td>Admin rights</td><td><b>Not needed</b> — everything installs to your own user folder</td></tr>
+  </table>
+</div>
+
+<div class="card"><div class="step"><div class="num">1</div><div>
+  <h2>Run the installer</h2>
+  <p>Double-click <code>OMEGA-ARC-Setup-0.3.2.exe</code> from this folder.</p>
+  <div class="warn"><b>Windows will warn you — this is expected.</b> A blue box saying
+  "Windows protected your PC" appears because this is independent software without a paid
+  Microsoft certificate. Click <kbd>More info</kbd>, then <kbd>Run anyway</kbd>.</div>
+</div></div></div>
+
+<div class="card"><div class="step"><div class="num">2</div><div>
+  <h2>Click through the setup</h2>
+  <p>Keep everything at its defaults and click <kbd>Next</kbd> through each page:</p>
+  <ul>
+    <li>Leave the install location as suggested.</li>
+    <li>Leave <b>"Download and install Ollama"</b> checked — it is the engine that runs the AI
+        models. (If you already have Ollama, this box won't appear.)</li>
+    <li>Keep "Create a desktop shortcut" checked so the icon lands on your desktop.</li>
+  </ul>
+  <p class="hint">Setup takes a minute or two, including the Ollama download.</p>
+</div></div></div>
+
+<div class="card"><div class="step"><div class="num">3</div><div>
+  <h2>Launch it</h2>
+  <p>On the final page, tick <b>"Launch OMEGA-ARC now"</b> and click <kbd>Finish</kbd> — or
+     double-click the red-and-amber <b>OMEGA-ARC</b> icon on your desktop any time.</p>
+</div></div></div>
+
+<div class="card"><div class="step"><div class="num">4</div><div>
+  <h2>First launch: let it download the AI models</h2>
+  <p>A console window opens and asks:</p>
+  <p style="margin-top:6px"><code>Download now? [Y/n]</code></p>
+  <p style="margin-top:6px">Press <kbd>Enter</kbd>. It downloads two models (about 6 GB total)
+     with a progress bar. This happens <b>once</b> — depending on your connection it can take
+     10&ndash;60 minutes. Leave the window open.</p>
+</div></div></div>
+
+<div class="card"><div class="step"><div class="num">5</div><div>
+  <h2>Done — your browser opens by itself</h2>
+  <div class="good">When everything is ready, your web browser opens the
+  <b>Command Deck</b> at <code>http://127.0.0.1:5173</code>. Start typing — you are talking to
+  your own private AI, running entirely on your machine. Nothing you say leaves your computer.</div>
+  <p class="hint">From now on, launching is instant: double-click the desktop icon and the browser
+  opens when it's ready. The console window stays open in the background — closing it is fine
+  (the runtime keeps running); to fully stop, restart your PC or end the processes in Task Manager.</p>
+</div></div></div>
+
+<div class="card">
+  <h3>If something goes wrong</h3>
+  <table>
+    <tr><td>"Ollama was not found"</td>
+        <td>Install it from <a href="https://ollama.com/download">ollama.com/download</a>, then
+            double-click the OMEGA-ARC icon again.</td></tr>
+    <tr><td>Model download interrupted</td>
+        <td>Just launch again — the download resumes where it stopped.</td></tr>
+    <tr><td>Responses are slow</td>
+        <td>Normal on machines without a graphics card — the AI runs on your CPU. It thinks before
+            it types.</td></tr>
+    <tr><td>Browser shows an error</td>
+        <td>Wait ~30 seconds and refresh. Logs live in the <code>logs</code> folder inside the
+            install directory.</td></tr>
+    <tr><td>Uninstalling</td>
+        <td>Windows Settings &rarr; Apps &rarr; OMEGA-ARC &rarr; Uninstall. Your conversations and
+            settings are kept; the downloaded models can be removed separately with
+            <code>ollama rm &lt;model&gt;</code>.</td></tr>
+  </table>
+</div>
+
+<footer>
+  OMEGA-ARC 0.3.2 &middot; local-first, deterministic, remembered &middot;
+  <a href="https://github.com/billhaitesme/The-Turning">github.com/billhaitesme/The-Turning</a><br>
+  Dual-licensed MIT OR Apache-2.0
+</footer>
+
+</div>
+</body>
+</html>
