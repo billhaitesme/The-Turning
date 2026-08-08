@@ -3,7 +3,7 @@
 ; Per-user install, no admin required. Ollama is downloaded and installed silently if missing.
 
 #define AppName "OMEGA-ARC"
-#define AppVersion "0.4.0"
+#define AppVersion "0.4.1"
 #define AppPublisher "The Turning (billhaitesme)"
 #define AppURL "https://github.com/billhaitesme/The-Turning"
 

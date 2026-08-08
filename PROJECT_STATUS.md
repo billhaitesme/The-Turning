@@ -6,10 +6,10 @@
 |---|---|
 | Last updated | 2026-08-08 |
 | Current epoch | Epoch XI — Tutelage |
-| Current version | 0.4.0 |
+| Current version | 0.4.1 |
 | Release line | 0.4.x |
 | Status | Active Development |
-| Current phase | Epoch XI-A (The First Lesson) released as **0.4.0** (tag `epoch-xi-a`), merged to `main` |
+| Current phase | Epoch XI-B (Retention and Compounding) released as **0.4.1** (tag `epoch-xi-b`), merged to `main` |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
 | Theme | Epoch XI: “The Runtime Learns” (X: “Remembers”, IX: “Becomes Visible”) |
@@ -121,8 +121,15 @@ Backend suite **389 passing**, hermetic.
 - ✓ Deck truthfulness: panels read authoritative stores; reasoning snapshot persists across restarts
 - Boundary: *anatomy is taught; identity is authored* (self-authored personality preserved)
 
-Remaining Epoch XI: XI-B Retention and Compounding, XI-C Consolidation Gate. Carried-forward
-obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device icon checks.
+## Epoch XI-B — Retention and Compounding, released as 0.4.1 (2026-08-08)
+
+Tagged **`epoch-xi-b`**, merged to `main`. Backend suite **392 passing**. Cumulative quizzes with
+per-section interference gating; spaced re-quizzes; retention report endpoint. Live: retention held
+at 1.0 hours after study; the cumulative run caught one genuine cross-lesson interference miss
+(review comprehension 0.917, above threshold).
+
+Remaining Epoch XI: XI-C Consolidation Gate. Carried-forward obligations (unchanged): Android
+on-device approval pass (gates IX-D) and on-device icon checks.
 
 ## Native Device Validation Gate (IX-B — closed)
 

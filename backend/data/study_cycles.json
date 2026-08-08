@@ -1784,6 +1784,562 @@
       },
       "pass_threshold": 0.8,
       "status": "passed"
+    },
+    {
+      "id": "34371efc-d54b-46e1-895e-c70396ad77c0",
+      "lesson_id": "lesson-1-identity-and-principles",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "dc77cc9c-976f-42cb-b74a-5d3d410538d5",
+      "started_at": "2026-08-08T11:00:42.628213Z",
+      "finished_at": "2026-08-08T11:02:00.667770Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 4
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 2
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 4
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 2
+          }
+        ]
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "0M3-G4-ARC"
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "The active language model changes only by explicit operator action, and every change is recorded."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "The deterministic runtime is the single authority over state and persistence."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "The desktop Bridge Zero is Mission Control, a read-only operations console with no chat by design."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "Epoch ten"
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "It runs entirely locally on Ollama, so nothing the operator says leaves the machine."
+          }
+        ],
+        "model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m"
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "60a2d294-0c1c-406c-a247-6b18aa5a61b6",
+      "lesson_id": "lesson-3-the-operator-surfaces",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "e78c7649-0005-48c9-8abf-317dbe4290e3",
+      "started_at": "2026-08-08T11:02:00.786587Z",
+      "finished_at": "2026-08-08T11:02:59.036476Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-3-the-operator-surfaces.md",
+          "chunks": 4
+        }
+      ],
+      "chunks_written": 4,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 5,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 5,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "The Command Deck is the web interface where conversation happens."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "Biometric confirmation: Face ID on iOS and BiometricPrompt on Android."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "An outdated surface can never misrepresent the runtime because a console whose version is lower than the required mobile version shows Update Required and disab"
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "No action bypasses the gate."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "The Windows installer bundles an embedded Python runtime, the Core Runtime, and both web interfaces, and it installs Ollama when missing."
+          }
+        ],
+        "model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m"
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "4bd258a3-3874-41de-969b-6c23344f879e",
+      "lesson_id": "lesson-3-the-operator-surfaces",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "4cee8f4f-67d1-42f9-b464-c693ef593877",
+      "started_at": "2026-08-08T11:04:08.664106Z",
+      "finished_at": "2026-08-08T11:06:55.490489Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-3-the-operator-surfaces.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 17,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 17,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": 1.0
+        }
+      },
+      "comprehension": {
+        "score": 0.9412,
+        "hits": 16,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "The Command Deck is the web interface where conversation happens."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "Biometric confirmation: Face ID on iOS and BiometricPrompt on Android."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "A console whose version is lower than the required mobile version shows Update Required and disables runtime operations, so an outdated surface can never misrep"
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "No action bypasses the gate."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "The Windows installer bundles an embedded Python runtime, the Core Runtime, and both web interfaces, and it installs Ollama when missing."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "answer_preview": "0M3-G4-ARC"
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "answer_preview": "The Model Lock is the rule that the active language model changes only by explicit operator action, and every change is recorded."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": false,
+            "answer_preview": "The runtime's long-term memory lives in a single SQLite store."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "answer_preview": "The desktop Bridge Zero is Mission Control: a read-only operations console with no chat by design."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "answer_preview": "Epoch ten"
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "answer_preview": "The system runs entirely locally on Ollama, and nothing the operator says leaves the machine."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "answer_preview": "The local embeddinggemma model produces embeddings for recall."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "answer_preview": "A room is a scope label on a memory, and recall can search within a single room."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "answer_preview": "Unscoped memories form the global wing, which stays recallable from inside every room."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "answer_preview": "The newer fact wins (temporal tie-break)."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "answer_preview": "An undeclared collision becomes a pending candidate that waits for operator review; nothing is hidden from recall without approval."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "answer_preview": "Superseded memories are never deleted and can always be restored."
+          }
+        ],
+        "model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
+        "sections": {
+          "own": 1.0,
+          "review": 0.9167
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
     }
   ]
 }

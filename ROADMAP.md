@@ -1,7 +1,7 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch XI — Tutelage
-**Current release:** 0.4.0
+**Current release:** 0.4.1
 **Active release line:** 0.4.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
@@ -162,9 +162,16 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
 - Boundary codified: *anatomy is taught; identity is authored.* Curriculum teaches what the runtime
   is made of; who it is remains self-determined (charter: self-authored personality).
 
+### XI-B — Retention and Compounding (released as 0.4.1, tagged `epoch-xi-b`)
+
+- Cumulative quizzes with per-section interference gating; spaced re-quizzes (idempotent, no
+  re-ingest); `GET /system/tutelage/retention` score-history report; seed lesson 3.
+- Measured live: retention held at 1.0 hours after study; lesson 3's cumulative run surfaced one
+  genuine cross-lesson retrieval interference miss (review comprehension 0.917 — above threshold,
+  now permanently measurable).
+
 ### Epoch XI remaining
 
-- **XI-B — Retention and Compounding:** spaced repetition, cumulative quizzes, retention curves.
 - **XI-C — Consolidation Gate:** distillation candidates from stable reviewed memory, approval-gated
   training, versioned adapter registry with Model-Lock-style activation.
 

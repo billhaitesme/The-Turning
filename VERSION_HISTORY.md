@@ -106,5 +106,7 @@ review-gated study cycles, and measured growth (ADR 0013; anatomy is taught, ide
   study cycle (idempotent ingestion → pre/post recall test → comprehension test graded by operator
   keys), prerequisite gating, study-seat bake-off (default retained), auditable cycle records. First
   real lessons: recall 0.0 → 1.0, true comprehension 12/12. 389 backend tests.
-- **XI-B — Retention and Compounding:** planned.
+- **XI-B — Retention and Compounding (0.4.1, `epoch-xi-b`):** cumulative quizzes with per-section
+  interference gating, spaced re-quizzes, retention-history report. Live runs held retention at 1.0
+  and surfaced one genuine cross-lesson interference miss. 392 backend tests.
 - **XI-C — Consolidation Gate:** planned (approval-gated LoRA distillation).

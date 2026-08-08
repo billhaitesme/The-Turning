@@ -144,3 +144,74 @@ def grade_comprehension(
     total = len(quiz) or 1
     return {"score": round(hits / total, 4), "hits": hits,
             "questions": len(quiz), "per_question": per_question}
+
+
+def compose_quiz(lesson: Dict[str, Any], curriculum: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """XI-B cumulative quizzes: the lesson's own questions plus every question from the
+    lessons named in `review_lessons` (interference check — new learning must not degrade
+    old recall). Review items get namespaced ids and carry their origin lesson."""
+    items: List[Dict[str, Any]] = []
+    for item in lesson.get("quiz", []):
+        entry = dict(item)
+        entry["origin"] = lesson.get("id")
+        items.append(entry)
+    for review_id in lesson.get("review_lessons", []):
+        found = find_lesson(curriculum, review_id)
+        if not found:
+            continue
+        for item in found["lesson"].get("quiz", []):
+            entry = dict(item)
+            entry["id"] = f"{review_id}:{item.get('id')}"
+            entry["origin"] = review_id
+            items.append(entry)
+    return items
+
+
+def section_scores(result: Dict[str, Any], items: List[Dict[str, Any]], own_lesson_id: str) -> Dict[str, Any]:
+    """Split a graded result into own-lesson vs review sections (None when no review items)."""
+    origin_by_id = {i.get("id"): i.get("origin") for i in items}
+    own_hits = own_total = review_hits = review_total = 0
+    for q in result.get("per_question", []):
+        origin = origin_by_id.get(q.get("id"))
+        if origin == own_lesson_id:
+            own_total += 1
+            own_hits += 1 if q.get("hit") else 0
+        else:
+            review_total += 1
+            review_hits += 1 if q.get("hit") else 0
+    return {
+        "own": round(own_hits / own_total, 4) if own_total else None,
+        "review": round(review_hits / review_total, 4) if review_total else None,
+    }
+
+
+def retention_report(cycles_store: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """XI-B retention: per lesson, the score history across every cycle — the raw series
+    of the retention curve. Growth (and decay) is observed, not assumed."""
+    by_lesson: Dict[str, List[Dict[str, Any]]] = {}
+    for cycle in cycles_store.get("cycles", []):
+        lesson_id = cycle.get("lesson_id")
+        if not lesson_id:
+            continue
+        comp = cycle.get("comprehension") or {}
+        by_lesson.setdefault(lesson_id, []).append({
+            "finished_at": cycle.get("finished_at"),
+            "recall": (cycle.get("recall_post") or {}).get("score"),
+            "comprehension": comp.get("score"),
+            "status": cycle.get("status"),
+            "chunks_written": cycle.get("chunks_written", 0),
+        })
+    report = []
+    for lesson_id, history in by_lesson.items():
+        history.sort(key=lambda h: h.get("finished_at") or "")
+        recalls = [h["recall"] for h in history if h.get("recall") is not None]
+        report.append({
+            "lesson_id": lesson_id,
+            "attempts": len(history),
+            "first_recall": recalls[0] if recalls else None,
+            "latest_recall": recalls[-1] if recalls else None,
+            "retention_delta": round(recalls[-1] - recalls[0], 4) if len(recalls) >= 2 else None,
+            "history": history,
+        })
+    report.sort(key=lambda r: r["lesson_id"])
+    return report

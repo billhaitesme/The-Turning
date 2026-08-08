@@ -762,7 +762,7 @@ def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
         return search_memories(query=question, conversation_id=conversation_id,
                                user_id=user_id, k=8, scope=scope)
 
-    quiz = lesson.get("quiz", [])
+    quiz = tutelage.compose_quiz(lesson, curriculum)
     recall_pre = tutelage.grade_recall(quiz, retrieve)
 
     sources_ingested = []
@@ -781,6 +781,7 @@ def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
         chunks_written += len(chunks)
 
     recall_post = tutelage.grade_recall(quiz, retrieve)
+    recall_post["sections"] = tutelage.section_scores(recall_post, quiz, lesson_id)
 
     comprehension_result = None
     seat_model = None
@@ -793,10 +794,13 @@ def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
 
         comprehension_result = tutelage.grade_comprehension(quiz, answer)
         comprehension_result["model"] = seat_model
+        comprehension_result["sections"] = tutelage.section_scores(comprehension_result, quiz, lesson_id)
 
     threshold = float(lesson.get("pass_threshold", 0.8))
-    gate_scores = [recall_post["score"]] + ([comprehension_result["score"]] if comprehension_result else [])
-    status = "passed" if min(gate_scores) >= threshold else "failed"
+    gate_scores = [v for v in recall_post["sections"].values() if v is not None]
+    if comprehension_result:
+        gate_scores += [v for v in comprehension_result["sections"].values() if v is not None]
+    status = "passed" if gate_scores and min(gate_scores) >= threshold else "failed"
 
     record = {
         "id": str(uuid.uuid4()),
@@ -1890,7 +1894,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="0.4.0")
+app = FastAPI(title=f"{APP_NAME} API", version="0.4.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -1998,6 +2002,13 @@ def get_tutelage_curriculum() -> Dict[str, Any]:
     cycles = tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)
     return {"curriculum": tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH),
             "passed_lessons": sorted(p for p in tutelage.passed_lessons(cycles) if p)}
+
+
+@app.get("/system/tutelage/retention")
+def get_tutelage_retention() -> Dict[str, Any]:
+    """Per-lesson score history across all cycles — the retention curve (XI-B)."""
+    return {"retention": tutelage.retention_report(
+        tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH))}
 
 
 @app.get("/system/tutelage/cycles")

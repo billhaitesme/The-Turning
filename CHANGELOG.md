@@ -18,6 +18,27 @@ Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substra
 (Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
 validation (see 0.2.1 below).
 
+## [0.4.1] - 2026-08-08 — Epoch XI-B (Retention and Compounding)
+
+Released from `feature/epoch-xi-tutelage`, tagged `epoch-xi-b`. Backend suite: **392 passing**.
+
+### Added
+
+- **Cumulative quizzes**: lessons may name `review_lessons` whose questions join the quiz
+  (namespaced, per-origin sections); the pass rule requires every section of every test to clear
+  the threshold — new learning that degrades old recall fails the lesson (interference gating).
+- **Retention report**: `GET /system/tutelage/retention` — per-lesson score history across all
+  cycles (first/latest/delta + full series). Spaced re-quizzes ride idempotent ingestion.
+- Seed lesson 3, "The Operator Surfaces" (reviews lessons 1–2; 17 questions total).
+
+### Measured (live, real embedder + study seat)
+
+- Spaced re-quiz of lesson 1 hours after study: recall 1.0 / comprehension 1.0, zero re-ingestion.
+- Lesson 3 cumulative: recall 1.0/1.0; comprehension own 1.0 / review 0.917 — the single review
+  miss is genuine cross-lesson retrieval interference (a lesson-1 question answered from lesson-2
+  notes): exactly the phenomenon cumulative testing exists to surface, now measurable.
+- Retention: all lessons at 1.0, delta 0.0.
+
 ## [0.4.0] - 2026-08-08 — Epoch XI-A (The First Lesson)
 
 Epoch XI — Tutelage — begins: the runtime studies. Released from `feature/epoch-xi-tutelage`,
