@@ -51,16 +51,31 @@ Metrics, all in [0,1]: `hit@1`, `recall@k`, `MRR`.
 
 ## Ranking signals (tunable, bounded)
 
-`search_memories` ranks by `cosine + MEMORY_LEXICAL_WEIGHT*lexical + MEMORY_RECENCY_WEIGHT*recency`.
-Each added term is normalized to [0,1], so it only reorders near-ties. Set either weight to `0` to
+`search_memories` ranks by
+`cosine + MEMORY_LEXICAL_WEIGHT*lexical + MEMORY_FUZZY_WEIGHT*fuzzy + MEMORY_RECENCY_WEIGHT*recency`.
+Each added term is normalized to [0,1], so it only reorders near-ties. Set any weight to `0` to
 isolate a signal, e.g. measure the pre-hybrid baseline:
 
 ```bash
 MEMORY_LEXICAL_WEIGHT=0 MEMORY_RECENCY_WEIGHT=0.05 python backend/benchmarks/recall_benchmark.py --fixture backend/benchmarks/fixtures/recall_v3.json
 ```
 
-Defaults: `MEMORY_RECENCY_WEIGHT=0.05` (on), `MEMORY_LEXICAL_WEIGHT=0` (off — hybrid showed no measured
-gain on the current corpus; see ADR 0017). Set `MEMORY_LEXICAL_WEIGHT>0` to enable and re-measure.
+Defaults: `MEMORY_RECENCY_WEIGHT=0.05` (on), `MEMORY_LEXICAL_WEIGHT=0` and `MEMORY_FUZZY_WEIGHT=0`
+(off — hybrid showed no measured gain on the current corpus, and fuzzy awaits a typo-injected
+measurement; see ADR 0017). Write-path knobs: `MEMORY_SUPERSEDE_THRESHOLD=0` /
+`MEMORY_SUPERSEDE_DECLARED_THRESHOLD=0` (supersession off; calibrated recommendation 0.80/0.45, ADR
+0021) and `MEMORY_CONSOLIDATION_THRESHOLD=0.95` (consolidation scan floor, ADR 0023). Set a weight
+above `0` to enable and re-measure.
+
+## Supersession calibration
+
+`supersession_benchmark.py` measures the write-path dispositions (auto / pending / none) against
+expected pairs and reports per-pair cosine plus precision — the calibration evidence behind the ADR
+0021 floors:
+
+```bash
+MEMORY_SUPERSEDE_THRESHOLD=0.80 MEMORY_SUPERSEDE_DECLARED_THRESHOLD=0.45 python backend/benchmarks/supersession_benchmark.py
+```
 
 ## Embedder bake-off (2026-08-08) — embeddinggemma retained
 
@@ -79,11 +94,7 @@ Both candidates lose recall — the primary function — and nothing dominates o
 would also invalidate all stored embeddings and the calibrated floors. Re-run this bake-off if the
 memory corpus or embedder landscape changes materially.
 
-Retrieval is strong out of the box. The **only** miss is the temporal query ("which model *currently*
-generates responses"): the current flat cosine ranking returned the older, superseded fact above the
-newer one. That single measured failure is the concrete motivation for the next slice —
-**temporal-aware retrieval** (validity windows / recency boosting) — which can now be proven or
-disproven against this number.
-
-> The baseline is environment-dependent (embedder model + version). Re-run after changing the embed
-> model. Results are written to `results/` for the record.
+> Historical note: the original v1 baseline's single miss (a temporal-supersession query under flat
+> cosine) motivated ADR 0016, which fixed it — the pattern every later slice followed. Baselines are
+> environment-dependent (embedder model + version); re-run after changing the embed model. Write
+> results to `results/` with `--out` when recording a baseline for the record.

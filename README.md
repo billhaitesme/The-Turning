@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch X / Version 0.3.1
+**Current release:** Epoch X / Version 0.3.2
 **Active series:** Version 0.3.x
-**Active milestone:** Epoch X — Memory (X-B Rooms and Revision released as 0.3.1, tagged `epoch-x-b`)
+**Active milestone:** Epoch X — Memory (X-C Review and Consolidation released as 0.3.2, tagged `epoch-x-c`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch X / 0.3.1 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch X / 0.3.1 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch X / 0.3.1 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch X / 0.3.1 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch X / 0.3.1 |
+| Core Runtime | `backend/` | Epoch X / 0.3.2 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch X / 0.3.2 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch X / 0.3.2 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch X / 0.3.2 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch X / 0.3.2 |
 
 ## Epoch IX
 
@@ -41,14 +41,21 @@ Epoch IX-C (Operator Actions) shipped as **0.2.1** (tagged `epoch-ix-c`): an all
 
 ## Epoch X — Memory
 
-Epoch X begins the memory pillar: durable, scoped, benchmarked long-term memory — the substrate the
-future Tutelage/Learning epoch depends on. The X-A foundation shipped as **0.3.0** (tagged
-`epoch-x-a`): a recall benchmark (retrieval quality is measured, not assumed), temporal-aware
-retrieval (recency tie-breaks, on), hybrid lexical/typo-fuzzy signals (available, off by default —
-measurement showed no current gain), write-time supersession (reversible, off pending calibration),
-and scoped retrieval ("rooms"; recall by subject — measured hit@1 0.500 → 1.000 on cross-room facts).
-Techniques adapted from [MemPalace](https://github.com/MemPalace/mempalace) (MIT) are credited in ADRs
-0016–0019.
+Epoch X delivers the memory pillar: durable, scoped, benchmarked long-term memory — the substrate the
+future Tutelage/Learning epoch depends on. Techniques adapted from
+[MemPalace](https://github.com/MemPalace/mempalace) (MIT) are credited in ADRs 0016–0023.
+
+- **X-A — Memory Foundation (0.3.0, `epoch-x-a`):** a recall benchmark (retrieval quality is
+  measured, not assumed), temporal-aware retrieval (recency tie-breaks, on), hybrid lexical/typo-fuzzy
+  signals (available, off — measurement showed no current gain), reversible supersession flags, and
+  scoped retrieval ("rooms"; measured hit@1 0.500 → 1.000 on cross-room facts).
+- **X-B — Rooms and Revision (0.3.1, `epoch-x-b`):** scope assignment — the conversation carries the
+  room, explicitly, and recall searches the room plus the global wing; robust supersession upgraded
+  per ADR 0021 — auto only on a *declared* change, undeclared collisions queue for operator review
+  (off by default with calibrated two-tier floors); an embedder bake-off retained `embeddinggemma`.
+- **X-C — Review and Consolidation (0.3.2, `epoch-x-c`):** a memory review surface (browse rooms,
+  re-room, restore — audited, never deleted) and an operator-invoked consolidation scan that proposes
+  near-duplicate residue into the same review queue.
 
 ## Start here
 - [Current project status](PROJECT_STATUS.md)

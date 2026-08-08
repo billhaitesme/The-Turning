@@ -46,11 +46,21 @@ The Core Runtime made observable and operable from native mobile consoles and de
 - **IX-A** — Native mobile operator consoles (iOS + Android).
 - **IX-B** — Authoritative RuntimeStore, typed events, telemetry, Operations Dashboard; validated on
   hardware (Android 8/8, iOS 8/8) and tagged `epoch-ix-a` (344 backend tests).
-- **IX-C** — Operator actions: model selector, new conversation, approvals + biometric, app icon
-  (in progress; 345 backend tests).
+- **IX-C** — Operator actions: model selector, new conversation, approvals + biometric, app icon.
+  Released as **0.2.1**, tagged `epoch-ix-c` (345 backend tests).
 - **IX-D** — Command Console (designed).
+
+## Epoch X — Memory
+
+Durable, scoped, benchmarked long-term memory (ADRs 0016–0023; MemPalace techniques credited).
+
+- **X-A** — Memory Foundation: recall benchmark, temporal-aware retrieval, hybrid knobs, supersession
+  flags, rooms. Released as **0.3.0**, tagged `epoch-x-a` (366 backend tests).
+- **X-B** — Rooms and Revision: scope assignment + global wing, reviewed supersession, embedder
+  bake-off. Released as **0.3.1**, tagged `epoch-x-b` (372 backend tests).
+- **X-C** — Review and Consolidation: memory review surface, consolidation scan. Released as
+  **0.3.2**, tagged `epoch-x-c` (382 backend tests).
 
 ## Future
 
-- **Epoch X — Memory** — durable, benchmarked long-term memory.
-- **Tutelage and Learning** — proposed, review-gated study loop.
+- **Tutelage and Learning** — proposed, review-gated study loop; sequenced after Memory.

@@ -2,9 +2,36 @@
 
 ## [Unreleased]
 
-Next: Epoch X continues (memory consolidation, richer review surfaces) and Epoch IX-D (Command
-Console, designed). IX-D build remains gated on the deferred Android on-device approval validation
-(see 0.2.1 below).
+Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substrate) and Epoch IX-D
+(Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
+validation (see 0.2.1 below).
+
+## [0.3.2] - 2026-08-08 — Epoch X-C (Review and Consolidation)
+
+Released from `feature/epoch-x-memory`, tagged `epoch-x-c`. Completes Epoch X's committed scope.
+Backend suite: **382 passing**, hermetic.
+
+### Added
+
+- **Memory review surface** (ADR 0022) — `GET /system/memory/rooms` (rooms + counts),
+  `GET /system/memory` (filtered browse; embeddings never exposed), `GET /system/memory/{id}`
+  (detail + audit trail), re-room (`POST .../scope`, null → global wing), and supersession
+  **restore**. Corrections are explicit operator actions audited in a new `memory_events` table;
+  deletion is deliberately not offered.
+- **Consolidation** (ADR 0023) — `POST /system/memory/consolidation-scan` clusters near-duplicate
+  active memories (same kind/room/user, `MEMORY_CONSOLIDATION_THRESHOLD` default 0.95), keeps the
+  newest as representative, and proposes older rows into the supersession review queue
+  (`origin='consolidation'`). No auto path; approved rows remain restorable; re-scans skip existing
+  candidates.
+
+### Fixed
+
+- Continuity/cleanliness audit before this cut: stale epoch/version/status claims corrected across
+  SYSTEM_OVERVIEW, VERSION_HISTORY, MILESTONES, ARCHITECTURE_DECISIONS (ADRs 0016–0023 now indexed),
+  versioning.md prose, PROJECT_STATUS, ROADMAP, README, the Epoch X architecture note, component
+  READMEs, and the benchmarks README (fuzzy term + supersession calibration documented). `.env.example`
+  updated to the current default model and memory knobs. The stale tracked `ZIP for CA/` snapshot was
+  untracked (recoverable from git history).
 
 ## [0.3.1] - 2026-08-08 — Epoch X-B (Rooms and Revision)
 

@@ -2,7 +2,7 @@
 
 Native SwiftUI operator console for the OMEGA-ARC Core Runtime.
 
-**Release:** Epoch IX / Version 0.2.0 · **Milestone:** IX-B
+**Release:** tracks the shared identity in [`docs/architecture/versioning.md`](../../docs/architecture/versioning.md) (currently Epoch X / 0.3.2)
 
 ## Build
 

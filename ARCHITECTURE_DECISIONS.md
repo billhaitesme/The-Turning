@@ -71,7 +71,7 @@ This living index preserves the reasoning behind OMEGA-ARC’s governing archite
 
 **Status:** Accepted
 
-**Decision:** All active components report Epoch IX / Version 0.2.x, with 0.2.0 as the current release. The mobile API major remains independently versioned as `1`.
+**Decision:** All active components report a single unified epoch/version identity, governed by [`versioning.md`](docs/architecture/versioning.md). (As written this decision named Epoch IX / 0.2.x; the identity has since advanced per the milestone-versioning rule — currently Epoch X / 0.3.x — without changing the principle.) The mobile API major remains independently versioned as `1`.
 
 **Reason:** A shared identity prevents documentation, builds, compatibility gates, and releases from describing different system states.
 
@@ -81,6 +81,23 @@ This living index preserves the reasoning behind OMEGA-ARC’s governing archite
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) is the current operational-status authority.
 - Historical documents may retain earlier epoch names when clearly historical.
 - Milestone tags use the documented `epoch-<roman>-<milestone>` convention.
+
+## Epoch X decisions (detailed ADRs)
+
+Epoch X memory decisions are recorded as detailed ADRs under [`docs/decisions/`](docs/decisions/):
+
+| ADR | Decision (one line) |
+|---|---|
+| [0016](docs/decisions/0016-temporal-aware-retrieval.md) | Bounded recency term breaks similarity near-ties toward the newer fact (on by default) |
+| [0017](docs/decisions/0017-hybrid-retrieval.md) | Lexical + typo-fuzzy ranking signals exist but ship disabled — measured neutral on the current corpus |
+| [0018](docs/decisions/0018-write-time-supersession.md) | Reversible superseded flags at the store level (mechanism; upgraded by 0021) |
+| [0019](docs/decisions/0019-scoped-retrieval.md) | Memories carry an optional `scope` ("room"); recall can search within one |
+| [0020](docs/decisions/0020-scope-assignment.md) | The conversation carries the room, set only by explicit action; recall = room + global wing |
+| [0021](docs/decisions/0021-declared-change-supersession.md) | Auto-supersede only on declared change; undeclared collisions become reviewed candidates |
+| [0022](docs/decisions/0022-memory-review-surface.md) | Memory is browsable and correctable (re-room, restore), audited, never deleted |
+| [0023](docs/decisions/0023-memory-consolidation.md) | Near-duplicate cleanup is proposed into the review queue, never automatic |
+
+Earlier detailed ADRs (0001–0015) cover the foundational epochs and Epoch IX operator surfaces.
 
 ## Adding or changing a decision
 

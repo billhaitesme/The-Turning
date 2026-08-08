@@ -4,12 +4,12 @@
 
 | Field | Current value |
 |---|---|
-| Last updated | 2026-08-07 |
+| Last updated | 2026-08-08 |
 | Current epoch | Epoch X — Memory |
-| Current version | 0.3.1 |
+| Current version | 0.3.2 |
 | Release line | 0.3.x |
 | Status | Active Development |
-| Current phase | Epoch X-B (Rooms and Revision) released as **0.3.1** (tag `epoch-x-b`), merged to `main` |
+| Current phase | Epoch X-C (Review and Consolidation) released as **0.3.2** (tag `epoch-x-c`), merged to `main` |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
 | Theme | Epoch X: “The Runtime Remembers” (Epoch IX was “The Runtime Becomes Visible”) |
@@ -90,12 +90,28 @@ suite **372 passing**, hermetic.
 - ✓ **Embedder bake-off** — `embeddinggemma` retained on a pre-registered rule; challengers lost
   recall. Recorded in `backend/benchmarks/README.md`.
 
-Remaining Epoch X: memory consolidation, richer review/re-scoping surfaces. Carried-forward
-obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device icon checks.
+Carried-forward obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device
+icon checks.
 
-## Native Device Validation Gate
+## Epoch X-C — Review and Consolidation, released as 0.3.2 (2026-08-08)
 
-IX-B remains active until both native clients pass this gate on physical hardware. Record the device, operating-system version, build identifier, tester, and date with each run.
+Two slices from `feature/epoch-x-memory`, tagged **`epoch-x-c`**, merged to `main`. Backend suite
+**382 passing**, hermetic.
+
+- ✓ **Memory review surface** (ADR 0022) — browse rooms/memories (embeddings never exposed), detail
+  with audit trail, re-room, and supersession restore; corrections audited in `memory_events`;
+  deletion deliberately not offered.
+- ✓ **Consolidation** (ADR 0023) — operator-invoked scan proposes near-duplicate residue into the
+  supersession review queue (`origin='consolidation'`); no auto path; approved rows stay restorable.
+
+Epoch X's committed scope (durable, scoped, benchmarked memory) is delivered. Next: Tutelage design
+(ADR 0013), a Bridge Zero memory panel, and floor calibration against a grown corpus remain open.
+
+## Native Device Validation Gate (IX-B — closed)
+
+This gate closed on 2026-07-24 (both platforms 8/8; see Checkpoint closed above). The records below
+are retained for audit. Record the device, operating-system version, build identifier, tester, and
+date with each run.
 
 ### iOS
 
@@ -153,11 +169,13 @@ tokens in a usable time; the model selection does not affect the streaming trans
 
 ## Future
 
-- Epoch IX-C — Operator Actions (in progress; see the IX-C progress section above)
-- Epoch IX-D — Command Console (designed in ADR 0015; build gated on IX-C on-device approval validation)
-- Epoch X — Memory (scope not yet committed)
+- Epoch IX-D — Command Console (designed in ADR 0015; build gated on the deferred Android on-device
+  approval validation)
+- Tutelage and Learning (proposed, ADR 0013; sequenced after Epoch X — now unblocked by the memory
+  substrate)
 
-The IX-B native-device gate and checkpoint exit criteria are satisfied, so IX-C feature work is under way. IX-D build remains gated on IX-C operator approvals being validated on physical hardware.
+IX-C and Epoch X (A/B/C) are released; see the sections above. IX-D build remains gated on IX-C
+operator approvals being validated on physical Android hardware (documented 0.2.1 exception).
 
 ## Authorities
 
