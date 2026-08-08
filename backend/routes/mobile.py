@@ -132,7 +132,7 @@ def _has_records(payload: Any, key: str) -> bool:
 @router.get("/compatibility")
 def compatibility() -> dict[str, str]:
     return {
-        "runtime_version": os.getenv("RUNTIME_VERSION", "0.4.0"),
+        "runtime_version": os.getenv("RUNTIME_VERSION", "0.4.1"),
         "required_mobile_version": os.getenv("REQUIRED_MOBILE_VERSION", "0.2.0"),
         "api_version": os.getenv("MOBILE_API_VERSION", "1"),
     }
@@ -246,7 +246,7 @@ def build_runtime_status() -> dict[str, Any]:
         "model_lock": bool(control.get("model_lock")),
         "uptime_seconds": max(0, int(time.monotonic() - PROCESS_STARTED_AT)),
         "latency_ms": round((time.perf_counter() - started) * 1000, 3),
-        "version": os.getenv("RUNTIME_VERSION", "0.4.0"),
+        "version": os.getenv("RUNTIME_VERSION", "0.4.1"),
         "chronicle_count": len(chronicle),
     }
 

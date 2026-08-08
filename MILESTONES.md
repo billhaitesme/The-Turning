@@ -68,5 +68,6 @@ The runtime studies: curriculum, measured study cycles, review-gated growth (ADR
 - **XI-A** — The First Lesson: curriculum + study cycle (recall + comprehension, operator-key
   grading), study-seat bake-off, seed subject = its own architecture. Released as **0.4.0**, tagged
   `epoch-xi-a` (389 backend tests).
-- **XI-B** — Retention and Compounding (planned).
+- **XI-B** — Retention and Compounding: cumulative quizzes + interference gating, spaced
+  re-quizzes, retention report. Released as **0.4.1**, tagged `epoch-xi-b` (392 backend tests).
 - **XI-C** — Consolidation Gate (planned; approval-gated LoRA).

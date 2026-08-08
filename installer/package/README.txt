@@ -1,4 +1,4 @@
-OMEGA-ARC 0.4.0 — Windows install package
+OMEGA-ARC 0.4.1 — Windows install package
 ==========================================
 
   >> Open START-HERE.html for the full step-by-step guide with pictures of
@@ -6,7 +6,7 @@ OMEGA-ARC 0.4.0 — Windows install package
 
 The short version:
 
-  1. Double-click OMEGA-ARC-Setup-0.4.0.exe
+  1. Double-click OMEGA-ARC-Setup-0.4.1.exe
      (Windows will warn "Windows protected your PC" — click "More info",
       then "Run anyway". Expected for independent software.)
   2. Click Next through the installer, keeping the defaults.
