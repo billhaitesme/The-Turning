@@ -197,6 +197,75 @@ def test_retention_report_tracks_history(monkeypatch, tmp_path):
     assert len(entry["history"]) == 2
 
 
+def _approve_consolidation(subject_id):
+    from services import tool_approval
+    request = {
+        "request_id": f"toolreq-consol-{subject_id}",
+        "tool_name": "tutelage_consolidation",
+        "arguments": {"subject_id": subject_id},
+        "requested_by": "runtime",
+        "session_id": "test",
+        "status": "proposed",
+        "goal_id": None,
+        "plan_id": None,
+        "decision_id": None,
+        "approval_id": None,
+        "created_at": "2026-08-08T00:00:00+00:00",
+    }
+    tool_approval.create_approval_request(request)
+    tool_approval.approve_request(request["request_id"], approved_by="operator")
+
+
+def test_consolidation_requires_and_consumes_approval(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    monkeypatch.setattr(app, "DISTILLATION_DIR", tmp_path / "distillation")
+    monkeypatch.setattr(tutelage, "DEFAULT_ADAPTERS_PATH", tmp_path / "adapters.json")
+    app.run_study_cycle("lesson-a")
+
+    # blocked without an approved gate
+    with pytest.raises(PermissionError):
+        app.run_consolidation("test-subject")
+
+    # answers: two verified, one deliberately wrong -> filtered out of the artifact
+    def selective_answer(model, question, notes):
+        if "flurb" in question:
+            return "no idea"
+        return " ".join(notes)
+    monkeypatch.setattr(app, "study_answer", selective_answer)
+
+    _approve_consolidation("test-subject")
+    entry = app.run_consolidation("test-subject")
+    assert entry["status"] == "candidate"
+    assert entry["pairs_count"] == 2 and entry["skipped_unverified"] == 1
+    assert entry["source_lessons"] == ["lesson-a"]
+
+    # the artifact is chat-format JSONL matching the training pipeline
+    import json as _json
+    lines = (tmp_path / "distillation" / f"{entry['id']}.jsonl").read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    first = _json.loads(lines[0])
+    assert [m["role"] for m in first["messages"]] == ["system", "user", "assistant"]
+
+    # single-use: the approval was consumed, a second run is blocked
+    with pytest.raises(PermissionError):
+        app.run_consolidation("test-subject")
+
+
+def test_adapter_lifecycle_single_active_per_subject(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    monkeypatch.setattr(tutelage, "DEFAULT_ADAPTERS_PATH", tmp_path / "adapters.json")
+    store = {"version": 1, "adapters": [
+        {"id": "a1", "subject_id": "s", "status": "active", "activated_at": "t0"},
+        {"id": "a2", "subject_id": "s", "status": "trained"},
+        {"id": "b1", "subject_id": "other", "status": "active"},
+    ]}
+    entry = tutelage.set_adapter_status(store, "a2", "active", "t1")
+    assert entry["status"] == "active" and entry["activated_at"] == "t1"
+    assert next(a for a in store["adapters"] if a["id"] == "a1")["status"] == "retired"
+    assert next(a for a in store["adapters"] if a["id"] == "b1")["status"] == "active"  # other subject untouched
+    assert tutelage.set_adapter_status(store, "missing", "active", "t2") is None
+
+
 def test_strip_think_and_or_groups():
     # leaked thinking is removed whether closed or unterminated
     assert app._strip_think("<think>reasoning about zubrowka</think>The answer is Paris.") == "The answer is Paris."

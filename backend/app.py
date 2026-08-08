@@ -33,6 +33,7 @@ from services.backend_health_response import (
 )
 from services.goal_engine import load_goal_store
 from services import tutelage
+from services import tool_approval as tool_approval_service
 from services.knowledge_graph import load_graph
 from services.reasoning_engine import (
     build_reasoning_prompt_context,
@@ -821,6 +822,106 @@ def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
     cycles.setdefault("cycles", []).append(record)
     tutelage.save_study_cycles(cycles, tutelage.DEFAULT_STUDY_CYCLES_PATH)
     return record
+
+
+# Epoch XI-C — the consolidation gate (ADR 0024). Distills stable, PASSING study knowledge
+# for a subject into a versioned training-pairs artifact and registers a candidate adapter.
+# The step is gated by the bounded-tool approval engine: it requires an operator-approved,
+# unconsumed "tutelage_consolidation" approval for this subject, and consumes it (single use).
+# Actual weight training stays operator-executed via training/ (documented in the ADR);
+# activation of a trained adapter is an explicit, recorded, Model-Lock-style action.
+DISTILLATION_DIR = Path(__file__).resolve().parents[1] / "training" / "distillation"
+
+
+def _relative_to_repo(path: Path) -> str:
+    try:
+        return str(path.relative_to(Path(__file__).resolve().parents[1]))
+    except ValueError:
+        return str(path)
+
+
+def _find_approved_consolidation(subject_id: str) -> Optional[Dict[str, Any]]:
+    requests = {r.get("request_id"): r for r in tool_approval_service.list_tool_requests()}
+    for approval in tool_approval_service.list_tool_approvals():
+        if approval.get("status") != "approved" or approval.get("consumed_at"):
+            continue
+        request = requests.get(approval.get("request_id"))
+        if not request or request.get("tool_name") != "tutelage_consolidation":
+            continue
+        if (request.get("arguments") or {}).get("subject_id") != subject_id:
+            continue
+        return approval
+    return None
+
+
+def run_consolidation(subject_id: str) -> Dict[str, Any]:
+    curriculum = tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH)
+    subject = next((s for s in curriculum.get("subjects", []) if s.get("id") == subject_id), None)
+    if subject is None:
+        raise LookupError(f"Unknown subject: {subject_id}")
+
+    approval = _find_approved_consolidation(subject_id)
+    if approval is None:
+        raise PermissionError(
+            "Consolidation requires an approved, unconsumed 'tutelage_consolidation' approval "
+            "for this subject (create a tool request and approve it as the operator).")
+
+    cycles = tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)
+    passed = tutelage.passed_lessons(cycles)
+    lessons = [l for l in subject.get("lessons", []) if l.get("id") in passed]
+    if not lessons:
+        raise ValueError("No passed lessons to consolidate for this subject.")
+
+    scope = subject.get("scope") or subject.get("id")
+    seat_model = OLLAMA_STUDY_MODEL or model_control.select_chat_model()
+    pairs: List[Dict[str, Any]] = []
+    skipped = 0
+    for lesson in lessons:
+        for item in lesson.get("quiz", []):
+            question = item.get("question", "")
+            notes = [m.get("summary_text", "") for m in search_memories(
+                query=question, conversation_id=None, user_id="tutelage", k=4, scope=scope)]
+            answer_text = study_answer(seat_model, question, notes)
+            graded = tutelage.grade_comprehension([item], lambda q: answer_text)
+            if graded["score"] == 1.0:
+                pairs.append({"messages": [
+                    {"role": "system", "content": "You are 0M3-G4-ARC. Answer from your studied knowledge."},
+                    {"role": "user", "content": question},
+                    {"role": "assistant", "content": answer_text},
+                ]})
+            else:
+                skipped += 1  # only key-verified answers are distilled — no unreviewed knowledge
+
+    if not pairs:
+        raise ValueError("No key-verified answers were produced; nothing to distill.")
+
+    now = utc_now()
+    adapter_id = f"adapter-{subject_id}-{now[:19].replace(':', '').replace('-', '')}"
+    DISTILLATION_DIR.mkdir(parents=True, exist_ok=True)
+    pairs_file = DISTILLATION_DIR / f"{adapter_id}.jsonl"
+    pairs_file.write_text("\n".join(json.dumps(p) for p in pairs) + "\n", encoding="utf-8")
+
+    tool_approval_service.consume_approval(approval["approval_id"])
+
+    store = tutelage.load_adapters(tutelage.DEFAULT_ADAPTERS_PATH)
+    entry = {
+        "id": adapter_id,
+        "subject_id": subject_id,
+        "status": "candidate",
+        "created_at": now,
+        "updated_at": now,
+        "pairs_file": _relative_to_repo(pairs_file),
+        "pairs_count": len(pairs),
+        "skipped_unverified": skipped,
+        "source_lessons": [l.get("id") for l in lessons],
+        "study_model": seat_model,
+        "approval_id": approval["approval_id"],
+        "activated_at": None,
+        "rationale": f"Distilled {len(pairs)} key-verified answers from {len(lessons)} passed lesson(s).",
+    }
+    store.setdefault("adapters", []).append(entry)
+    tutelage.save_adapters(store, tutelage.DEFAULT_ADAPTERS_PATH)
+    return entry
 
 
 # Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per
@@ -2002,6 +2103,49 @@ def get_tutelage_curriculum() -> Dict[str, Any]:
     cycles = tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)
     return {"curriculum": tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH),
             "passed_lessons": sorted(p for p in tutelage.passed_lessons(cycles) if p)}
+
+
+class ConsolidationRequest(BaseModel):
+    subject_id: str = Field(..., min_length=1)
+
+
+class AdapterActionRequest(BaseModel):
+    action: str  # "activate" | "retire"
+
+
+@app.post("/system/tutelage/consolidations")
+def post_tutelage_consolidation(req: ConsolidationRequest) -> Dict[str, Any]:
+    """Approval-gated consolidation (ADR 0024): distill passing study knowledge into a
+    versioned training artifact + candidate adapter. Requires an approved, unconsumed
+    tutelage_consolidation approval; consumes it."""
+    try:
+        return run_consolidation(req.subject_id)
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+
+
+@app.get("/system/tutelage/adapters")
+def get_tutelage_adapters() -> Dict[str, Any]:
+    return {"adapters": tutelage.load_adapters(tutelage.DEFAULT_ADAPTERS_PATH).get("adapters", [])}
+
+
+@app.post("/system/tutelage/adapters/{adapter_id}")
+def post_tutelage_adapter_action(adapter_id: str, req: AdapterActionRequest) -> Dict[str, Any]:
+    """Adapter lifecycle — explicit, recorded, Model-Lock-style. Activating an adapter
+    retires any other active adapter for the same subject."""
+    status_map = {"activate": "active", "retire": "retired", "mark-trained": "trained"}
+    if req.action not in status_map:
+        raise HTTPException(status_code=422, detail="action must be 'activate', 'retire', or 'mark-trained'.")
+    store = tutelage.load_adapters(tutelage.DEFAULT_ADAPTERS_PATH)
+    entry = tutelage.set_adapter_status(store, adapter_id, status_map[req.action], utc_now())
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Adapter not found.")
+    tutelage.save_adapters(store, tutelage.DEFAULT_ADAPTERS_PATH)
+    return entry
 
 
 @app.get("/system/tutelage/retention")

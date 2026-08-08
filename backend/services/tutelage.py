@@ -20,6 +20,11 @@ DEFAULT_STUDY_CYCLES_PATH = (
     / "data"
     / "study_cycles.json"
 )
+DEFAULT_ADAPTERS_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "adapters.json"
+)
 # Lesson source paths are relative to the repository root (backend/..).
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -215,3 +220,32 @@ def retention_report(cycles_store: Dict[str, Any]) -> List[Dict[str, Any]]:
         })
     report.sort(key=lambda r: r["lesson_id"])
     return report
+
+
+def load_adapters(path: Path = DEFAULT_ADAPTERS_PATH) -> Dict[str, Any]:
+    if not Path(path).exists():
+        return {"version": 1, "adapters": []}
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def save_adapters(store: Dict[str, Any], path: Path = DEFAULT_ADAPTERS_PATH) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def set_adapter_status(store: Dict[str, Any], adapter_id: str, status: str, timestamp: str) -> Optional[Dict[str, Any]]:
+    """Adapter lifecycle: candidate -> trained -> active -> retired. Activation follows the
+    Model-Lock pattern — explicit, recorded, and single-active-per-subject (activating one
+    retires any other active adapter for the same subject)."""
+    target = next((a for a in store.get("adapters", []) if a.get("id") == adapter_id), None)
+    if target is None:
+        return None
+    if status == "active":
+        for other in store.get("adapters", []):
+            if other is not target and other.get("subject_id") == target.get("subject_id")                     and other.get("status") == "active":
+                other["status"] = "retired"
+                other["retired_at"] = timestamp
+        target["activated_at"] = timestamp
+    target["status"] = status
+    target["updated_at"] = timestamp
+    return target
