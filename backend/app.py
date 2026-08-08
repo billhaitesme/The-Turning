@@ -250,11 +250,24 @@ def init_db() -> None:
         summary_text TEXT NOT NULL,
         embedding_json TEXT NOT NULL,
         score REAL DEFAULT 0,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        superseded INTEGER DEFAULT 0,
+        superseded_by TEXT,
+        superseded_at TEXT
     )
     """)
+    # Epoch X — supersession columns for existing databases (fresh DBs get them above).
+    _ensure_column(cur, "memories", "superseded", "INTEGER DEFAULT 0")
+    _ensure_column(cur, "memories", "superseded_by", "TEXT")
+    _ensure_column(cur, "memories", "superseded_at", "TEXT")
     conn.commit()
     conn.close()
+
+
+def _ensure_column(cur: sqlite3.Cursor, table: str, column: str, decl: str) -> None:
+    existing = {row[1] for row in cur.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in existing:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
 
 
 def utc_now() -> str:
@@ -412,14 +425,58 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
+# Epoch X — write-time supersession (ADR 0018). When a new memory closely matches an existing one of
+# the same kind and scope (cosine >= threshold), the older one is flagged superseded (kept in the DB,
+# reversible) and dropped from active recall — so the store stays current at the source, not just via
+# a read-time recency nudge. OFF by default: distinguishing "replaces" from "complements" by
+# similarity alone is unreliable, so enabling is an operator choice with a calibrated threshold.
+MEMORY_SUPERSEDE_THRESHOLD = float(os.getenv("MEMORY_SUPERSEDE_THRESHOLD", "0.0"))
+
+
+def _supersede_prior_memories(cur: sqlite3.Cursor, *, new_id: str, embedding: List[float], kind: str,
+                              user_id: Optional[str], conversation_id: Optional[str]) -> int:
+    """Flag older, non-superseded memories of the same kind/scope that the new one replaces.
+    Reversible: rows are marked, never deleted. Returns the count superseded."""
+    if user_id:
+        rows = cur.execute(
+            "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND (superseded IS NULL OR superseded = 0) AND (user_id = ? OR conversation_id = ?)",
+            (new_id, kind, user_id, conversation_id),
+        ).fetchall()
+    else:
+        rows = cur.execute(
+            "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND (superseded IS NULL OR superseded = 0) AND conversation_id = ?",
+            (new_id, kind, conversation_id),
+        ).fetchall()
+    now = utc_now()
+    count = 0
+    for row in rows:
+        try:
+            old_embedding = json.loads(row["embedding_json"])
+        except Exception:
+            continue
+        if cosine_similarity(embedding, old_embedding) >= MEMORY_SUPERSEDE_THRESHOLD:
+            cur.execute(
+                "UPDATE memories SET superseded = 1, superseded_by = ?, superseded_at = ? WHERE id = ?",
+                (new_id, now, row["id"]),
+            )
+            count += 1
+    return count
+
+
 def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0) -> None:
     embedding = get_embedding(summary_text)
+    new_id = str(uuid.uuid4())
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO memories (id, conversation_id, user_id, kind, source_text, summary_text, embedding_json, score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (str(uuid.uuid4()), conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now()),
+        (new_id, conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now()),
     )
+    if 0.0 < MEMORY_SUPERSEDE_THRESHOLD <= 1.0:
+        _supersede_prior_memories(cur, new_id=new_id, embedding=embedding, kind=kind,
+                                  user_id=user_id, conversation_id=conversation_id)
     conn.commit()
     conn.close()
 
@@ -514,9 +571,9 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
     conn = get_db()
     cur = conn.cursor()
     if user_id:
-        cur.execute("SELECT * FROM memories WHERE user_id = ? OR conversation_id = ? ORDER BY created_at DESC LIMIT 250", (user_id, conversation_id))
+        cur.execute("SELECT * FROM memories WHERE (user_id = ? OR conversation_id = ?) AND (superseded IS NULL OR superseded = 0) ORDER BY created_at DESC LIMIT 250", (user_id, conversation_id))
     else:
-        cur.execute("SELECT * FROM memories WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 250", (conversation_id,))
+        cur.execute("SELECT * FROM memories WHERE conversation_id = ? AND (superseded IS NULL OR superseded = 0) ORDER BY created_at DESC LIMIT 250", (conversation_id,))
     rows = cur.fetchall()
     conn.close()
     scored = []
