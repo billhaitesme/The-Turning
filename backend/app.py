@@ -32,6 +32,7 @@ from services.backend_health_response import (
     is_health_check_execution_request,
 )
 from services.goal_engine import load_goal_store
+from services import tutelage
 from services.knowledge_graph import load_graph
 from services.reasoning_engine import (
     build_reasoning_prompt_context,
@@ -684,6 +685,74 @@ def restore_memory(memory_id: str) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# Epoch XI — Tutelage, slice 1 (ADR 0013, docs/architecture/epoch-xi-tutelage.md). The
+# deterministic half of the study cycle: open a lesson as a scoped conversation, ingest the lesson's
+# local sources into the subject's memory room (kind="study", provenance per chunk), and grade
+# retrievability with a pre/post recall test — no LLM anywhere in this path, and grading is against
+# operator-authored expectations (the model never grades itself). The comprehension (LLM) half is a
+# later slice. Every cycle is an auditable record in study_cycles.json.
+OLLAMA_STUDY_MODEL = os.getenv("OLLAMA_STUDY_MODEL", "")  # reserved for the comprehension slice
+
+
+def run_study_cycle(lesson_id: str) -> Dict[str, Any]:
+    curriculum = tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH)
+    found = tutelage.find_lesson(curriculum, lesson_id)
+    if found is None:
+        raise LookupError(f"Unknown lesson: {lesson_id}")
+    subject, lesson = found["subject"], found["lesson"]
+    cycles = tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)
+    missing = tutelage.unmet_prerequisites(lesson, cycles)
+    if missing:
+        raise PermissionError(f"Prerequisite lesson(s) not passed: {', '.join(missing)}")
+
+    scope = subject.get("scope") or subject.get("id")
+    user_id = "tutelage"
+    started_at = utc_now()
+    conversation_id = create_conversation(user_id=user_id, title=f"Lesson: {lesson.get('title')}", scope=scope)
+
+    def retrieve(question: str) -> List[Dict[str, Any]]:
+        return search_memories(query=question, conversation_id=conversation_id,
+                               user_id=user_id, k=8, scope=scope)
+
+    quiz = lesson.get("quiz", [])
+    recall_pre = tutelage.grade_recall(quiz, retrieve)
+
+    sources_ingested = []
+    chunks_written = 0
+    for source in lesson.get("sources", []):
+        text = tutelage.read_source(source)
+        chunks = tutelage.chunk_text(text)
+        for index, chunk in enumerate(chunks, start=1):
+            save_memory(conversation_id=conversation_id, user_id=user_id, kind="study",
+                        source_text=f"{source}#chunk{index}", summary_text=chunk,
+                        score=0.6, scope=scope)
+        sources_ingested.append({"source": source, "chunks": len(chunks)})
+        chunks_written += len(chunks)
+
+    recall_post = tutelage.grade_recall(quiz, retrieve)
+    threshold = float(lesson.get("pass_threshold", 0.8))
+    status = "passed" if recall_post["score"] >= threshold else "failed"
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "lesson_id": lesson_id,
+        "subject_id": subject.get("id"),
+        "scope": scope,
+        "conversation_id": conversation_id,
+        "started_at": started_at,
+        "finished_at": utc_now(),
+        "sources": sources_ingested,
+        "chunks_written": chunks_written,
+        "recall_pre": recall_pre,
+        "recall_post": recall_post,
+        "pass_threshold": threshold,
+        "status": status,
+    }
+    cycles.setdefault("cycles", []).append(record)
+    tutelage.save_study_cycles(cycles, tutelage.DEFAULT_STUDY_CYCLES_PATH)
+    return record
 
 
 # Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per
@@ -1686,6 +1755,10 @@ class SupersessionResolveRequest(BaseModel):
     action: str  # "approve" | "reject"
 
 
+class StudyCycleRequest(BaseModel):
+    lesson_id: str = Field(..., min_length=1)
+
+
 class ConsolidationScanRequest(BaseModel):
     threshold: Optional[float] = None  # defaults to MEMORY_CONSOLIDATION_THRESHOLD
     kinds: Optional[List[str]] = None
@@ -1827,6 +1900,32 @@ def post_resolve_supersession(candidate_id: str, req: SupersessionResolveRequest
     if not resolve_supersession_candidate(candidate_id, approve=req.action == "approve"):
         raise HTTPException(status_code=404, detail="Pending candidate not found.")
     return {"candidate_id": candidate_id, "status": "approved" if req.action == "approve" else "rejected"}
+
+
+@app.get("/system/tutelage/curriculum")
+def get_tutelage_curriculum() -> Dict[str, Any]:
+    """The operator-authored curriculum plus which lessons have been passed (ADR 0013)."""
+    cycles = tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)
+    return {"curriculum": tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH),
+            "passed_lessons": sorted(p for p in tutelage.passed_lessons(cycles) if p)}
+
+
+@app.get("/system/tutelage/cycles")
+def get_tutelage_cycles() -> Dict[str, Any]:
+    return {"cycles": tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH).get("cycles", [])}
+
+
+@app.post("/system/tutelage/cycles")
+def post_tutelage_cycle(req: StudyCycleRequest) -> Dict[str, Any]:
+    """Run one deterministic study cycle for a lesson (ingest -> room memories -> recall test)."""
+    try:
+        return run_study_cycle(req.lesson_id)
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    except PermissionError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=422, detail=f"Lesson source missing: {error}")
 
 
 @app.post("/system/memory/consolidation-scan")

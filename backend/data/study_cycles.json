@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "cycles": [
+    {
+      "id": "e3652e41-db4b-464a-b320-7a89f4351b5e",
+      "lesson_id": "lesson-1-identity-and-principles",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "c8a433fe-dd61-4a39-83e5-54628f20fc99",
+      "started_at": "2026-08-08T09:51:10.694305Z",
+      "finished_at": "2026-08-08T09:51:47.670576Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md",
+          "chunks": 4
+        }
+      ],
+      "chunks_written": 4,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q6",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "46f4833a-29ee-4722-af90-db377e328bca",
+      "lesson_id": "lesson-2-the-memory-system",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "3e60d826-1de2-4cd2-a7d3-53c5d1875d56",
+      "started_at": "2026-08-08T09:51:47.743269Z",
+      "finished_at": "2026-08-08T09:52:27.248803Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-2-the-memory-system.md",
+          "chunks": 5
+        }
+      ],
+      "chunks_written": 5,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q6",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    }
+  ]
+}
