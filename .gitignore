@@ -52,3 +52,10 @@ ZIP for CA/
 installer/build/
 installer/Output/
 backend/data/reasoning_snapshot.json
+
+# Training workspace (local-only heavyweights)
+training/.venv/
+training/llama.cpp/
+training/adapters/
+training/train_run_detached.log
+training/Modelfile
