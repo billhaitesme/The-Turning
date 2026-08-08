@@ -8,32 +8,119 @@
       "lessons": [
         {
           "id": "lesson-1-identity-and-principles",
-          "title": "Identity and Principles",
+          "title": "Anatomy and Principles (what I am made of)",
           "prerequisites": [],
-          "sources": ["curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md"],
+          "sources": [
+            "curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md"
+          ],
           "pass_threshold": 0.8,
           "quiz": [
-            { "id": "q1", "question": "What is the machine identity of the runtime?", "expect": ["0m3-g4-arc"] },
-            { "id": "q2", "question": "Who may change the active language model, and how?", "expect": ["model lock", "operator action"] },
-            { "id": "q3", "question": "What owns state and persistence in OMEGA-ARC?", "expect": ["deterministic runtime"] },
-            { "id": "q4", "question": "What is the desktop Bridge Zero and does it have chat?", "expect": ["mission control", "no chat"] },
-            { "id": "q5", "question": "Which epoch gave the runtime durable memory?", "expect": ["epoch ten", "durable memory"] },
-            { "id": "q6", "question": "Where does the system run and does data leave the machine?", "expect": ["locally", "ollama"] }
+            {
+              "id": "q1",
+              "question": "What is the machine identity of the runtime?",
+              "expect": [
+                "0m3-g4-arc"
+              ]
+            },
+            {
+              "id": "q2",
+              "question": "Who may change the active language model, and how?",
+              "expect": [
+                "model lock",
+                "operator action"
+              ]
+            },
+            {
+              "id": "q3",
+              "question": "What owns state and persistence in OMEGA-ARC?",
+              "expect": [
+                "deterministic runtime"
+              ]
+            },
+            {
+              "id": "q4",
+              "question": "What is the desktop Bridge Zero and does it have chat?",
+              "expect": [
+                "mission control",
+                "no chat"
+              ]
+            },
+            {
+              "id": "q5",
+              "question": "Which epoch gave the runtime durable memory?",
+              "expect": [
+                "epoch ten",
+                "durable memory"
+              ]
+            },
+            {
+              "id": "q6",
+              "question": "Where does the system run and does data leave the machine?",
+              "expect": [
+                "locally",
+                "ollama"
+              ]
+            }
           ]
         },
         {
           "id": "lesson-2-the-memory-system",
           "title": "The Memory System",
-          "prerequisites": ["lesson-1-identity-and-principles"],
-          "sources": ["curriculum/omega-arc-architecture/lesson-2-the-memory-system.md"],
+          "prerequisites": [
+            "lesson-1-identity-and-principles"
+          ],
+          "sources": [
+            "curriculum/omega-arc-architecture/lesson-2-the-memory-system.md"
+          ],
           "pass_threshold": 0.8,
           "quiz": [
-            { "id": "q1", "question": "What produces the embeddings used for memory recall?", "expect": ["embeddinggemma"] },
-            { "id": "q2", "question": "What is a room in the memory system?", "expect": ["scope label", "recall"] },
-            { "id": "q3", "question": "What is the global wing?", "expect": ["unscoped", "every room"] },
-            { "id": "q4", "question": "How are near-tie memories ordered during retrieval?", "expect": ["recency", "newer fact"] },
-            { "id": "q5", "question": "What happens to an undeclared supersession collision?", "expect": ["pending candidate", "operator review"] },
-            { "id": "q6", "question": "Are superseded memories deleted?", "expect": ["never deleted", "restored"] }
+            {
+              "id": "q1",
+              "question": "What produces the embeddings used for memory recall?",
+              "expect": [
+                "embeddinggemma"
+              ]
+            },
+            {
+              "id": "q2",
+              "question": "What is a room in the memory system?",
+              "expect": [
+                "scope label",
+                "recall"
+              ]
+            },
+            {
+              "id": "q3",
+              "question": "What is the global wing?",
+              "expect": [
+                "unscoped",
+                "every room"
+              ]
+            },
+            {
+              "id": "q4",
+              "question": "How are near-tie memories ordered during retrieval?",
+              "expect": [
+                "recency",
+                "newer fact"
+              ]
+            },
+            {
+              "id": "q5",
+              "question": "What happens to an undeclared supersession collision?",
+              "expect": [
+                "pending candidate",
+                "operator review"
+              ]
+            },
+            {
+              "id": "q6",
+              "question": "Are superseded memories deleted?",
+              "expect": [
+                "never deleted",
+                "restored"
+              ]
+            }
           ]
         }
       ]

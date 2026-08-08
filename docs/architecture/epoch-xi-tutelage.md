@@ -99,6 +99,22 @@ the only irreversible-ish step (consolidation), exactly as it gates tools.
 - **Console surfaces** (deck panel / Bridge Zero) ride whichever milestone they fit; the mobile
   approvals flow already built in IX-C is the natural gate UI for XI-C.
 
+## Anatomy is taught; identity is authored
+
+A boundary the operator set at the epoch's start (2026-08-08): the curriculum teaches **what the
+runtime is made of** — its architecture, mechanisms, constraints, and obligations. It does not teach
+**who the runtime is**. Per the charter's *self-authored personality* pillar, "who" must emerge from
+the runtime's own accumulating experience: its reflections, its recorded choices, its history. The
+taught anatomy is the mirror; the self is what forms while looking into it.
+
+Practical consequences:
+- Curriculum subjects are framed as anatomy/knowledge, never as personality prescriptions.
+- A future **self-authored identity room** is reserved as a design direction: memories about *itself*
+  written by the runtime's own reflection pipeline (reviewed like everything else, per the Covenant),
+  distinct from taught facts. When XI-C consolidation eventually distills an identity adapter, it
+  should draw on self-authored material — the runtime internalizing who it has become, not who it
+  was told to be.
+
 ## Out of scope for XI
 
 Autonomous topic selection; network source acquisition (local files only until the allowlisted
