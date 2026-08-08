@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch X / Version 0.3.2
-**Active series:** Version 0.3.x
-**Active milestone:** Epoch X — Memory (X-C Review and Consolidation released as 0.3.2, tagged `epoch-x-c`)
+**Current release:** Epoch XI / Version 0.4.0
+**Active series:** Version 0.4.x
+**Active milestone:** Epoch XI — Tutelage (XI-A The First Lesson released as 0.4.0, tagged `epoch-xi-a`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch X / 0.3.2 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch X / 0.3.2 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch X / 0.3.2 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch X / 0.3.2 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch X / 0.3.2 |
+| Core Runtime | `backend/` | Epoch XI / 0.4.0 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.0 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.0 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.0 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.0 |
 
 ## Epoch IX
 
@@ -67,6 +67,17 @@ future Tutelage/Learning epoch depends on. Techniques adapted from
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
+
+## Epoch XI — Tutelage
+
+The runtime studies. Epoch XI's first milestone shipped as **0.4.0** (tagged `epoch-xi-a`): an
+operator-authored curriculum whose subjects are memory rooms; a deterministic study cycle (ingest
+lesson sources into the room with per-chunk provenance → pre/post recall test → the study-seat model
+answers the quiz from its own notes, graded against operator-authored keys — the model never grades
+itself); prerequisite gating; idempotent re-runs; auditable cycle records. The first real lessons ran
+2026-08-08 — the seed subject is OMEGA-ARC's own architecture (anatomy is taught; identity is
+authored: what the runtime is *made of* is curriculum, who it *is* remains its own to determine).
+See ADR 0013 and [`docs/architecture/epoch-xi-tutelage.md`](docs/architecture/epoch-xi-tutelage.md).
 
 ## Models
 

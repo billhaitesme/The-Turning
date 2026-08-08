@@ -97,7 +97,14 @@ Techniques adapted from MemPalace (MIT) are credited in ADRs 0016–0023.
   re-room, restore, audited in `memory_events`); consolidation scan proposing near-duplicates into
   the review queue. 382 backend tests.
 
-## Future
+## Epoch XI — Tutelage ("The Runtime Learns")
 
-- **Tutelage and Learning (proposed):** a runtime-driven, review-gated study loop, sequenced after
-  Memory. ADR 0013.
+The epoch in which the runtime begins to study — an operator-authored curriculum, deterministic
+review-gated study cycles, and measured growth (ADR 0013; anatomy is taught, identity is authored).
+
+- **XI-A — The First Lesson (0.4.0, `epoch-xi-a`):** curriculum store (subjects = memory rooms),
+  study cycle (idempotent ingestion → pre/post recall test → comprehension test graded by operator
+  keys), prerequisite gating, study-seat bake-off (default retained), auditable cycle records. First
+  real lessons: recall 0.0 → 1.0, true comprehension 12/12. 389 backend tests.
+- **XI-B — Retention and Compounding:** planned.
+- **XI-C — Consolidation Gate:** planned (approval-gated LoRA distillation).
