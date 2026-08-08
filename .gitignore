@@ -51,3 +51,4 @@ ZIP for CA/
 # Installer build artifacts
 installer/build/
 installer/Output/
+backend/data/reasoning_snapshot.json

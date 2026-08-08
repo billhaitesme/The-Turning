@@ -114,3 +114,26 @@ def grade_recall(
     total = len(quiz) or 1
     return {"k": k, "score": round(hits / total, 4), "hits": hits,
             "questions": len(quiz), "per_question": per_question}
+
+
+def grade_comprehension(
+    quiz: List[Dict[str, Any]],
+    answer: Callable[[str], str],
+) -> Dict[str, Any]:
+    """Deterministic comprehension grading (ADR 0013: the model never grades itself).
+    `answer(question)` produces the model's answer; a question is correct when the answer
+    contains every operator-authored key term (item `answer_expect`, falling back to
+    `expect`), case-insensitive."""
+    per_question = []
+    hits = 0
+    for item in quiz:
+        terms = [str(t).lower() for t in (item.get("answer_expect") or item.get("expect") or []) if str(t).strip()]
+        text = str(answer(item.get("question", "")) or "")
+        lowered = text.lower()
+        hit = bool(terms) and all(term in lowered for term in terms)
+        hits += 1 if hit else 0
+        per_question.append({"id": item.get("id"), "hit": hit,
+                             "answer_preview": text.strip()[:160]})
+    total = len(quiz) or 1
+    return {"score": round(hits / total, 4), "hits": hits,
+            "questions": len(quiz), "per_question": per_question}

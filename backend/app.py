@@ -102,6 +102,7 @@ import math
 from services.runtime_store import observe_streaming_response
 import os
 import re
+from pathlib import Path
 import sqlite3
 import time
 import uuid
@@ -693,10 +694,46 @@ def restore_memory(memory_id: str) -> bool:
 # retrievability with a pre/post recall test — no LLM anywhere in this path, and grading is against
 # operator-authored expectations (the model never grades itself). The comprehension (LLM) half is a
 # later slice. Every cycle is an auditable record in study_cycles.json.
-OLLAMA_STUDY_MODEL = os.getenv("OLLAMA_STUDY_MODEL", "")  # reserved for the comprehension slice
+OLLAMA_STUDY_MODEL = os.getenv("OLLAMA_STUDY_MODEL", "")  # empty -> the active chat model
 
 
-def run_study_cycle(lesson_id: str) -> Dict[str, Any]:
+def study_answer(model: str, question: str, notes: List[str]) -> str:
+    """Comprehension step: the study-seat model answers a quiz question using ONLY the
+    lesson's retrieved notes. Grading happens elsewhere against operator-authored keys —
+    the model never grades itself (ADR 0013). Thinking stays off (OLLAMA_THINK)."""
+    notes_block = "\n\n".join(f"[note {i+1}] {n}" for i, n in enumerate(notes))
+    messages = [
+        {"role": "system", "content": (
+            "You are completing a study quiz. Answer the question concisely using ONLY the "
+            "provided study notes. If the notes do not contain the answer, say so.")},
+        {"role": "user", "content": f"Study notes:\n\n{notes_block}\n\nQuestion: {question}"},
+    ]
+    try:
+        with httpx.Client(timeout=300.0) as client:
+            response = client.post(
+                f"{OLLAMA_BASE_URL}/chat",
+                json={"model": model, "messages": messages, "stream": False, "think": OLLAMA_THINK},
+            )
+            response.raise_for_status()
+            return str(response.json().get("message", {}).get("content", ""))
+    except Exception as error:
+        return f"[study-answer error: {error}]"
+
+
+def _source_already_ingested(source: str, scope: str) -> bool:
+    """Idempotent ingestion: a source is skipped when its chunks are already in the room
+    (spaced-repetition re-runs re-test without re-writing; ADR epoch-xi design)."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM memories WHERE kind = 'study' AND IFNULL(scope,'') = ? "
+        "AND source_text LIKE ?", (scope or "", f"{source}#%"),
+    ).fetchone()
+    conn.close()
+    return bool(row and row["n"])
+
+
+def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
+                    study_model: Optional[str] = None) -> Dict[str, Any]:
     curriculum = tutelage.load_curriculum(tutelage.DEFAULT_CURRICULUM_PATH)
     found = tutelage.find_lesson(curriculum, lesson_id)
     if found is None:
@@ -722,6 +759,9 @@ def run_study_cycle(lesson_id: str) -> Dict[str, Any]:
     sources_ingested = []
     chunks_written = 0
     for source in lesson.get("sources", []):
+        if _source_already_ingested(source, scope):
+            sources_ingested.append({"source": source, "chunks": 0, "skipped": "already ingested"})
+            continue
         text = tutelage.read_source(source)
         chunks = tutelage.chunk_text(text)
         for index, chunk in enumerate(chunks, start=1):
@@ -732,8 +772,22 @@ def run_study_cycle(lesson_id: str) -> Dict[str, Any]:
         chunks_written += len(chunks)
 
     recall_post = tutelage.grade_recall(quiz, retrieve)
+
+    comprehension_result = None
+    seat_model = None
+    if comprehension:
+        seat_model = study_model or OLLAMA_STUDY_MODEL or model_control.select_chat_model()
+
+        def answer(question: str) -> str:
+            notes = [m.get("summary_text", "") for m in retrieve(question)[:4]]
+            return study_answer(seat_model, question, notes)
+
+        comprehension_result = tutelage.grade_comprehension(quiz, answer)
+        comprehension_result["model"] = seat_model
+
     threshold = float(lesson.get("pass_threshold", 0.8))
-    status = "passed" if recall_post["score"] >= threshold else "failed"
+    gate_scores = [recall_post["score"]] + ([comprehension_result["score"]] if comprehension_result else [])
+    status = "passed" if min(gate_scores) >= threshold else "failed"
 
     record = {
         "id": str(uuid.uuid4()),
@@ -747,6 +801,7 @@ def run_study_cycle(lesson_id: str) -> Dict[str, Any]:
         "chunks_written": chunks_written,
         "recall_pre": recall_pre,
         "recall_post": recall_post,
+        "comprehension": comprehension_result,
         "pass_threshold": threshold,
         "status": status,
     }
@@ -1105,7 +1160,30 @@ def build_backend_awareness_preferences(user_profile: Dict[str, Any], user_messa
     return preferences
 
 
-latest_reasoning_result: Optional[Dict[str, Any]] = None
+REASONING_SNAPSHOT_PATH = Path(__file__).resolve().parent / "data" / "reasoning_snapshot.json"
+
+
+def _load_reasoning_snapshot() -> Optional[Dict[str, Any]]:
+    try:
+        if REASONING_SNAPSHOT_PATH.exists():
+            return json.loads(REASONING_SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return None
+
+
+def _persist_reasoning_snapshot(result: Optional[Dict[str, Any]]) -> None:
+    try:
+        if result is not None:
+            REASONING_SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            REASONING_SNAPSHOT_PATH.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+# Restored at startup so the Command Deck's evidence/reasoning panels do not go dark
+# after a backend restart — visibility must not have amnesia (ADR-IX-004).
+latest_reasoning_result: Optional[Dict[str, Any]] = _load_reasoning_snapshot()
 latest_planning_result: Optional[Dict[str, Any]] = None
 latest_decision_result: Optional[Dict[str, Any]] = None
 latest_deliberation_result: Optional[Dict[str, Any]] = None
@@ -1187,6 +1265,7 @@ def _execute_backend_health_request(*, conversation_id: str, user_profile: Dict[
 
     global latest_reasoning_result
     latest_reasoning_result = outcome.get("reasoning_result")
+    _persist_reasoning_snapshot(latest_reasoning_result)
 
     result = outcome["result"]
     output = result.get("output") if isinstance(result.get("output"), dict) else {}
@@ -1757,6 +1836,8 @@ class SupersessionResolveRequest(BaseModel):
 
 class StudyCycleRequest(BaseModel):
     lesson_id: str = Field(..., min_length=1)
+    comprehension: bool = True
+    study_model: Optional[str] = None
 
 
 class ConsolidationScanRequest(BaseModel):
@@ -1919,7 +2000,8 @@ def get_tutelage_cycles() -> Dict[str, Any]:
 def post_tutelage_cycle(req: StudyCycleRequest) -> Dict[str, Any]:
     """Run one deterministic study cycle for a lesson (ingest -> room memories -> recall test)."""
     try:
-        return run_study_cycle(req.lesson_id)
+        return run_study_cycle(req.lesson_id, comprehension=req.comprehension,
+                               study_model=req.study_model)
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error))
     except PermissionError as error:
@@ -2125,6 +2207,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     if summary_intent in {"state_summary", "uncertainty_summary"} and reasoning_output is not None:
         latest_reasoning_result = reasoning_output
+        _persist_reasoning_snapshot(latest_reasoning_result)
     elif ENABLE_REASONING_PIPELINE:
         try:
             previous_evidence_store = _load_scoped_evidence_store(conversation_id)
@@ -2143,6 +2226,7 @@ def chat(req: ChatRequest) -> ChatResponse:
                 dependency_map=_build_dependency_map(evidence_store),
             )
             latest_reasoning_result = reasoning_output
+            _persist_reasoning_snapshot(latest_reasoning_result)
         except Exception as exc:
             print("Reasoning pipeline warning:", repr(exc))
             reasoning_output = None
@@ -2420,6 +2504,7 @@ def chat_stream(req: ChatRequest):
                 return
 
             latest_reasoning_result = reasoning_output
+            _persist_reasoning_snapshot(latest_reasoning_result)
 
             yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
             yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
@@ -2450,6 +2535,7 @@ def chat_stream(req: ChatRequest):
             full_text, execution_outcome = _execute_backend_health_request(conversation_id=conversation_id, user_profile=user_profile)
             if execution_outcome is not None:
                 latest_reasoning_result = execution_outcome.get("reasoning_result")
+                _persist_reasoning_snapshot(latest_reasoning_result)
             yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
             yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
 
@@ -2563,6 +2649,7 @@ def chat_stream(req: ChatRequest):
                         dependency_map=_build_dependency_map(evidence_store),
                     )
                     latest_reasoning_result = reasoning_output
+                    _persist_reasoning_snapshot(latest_reasoning_result)
                 except Exception as exc:
                     print("Reasoning pipeline warning:", repr(exc))
                     reasoning_output = None

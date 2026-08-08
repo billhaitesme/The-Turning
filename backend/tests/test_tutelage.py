@@ -66,6 +66,8 @@ def _setup(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "get_db", fake_get_db)
     monkeypatch.setattr(app, "get_embedding", stub_embedding)
     monkeypatch.setattr(app, "MEMORY_SUPERSEDE_THRESHOLD", 0.0)
+    # deterministic study-seat: answers by echoing the retrieved notes (never hits Ollama)
+    monkeypatch.setattr(app, "study_answer", lambda model, question, notes: " ".join(notes))
     app.init_db()
 
     source = tmp_path / "lesson-a.md"
@@ -105,6 +107,37 @@ def test_full_cycle_learns_and_passes(monkeypatch, tmp_path):
     assert cycles["cycles"][0]["lesson_id"] == "lesson-a"
     assert tutelage.unmet_prerequisites(
         {"prerequisites": ["lesson-a"]}, cycles) == []
+
+
+def test_comprehension_grades_and_gates(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    record = app.run_study_cycle("lesson-a")
+    # note-echo answerer contains every key term -> full comprehension
+    assert record["comprehension"]["score"] == 1.0
+    assert record["comprehension"]["model"]
+    assert record["status"] == "passed"
+
+    # a failing study-seat fails the lesson even with perfect recall
+    monkeypatch.setattr(app, "study_answer", lambda model, question, notes: "I do not know.")
+    record2 = app.run_study_cycle("lesson-a")
+    assert record2["recall_post"]["score"] == 1.0
+    assert record2["comprehension"]["score"] == 0.0
+    assert record2["status"] == "failed"
+
+    # comprehension can be skipped (recall-only cycle)
+    record3 = app.run_study_cycle("lesson-a", comprehension=False)
+    assert record3["comprehension"] is None and record3["status"] == "passed"
+
+
+def test_reingestion_is_idempotent(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    first = app.run_study_cycle("lesson-a")
+    again = app.run_study_cycle("lesson-a")  # spaced-repetition re-run
+    assert again["chunks_written"] == 0
+    assert again["sources"][0].get("skipped") == "already ingested"
+    rows = app.browse_memories(scope="test-subject", kind="study", status="all")
+    assert len(rows) == first["chunks_written"]  # no duplicates
+    assert again["recall_post"]["score"] == 1.0  # still retrievable
 
 
 def test_prerequisite_gating_blocks_until_passed(monkeypatch, tmp_path):
