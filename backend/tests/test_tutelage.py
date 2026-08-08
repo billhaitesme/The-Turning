@@ -164,6 +164,18 @@ def test_chunking_is_deterministic_and_paragraph_safe():
         assert "capital of Freedonia is Zubrowka City" in c or "capital" not in c
 
 
+def test_strip_think_and_or_groups():
+    # leaked thinking is removed whether closed or unterminated
+    assert app._strip_think("<think>reasoning about zubrowka</think>The answer is Paris.") == "The answer is Paris."
+    assert app._strip_think("<think>endless reasoning that never closes") == ""
+    # OR-groups: a list entry is satisfied by any synonym; strings stay required
+    quiz = [{"id": "q1", "question": "?", "answer_expect": [["recency", "newer fact"], "tie-break"]}]
+    graded = tutelage.grade_comprehension(quiz, lambda q: "the newer fact wins the tie-break")
+    assert graded["score"] == 1.0
+    graded2 = tutelage.grade_comprehension(quiz, lambda q: "the newer fact wins")  # missing required string
+    assert graded2["score"] == 0.0
+
+
 def test_grade_recall_rank_and_miss():
     quiz = [{"id": "q1", "question": "capital?", "expect": ["zubrowka"]},
             {"id": "q2", "question": "missing?", "expect": ["not present anywhere"]}]

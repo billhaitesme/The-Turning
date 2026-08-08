@@ -28,6 +28,16 @@
               "expect": [
                 "model lock",
                 "operator action"
+              ],
+              "answer_expect": [
+                [
+                  "model lock",
+                  "explicit operator"
+                ],
+                [
+                  "operator action",
+                  "operator"
+                ]
               ]
             },
             {
@@ -103,6 +113,13 @@
               "expect": [
                 "recency",
                 "newer fact"
+              ],
+              "answer_expect": [
+                [
+                  "recency",
+                  "newer fact",
+                  "temporal tie-break"
+                ]
               ]
             },
             {

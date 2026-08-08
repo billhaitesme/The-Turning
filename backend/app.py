@@ -697,6 +697,14 @@ def restore_memory(memory_id: str) -> bool:
 OLLAMA_STUDY_MODEL = os.getenv("OLLAMA_STUDY_MODEL", "")  # empty -> the active chat model
 
 
+def _strip_think(text: str) -> str:
+    """Remove leaked <think> blocks (some models emit them regardless of think:false —
+    observed with lfm2.5) so grading and previews see only the actual answer."""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"^<think>.*", "", text, flags=re.DOTALL | re.IGNORECASE)
+    return text.strip()
+
+
 def study_answer(model: str, question: str, notes: List[str]) -> str:
     """Comprehension step: the study-seat model answers a quiz question using ONLY the
     lesson's retrieved notes. Grading happens elsewhere against operator-authored keys —
@@ -715,7 +723,8 @@ def study_answer(model: str, question: str, notes: List[str]) -> str:
                 json={"model": model, "messages": messages, "stream": False, "think": OLLAMA_THINK},
             )
             response.raise_for_status()
-            return str(response.json().get("message", {}).get("content", ""))
+            content = str(response.json().get("message", {}).get("content", ""))
+            return _strip_think(content)
     except Exception as error:
         return f"[study-answer error: {error}]"
 

@@ -127,10 +127,17 @@ def grade_comprehension(
     per_question = []
     hits = 0
     for item in quiz:
-        terms = [str(t).lower() for t in (item.get("answer_expect") or item.get("expect") or []) if str(t).strip()]
+        terms = [t for t in (item.get("answer_expect") or item.get("expect") or [])
+                 if (isinstance(t, list) and t) or str(t).strip()]
         text = str(answer(item.get("question", "")) or "")
         lowered = text.lower()
-        hit = bool(terms) and all(term in lowered for term in terms)
+
+        def _satisfied(term) -> bool:
+            if isinstance(term, list):  # OR-group: any synonym satisfies
+                return any(str(alt).lower() in lowered for alt in term)
+            return str(term).lower() in lowered
+
+        hit = bool(terms) and all(_satisfied(term) for term in terms)
         hits += 1 if hit else 0
         per_question.append({"id": item.get("id"), "hit": hit,
                              "answer_preview": text.strip()[:160]})
