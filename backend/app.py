@@ -251,12 +251,14 @@ def init_db() -> None:
         embedding_json TEXT NOT NULL,
         score REAL DEFAULT 0,
         created_at TEXT NOT NULL,
+        scope TEXT,
         superseded INTEGER DEFAULT 0,
         superseded_by TEXT,
         superseded_at TEXT
     )
     """)
-    # Epoch X — supersession columns for existing databases (fresh DBs get them above).
+    # Epoch X — columns added for existing databases (fresh DBs get them above).
+    _ensure_column(cur, "memories", "scope", "TEXT")
     _ensure_column(cur, "memories", "superseded", "INTEGER DEFAULT 0")
     _ensure_column(cur, "memories", "superseded_by", "TEXT")
     _ensure_column(cur, "memories", "superseded_at", "TEXT")
@@ -465,14 +467,14 @@ def _supersede_prior_memories(cur: sqlite3.Cursor, *, new_id: str, embedding: Li
     return count
 
 
-def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0) -> None:
+def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0, scope: Optional[str] = None) -> None:
     embedding = get_embedding(summary_text)
     new_id = str(uuid.uuid4())
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO memories (id, conversation_id, user_id, kind, source_text, summary_text, embedding_json, score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (new_id, conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now()),
+        "INSERT INTO memories (id, conversation_id, user_id, kind, source_text, summary_text, embedding_json, score, created_at, scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (new_id, conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now(), scope),
     )
     if 0.0 < MEMORY_SUPERSEDE_THRESHOLD <= 1.0:
         _supersede_prior_memories(cur, new_id=new_id, embedding=embedding, kind=kind,
@@ -564,16 +566,29 @@ def _rank_memories(scored: List[Dict[str, Any]]) -> None:
     scored.sort(key=lambda item: item["ranking_score"], reverse=True)
 
 
-def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS) -> List[Dict[str, Any]]:
+def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS, scope: Optional[str] = None) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
     query_tokens = _tokenize(query) if MEMORY_LEXICAL_WEIGHT > 0 else set()
     query_trigrams = _char_trigrams(query) if MEMORY_FUZZY_WEIGHT > 0 else set()
+    # Scope = MemPalace's "room": recall within a topic/subject when a scope is given (ADR 0019).
+    # Omitting scope preserves prior behavior (recall across all of the user's/conversation's rooms).
+    clauses = ["(superseded IS NULL OR superseded = 0)"]
+    params: List[Any] = []
+    if user_id:
+        clauses.append("(user_id = ? OR conversation_id = ?)")
+        params.extend([user_id, conversation_id])
+    else:
+        clauses.append("conversation_id = ?")
+        params.append(conversation_id)
+    if scope is not None:
+        clauses.append("scope = ?")
+        params.append(scope)
     conn = get_db()
     cur = conn.cursor()
-    if user_id:
-        cur.execute("SELECT * FROM memories WHERE (user_id = ? OR conversation_id = ?) AND (superseded IS NULL OR superseded = 0) ORDER BY created_at DESC LIMIT 250", (user_id, conversation_id))
-    else:
-        cur.execute("SELECT * FROM memories WHERE conversation_id = ? AND (superseded IS NULL OR superseded = 0) ORDER BY created_at DESC LIMIT 250", (conversation_id,))
+    cur.execute(
+        "SELECT * FROM memories WHERE " + " AND ".join(clauses) + " ORDER BY created_at DESC LIMIT 250",
+        params,
+    )
     rows = cur.fetchall()
     conn.close()
     scored = []

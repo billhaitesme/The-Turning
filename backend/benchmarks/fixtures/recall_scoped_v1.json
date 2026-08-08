@@ -1,0 +1,21 @@
+{
+  "name": "recall_scoped_v1",
+  "description": "Two 'rooms' (scopes) with parallel facts whose text carries NO distinguishing name, so embeddings alone cannot tell them apart ('the deadline is Friday' vs 'the deadline is Tuesday'). Only the scope resolves them. Each query names its scope; the same query text in a different scope has a different gold. Nova memories are newer than Orion, so the read-time recency tie-break makes the UNSCOPED baseline deterministic (it always returns the Nova fact) — measuring how badly a flat store conflates rooms. Used for scoped retrieval (Epoch X, slice 5).",
+  "user_id": "bench-user",
+  "memories": [
+    { "id": "o_deadline", "kind": "project", "scope": "project-orion", "summary_text": "The deadline is Tuesday.", "source_text": "Deadline: Tuesday.", "created_at": "2026-06-01T10:00:00Z" },
+    { "id": "o_lead",     "kind": "project", "scope": "project-orion", "summary_text": "The lead is Ben.",        "source_text": "Lead: Ben.",         "created_at": "2026-06-02T10:00:00Z" },
+    { "id": "o_lang",     "kind": "project", "scope": "project-orion", "summary_text": "The language is Rust.",   "source_text": "Language: Rust.",    "created_at": "2026-06-03T10:00:00Z" },
+    { "id": "n_deadline", "kind": "project", "scope": "project-nova",  "summary_text": "The deadline is Friday.",  "source_text": "Deadline: Friday.",  "created_at": "2026-07-01T10:00:00Z" },
+    { "id": "n_lead",     "kind": "project", "scope": "project-nova",  "summary_text": "The lead is Ana.",         "source_text": "Lead: Ana.",         "created_at": "2026-07-02T10:00:00Z" },
+    { "id": "n_lang",     "kind": "project", "scope": "project-nova",  "summary_text": "The language is Go.",       "source_text": "Language: Go.",      "created_at": "2026-07-03T10:00:00Z" }
+  ],
+  "queries": [
+    { "query": "When is the deadline?", "scope": "project-nova",  "gold": ["n_deadline"] },
+    { "query": "When is the deadline?", "scope": "project-orion", "gold": ["o_deadline"] },
+    { "query": "Who is the lead?",      "scope": "project-nova",  "gold": ["n_lead"] },
+    { "query": "Who is the lead?",      "scope": "project-orion", "gold": ["o_lead"] },
+    { "query": "What language is used?", "scope": "project-nova",  "gold": ["n_lang"] },
+    { "query": "What language is used?", "scope": "project-orion", "gold": ["o_lang"] }
+  ]
+}

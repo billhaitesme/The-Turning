@@ -68,10 +68,10 @@ def _seed(app_module, user_id: str, memories: Sequence[Dict[str, Any]]) -> None:
     for m in memories:
         emb = app_module.get_embedding(m["summary_text"])
         cur.execute(
-            "INSERT INTO memories (id, conversation_id, user_id, kind, source_text, summary_text, embedding_json, score, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO memories (id, conversation_id, user_id, kind, source_text, summary_text, embedding_json, score, created_at, scope) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (m["id"], None, user_id, m["kind"], m["source_text"], m["summary_text"],
-             json.dumps(emb), 0.0, m["created_at"]),
+             json.dumps(emb), 0.0, m["created_at"], m.get("scope")),
         )
     conn.commit()
     conn.close()
@@ -105,7 +105,7 @@ def run_benchmark(
         for q in queries:
             gold = set(q["gold"])
             results = app_module.search_memories(
-                query=q["query"], conversation_id=None, user_id=user_id, k=depth
+                query=q["query"], conversation_id=None, user_id=user_id, k=depth, scope=q.get("scope")
             )
             ranked_ids = [r["id"] for r in results]
             first_gold_rank = next((i + 1 for i, mid in enumerate(ranked_ids) if mid in gold), None)
