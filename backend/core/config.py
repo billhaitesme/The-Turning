@@ -24,7 +24,7 @@ class Settings:
         if model.strip()
     )
     reasoning_model: str = os.getenv("OLLAMA_REASONING_MODEL", "llama3.1:8b")
-    vision_model: str = os.getenv("OLLAMA_VISION_MODEL", "llava:7b")
+    vision_model: str = os.getenv("OLLAMA_VISION_MODEL", "qwen3-vl:latest")
     router_model: str = os.getenv("OLLAMA_ROUTER_MODEL", "gemma3:1b")
     embedding_model: str = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma:latest")
     network_mode: str = os.getenv("NETWORK_MODE", "offline")

@@ -144,7 +144,7 @@ def build_awareness_snapshot(
     ollama_url="http://127.0.0.1:11434/api/tags",
     network_mode="offline",
     active_model="llama2-uncensored:7b",
-    vision_model="llava:7b",
+    vision_model="qwen3-vl:latest",
     embedding_model="embeddinggemma:latest",
     router_model="gemma3:1b",
     configured_backend_port=None,
