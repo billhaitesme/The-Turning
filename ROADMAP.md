@@ -139,12 +139,19 @@ Five measured slices on `feature/epoch-x-memory`, techniques credited to
 - Supersession/consolidation floor calibration against a grown real corpus.
 - A proposal-only scope suggester, only if a measured need appears (ADR 0020).
 
-## Future — Tutelage and Learning (proposed, unscheduled)
+## Epoch XI — Tutelage ("The Runtime Learns") — design accepted, build starting
 
-The epoch where OMEGA-ARC begins studying: a runtime-driven, review-gated study loop with two-tier
-learning (reversible memory + gated LoRA consolidation) and a recall benchmark so growth is measured.
-Sequenced after Epoch X — a learner must remember reliably first. See ADR
-[`0013-learning-and-tutelage.md`](docs/decisions/0013-learning-and-tutelage.md) and
-[`docs/architecture/epoch-tutelage-learning.md`](docs/architecture/epoch-tutelage-learning.md).
+The epoch where OMEGA-ARC begins studying: an operator-authored curriculum whose subjects are memory
+rooms, a deterministic review-gated study cycle (ingest local sources -> scoped memories with
+provenance -> deterministic recall test -> keyword-graded comprehension test -> auditable cycle
+record), spaced re-quizzes for measured retention, and — later, approval-gated — LoRA consolidation.
+The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`](docs/architecture/epoch-xi-tutelage.md)
+(ADR [`0013`](docs/decisions/0013-learning-and-tutelage.md), accepted).
+
+- **XI-A — The First Lesson (targets 0.4.0):** curriculum store, study cycle, tutelage REST surface,
+  seed subject, measured end-to-end.
+- **XI-B — Retention and Compounding:** spaced repetition, cumulative quizzes, retention curves.
+- **XI-C — Consolidation Gate:** distillation candidates from stable reviewed memory, approval-gated
+  training, versioned adapter registry with Model-Lock-style activation.
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.

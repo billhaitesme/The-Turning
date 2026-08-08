@@ -1,8 +1,9 @@
 # 0013 — Learning and Tutelage
 
-**Status:** Proposed
+**Status:** Accepted (2026-08-08) — the Epoch X prerequisite is delivered (0.3.0–0.3.2) and the
+epoch design is committed in [`../architecture/epoch-xi-tutelage.md`](../architecture/epoch-xi-tutelage.md).
 **Date:** 2026-08-07
-**Depends on:** durable memory (Epoch X — see `docs/architecture/epoch-x-memory-and-retrieval.md`)
+**Depends on:** durable memory (Epoch X — delivered; see `docs/architecture/epoch-x-memory-and-retrieval.md`)
 
 ## Context
 
@@ -66,10 +67,15 @@ Weight consolidations are additive LoRA adapters, never destructive edits to a b
 adapter can be deselected to return to the prior behavior. Memory-tier learning is already
 reversible (human-readable stores).
 
-## Open questions (for the epoch design)
+## Open questions — resolved by the epoch design (2026-08-08)
 
-- Curriculum sequencing and topic selection policy.
-- Where sources come from under the local-first / offline posture.
-- How self-tests avoid grading themselves into false confidence.
+- *Curriculum sequencing / topic selection:* operator-authored curriculum with prerequisite gating;
+  no autonomous selection this epoch.
+- *Sources under local-first:* local files per lesson (`curriculum/<subject>/`); network acquisition
+  deferred until an allowlisted fetch posture is designed.
+- *Self-test false confidence:* all grading is deterministic against operator-authored answer keys
+  (recall test needs no LLM at all; comprehension answers are keyword/regex-graded) — the model
+  never grades itself.
 
-See `docs/architecture/epoch-tutelage-learning.md` for the epoch-level design sketch.
+See [`../architecture/epoch-xi-tutelage.md`](../architecture/epoch-xi-tutelage.md) for the accepted
+epoch design (supersedes the earlier sketch).
