@@ -273,9 +273,11 @@ def init_db() -> None:
         declared INTEGER DEFAULT 0,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        resolved_at TEXT
+        resolved_at TEXT,
+        origin TEXT DEFAULT 'write'
     )
     """)
+    _ensure_column(cur, "supersession_candidates", "origin", "TEXT DEFAULT 'write'")
     cur.execute("""
     CREATE TABLE IF NOT EXISTS memory_events (
         id TEXT PRIMARY KEY,
@@ -677,6 +679,78 @@ def restore_memory(memory_id: str) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per
+# exchange, so near-duplicate residue accumulates. An operator-invoked scan finds near-duplicate
+# clusters (same kind + room + user, cosine >= a high floor), keeps the NEWEST row as the
+# representative, and PROPOSES the older ones into the existing supersession review queue
+# (origin='consolidation'). Batch consolidation never auto-hides anything — every proposal awaits
+# explicit approval, and approved rows remain restorable.
+MEMORY_CONSOLIDATION_THRESHOLD = float(os.getenv("MEMORY_CONSOLIDATION_THRESHOLD", "0.95"))
+
+
+def consolidation_scan(*, threshold: Optional[float] = None, kinds: Optional[List[str]] = None,
+                       max_rows: int = 500) -> Dict[str, int]:
+    """Propose near-duplicate memories for consolidation. Deterministic, greedy newest-first
+    clustering within (kind, room, user); returns summary counts."""
+    floor = threshold if threshold is not None else MEMORY_CONSOLIDATION_THRESHOLD
+    if not (0.0 < floor <= 1.0):
+        raise ValueError("threshold must be in (0, 1].")
+    conn = get_db()
+    cur = conn.cursor()
+    clauses = ["(superseded IS NULL OR superseded = 0)"]
+    params: List[Any] = []
+    if kinds:
+        clauses.append("kind IN (" + ",".join("?" * len(kinds)) + ")")
+        params.extend(kinds)
+    params.append(max(1, min(int(max_rows), 2000)))
+    rows = cur.execute(
+        "SELECT id, kind, scope, user_id, embedding_json, created_at FROM memories "
+        "WHERE " + " AND ".join(clauses) + " ORDER BY created_at DESC LIMIT ?",
+        params,
+    ).fetchall()
+    already = {r["old_id"] for r in cur.execute(
+        "SELECT old_id FROM supersession_candidates WHERE status IN ('pending', 'approved', 'auto')"
+    ).fetchall()}
+
+    groups: Dict[tuple, List[Dict[str, Any]]] = {}
+    parsed = 0
+    for row in rows:
+        try:
+            emb = json.loads(row["embedding_json"])
+        except Exception:
+            continue
+        parsed += 1
+        groups.setdefault((row["kind"], row["scope"] or "", row["user_id"] or ""), []).append(
+            {"id": row["id"], "emb": emb})
+
+    now = utc_now()
+    proposed = skipped = 0
+    for members in groups.values():  # members are newest-first
+        assigned: set = set()
+        for i, rep in enumerate(members):
+            if rep["id"] in assigned:
+                continue
+            for older in members[i + 1:]:
+                if older["id"] in assigned:
+                    continue
+                if cosine_similarity(rep["emb"], older["emb"]) >= floor:
+                    assigned.add(older["id"])
+                    if older["id"] in already:
+                        skipped += 1
+                        continue
+                    cur.execute(
+                        "INSERT INTO supersession_candidates (id, new_id, old_id, similarity, declared, "
+                        "status, created_at, origin) VALUES (?, ?, ?, ?, 0, 'pending', ?, 'consolidation')",
+                        (str(uuid.uuid4()), rep["id"], older["id"],
+                         cosine_similarity(rep["emb"], older["emb"]), now),
+                    )
+                    proposed += 1
+    conn.commit()
+    conn.close()
+    return {"rows_scanned": parsed, "groups": len(groups), "proposed": proposed,
+            "skipped_existing": skipped}
 
 
 def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0, scope: Optional[str] = None) -> None:
@@ -1607,6 +1681,12 @@ class SupersessionResolveRequest(BaseModel):
     action: str  # "approve" | "reject"
 
 
+class ConsolidationScanRequest(BaseModel):
+    threshold: Optional[float] = None  # defaults to MEMORY_CONSOLIDATION_THRESHOLD
+    kinds: Optional[List[str]] = None
+    max_rows: int = 500
+
+
 class ConversationScopeResponse(BaseModel):
     conversation_id: str
     scope: Optional[str]
@@ -1742,6 +1822,16 @@ def post_resolve_supersession(candidate_id: str, req: SupersessionResolveRequest
     if not resolve_supersession_candidate(candidate_id, approve=req.action == "approve"):
         raise HTTPException(status_code=404, detail="Pending candidate not found.")
     return {"candidate_id": candidate_id, "status": "approved" if req.action == "approve" else "rejected"}
+
+
+@app.post("/system/memory/consolidation-scan")
+def post_consolidation_scan(req: ConsolidationScanRequest) -> Dict[str, Any]:
+    """Operator-invoked consolidation scan (ADR 0023): proposes near-duplicate memories into the
+    supersession review queue (origin='consolidation'). Nothing is hidden without approval."""
+    try:
+        return consolidation_scan(threshold=req.threshold, kinds=req.kinds, max_rows=req.max_rows)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
 
 
 @app.get("/system/memory/rooms")
