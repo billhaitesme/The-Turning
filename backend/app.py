@@ -264,6 +264,18 @@ def init_db() -> None:
     _ensure_column(cur, "memories", "superseded", "INTEGER DEFAULT 0")
     _ensure_column(cur, "memories", "superseded_by", "TEXT")
     _ensure_column(cur, "memories", "superseded_at", "TEXT")
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS supersession_candidates (
+        id TEXT PRIMARY KEY,
+        new_id TEXT NOT NULL,
+        old_id TEXT NOT NULL,
+        similarity REAL NOT NULL,
+        declared INTEGER DEFAULT 0,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+    )
+    """)
     conn.commit()
     conn.close()
 
@@ -440,44 +452,120 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-# Epoch X — write-time supersession (ADR 0018). When a new memory closely matches an existing one of
-# the same kind and scope (cosine >= threshold), the older one is flagged superseded (kept in the DB,
-# reversible) and dropped from active recall — so the store stays current at the source, not just via
-# a read-time recency nudge. OFF by default: distinguishing "replaces" from "complements" by
-# similarity alone is unreliable, so enabling is an operator choice with a calibrated threshold.
+# Epoch X — write-time supersession, robust form (ADR 0021, upgrading ADR 0018). Similarity alone
+# cannot separate "replaces" (port 8000 -> 8001) from "complements" (backend is FastAPI; backend is
+# Python), so the runtime never hides a memory on similarity alone. Two dispositions:
+#   AUTO   — the new text itself DECLARES the change ("is now", "changed to", "no longer", ...):
+#            same kind + same room + cosine >= threshold -> the old row is flagged superseded.
+#   PROPOSE — high similarity but no declared change: a pending supersession candidate is recorded
+#            for operator review; NOTHING is hidden from recall until it is approved.
+# All decisions are recorded in supersession_candidates (auto/pending/approved/rejected), reversible.
+# Threshold 0 disables scanning entirely.
+#
+# Two-tier floors (calibrated in benchmarks/supersession_benchmark.py): a replaced VALUE drags the
+# embedding away from the old fact, so true declared replacements often score LOWER similarity than
+# unrelated complements. The declared-change marker is itself the strong signal; it therefore gets a
+# lower similarity floor than undeclared collisions (which rely on similarity alone and stay high).
+# MEMORY_SUPERSEDE_DECLARED_THRESHOLD=0 (default) falls back to the main threshold.
 MEMORY_SUPERSEDE_THRESHOLD = float(os.getenv("MEMORY_SUPERSEDE_THRESHOLD", "0.0"))
+MEMORY_SUPERSEDE_DECLARED_THRESHOLD = float(os.getenv("MEMORY_SUPERSEDE_DECLARED_THRESHOLD", "0.0"))
+
+_CHANGE_MARKERS = re.compile(
+    r"\b(is|are|was|were)\s+now\b|\bnow\s+(uses?|runs?|lives?|listens?)\b"
+    r"|\b(changed|switched|moved|updated|renamed|upgraded|downgraded)\s+(to|from)\b"
+    r"|\bno\s+longer\b|\binstead\s+of\b|\breplaced?\s+(by|with)\b",
+    re.IGNORECASE,
+)
 
 
-def _supersede_prior_memories(cur: sqlite3.Cursor, *, new_id: str, embedding: List[float], kind: str,
-                              user_id: Optional[str], conversation_id: Optional[str]) -> int:
-    """Flag older, non-superseded memories of the same kind/scope that the new one replaces.
-    Reversible: rows are marked, never deleted. Returns the count superseded."""
+def _declares_change(text: str) -> bool:
+    """True when the text itself announces a change of fact — the deterministic signal that a
+    same-subject prior memory is being replaced rather than complemented."""
+    return bool(_CHANGE_MARKERS.search(str(text)))
+
+
+def _scan_supersession(cur: sqlite3.Cursor, *, new_id: str, embedding: List[float], kind: str,
+                       scope: Optional[str], user_id: Optional[str], conversation_id: Optional[str],
+                       summary_text: str) -> Dict[str, int]:
+    """Scan same-kind, same-room prior memories: auto-supersede on declared change, otherwise
+    record a pending candidate for review. Returns counts. Rows are marked, never deleted."""
     if user_id:
         rows = cur.execute(
             "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND IFNULL(scope, '') = IFNULL(?, '') "
             "AND (superseded IS NULL OR superseded = 0) AND (user_id = ? OR conversation_id = ?)",
-            (new_id, kind, user_id, conversation_id),
+            (new_id, kind, scope, user_id, conversation_id),
         ).fetchall()
     else:
         rows = cur.execute(
             "SELECT id, embedding_json FROM memories WHERE id != ? AND kind = ? "
+            "AND IFNULL(scope, '') = IFNULL(?, '') "
             "AND (superseded IS NULL OR superseded = 0) AND conversation_id = ?",
-            (new_id, kind, conversation_id),
+            (new_id, kind, scope, conversation_id),
         ).fetchall()
     now = utc_now()
-    count = 0
+    declared = _declares_change(summary_text)
+    declared_floor = MEMORY_SUPERSEDE_DECLARED_THRESHOLD or MEMORY_SUPERSEDE_THRESHOLD
+    floor = declared_floor if declared else MEMORY_SUPERSEDE_THRESHOLD
+    counts = {"auto": 0, "pending": 0}
     for row in rows:
         try:
             old_embedding = json.loads(row["embedding_json"])
         except Exception:
             continue
-        if cosine_similarity(embedding, old_embedding) >= MEMORY_SUPERSEDE_THRESHOLD:
+        similarity = cosine_similarity(embedding, old_embedding)
+        if similarity < floor:
+            continue
+        if declared:
             cur.execute(
                 "UPDATE memories SET superseded = 1, superseded_by = ?, superseded_at = ? WHERE id = ?",
                 (new_id, now, row["id"]),
             )
-            count += 1
-    return count
+            status = "auto"
+        else:
+            status = "pending"
+        cur.execute(
+            "INSERT INTO supersession_candidates (id, new_id, old_id, similarity, declared, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (str(uuid.uuid4()), new_id, row["id"], similarity, 1 if declared else 0, status, now),
+        )
+        counts[status] += 1
+    return counts
+
+
+def list_supersession_candidates(status: str = "pending") -> List[Dict[str, Any]]:
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT c.*, old.summary_text AS old_summary, new.summary_text AS new_summary "
+        "FROM supersession_candidates c "
+        "LEFT JOIN memories old ON old.id = c.old_id "
+        "LEFT JOIN memories new ON new.id = c.new_id "
+        "WHERE c.status = ? ORDER BY c.created_at DESC",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def resolve_supersession_candidate(candidate_id: str, approve: bool) -> bool:
+    """Approve (old row becomes superseded) or reject a pending candidate. Returns False if the
+    candidate does not exist or is not pending."""
+    conn = get_db()
+    cur = conn.cursor()
+    row = cur.execute("SELECT * FROM supersession_candidates WHERE id = ? AND status = 'pending'",
+                      (candidate_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return False
+    now = utc_now()
+    if approve:
+        cur.execute("UPDATE memories SET superseded = 1, superseded_by = ?, superseded_at = ? WHERE id = ?",
+                    (row["new_id"], now, row["old_id"]))
+    cur.execute("UPDATE supersession_candidates SET status = ?, resolved_at = ? WHERE id = ?",
+                ("approved" if approve else "rejected", now, candidate_id))
+    conn.commit()
+    conn.close()
+    return True
 
 
 def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0, scope: Optional[str] = None) -> None:
@@ -490,8 +578,9 @@ def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind:
         (new_id, conversation_id, user_id, kind, source_text, summary_text, json.dumps(embedding), score, utc_now(), scope),
     )
     if 0.0 < MEMORY_SUPERSEDE_THRESHOLD <= 1.0:
-        _supersede_prior_memories(cur, new_id=new_id, embedding=embedding, kind=kind,
-                                  user_id=user_id, conversation_id=conversation_id)
+        _scan_supersession(cur, new_id=new_id, embedding=embedding, kind=kind, scope=scope,
+                           user_id=user_id, conversation_id=conversation_id,
+                           summary_text=summary_text)
     conn.commit()
     conn.close()
 
@@ -1403,6 +1492,10 @@ class ConversationScopeRequest(BaseModel):
     scope: Optional[str] = None  # None clears the room
 
 
+class SupersessionResolveRequest(BaseModel):
+    action: str  # "approve" | "reject"
+
+
 class ConversationScopeResponse(BaseModel):
     conversation_id: str
     scope: Optional[str]
@@ -1522,6 +1615,22 @@ def get_system_deliberation() -> Dict[str, Any]:
 @app.get("/system/assumptions")
 def get_system_assumptions() -> Dict[str, Any]:
     return {"assumptions": load_assumption_store()}
+
+
+@app.get("/system/memory/supersession-candidates")
+def get_supersession_candidates(status: str = "pending") -> Dict[str, Any]:
+    """Supersession review surface (ADR 0021): undeclared high-similarity collisions wait here
+    for an explicit operator decision; nothing is hidden from recall until approved."""
+    return {"candidates": list_supersession_candidates(status=status)}
+
+
+@app.post("/system/memory/supersession-candidates/{candidate_id}/resolve")
+def post_resolve_supersession(candidate_id: str, req: SupersessionResolveRequest) -> Dict[str, Any]:
+    if req.action not in ("approve", "reject"):
+        raise HTTPException(status_code=422, detail="action must be 'approve' or 'reject'.")
+    if not resolve_supersession_candidate(candidate_id, approve=req.action == "approve"):
+        raise HTTPException(status_code=404, detail="Pending candidate not found.")
+    return {"candidate_id": candidate_id, "status": "approved" if req.action == "approve" else "rejected"}
 
 
 @app.post("/conversations", response_model=CreateConversationResponse)

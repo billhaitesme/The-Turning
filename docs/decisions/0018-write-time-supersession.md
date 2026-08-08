@@ -1,6 +1,10 @@
 # 0018 — Write-time memory supersession (Epoch X)
 
 **Status:** Accepted — mechanism landed **available but disabled by default** (`MEMORY_SUPERSEDE_THRESHOLD=0`).
+**Upgraded by:** ADR [`0021-declared-change-supersession.md`](0021-declared-change-supersession.md) —
+the raw-threshold auto-supersession described here was replaced by the two-disposition form (declared
+change → auto; undeclared collision → reviewed candidate). The columns, reversibility, and threshold
+knob remain as described.
 **Date:** 2026-08-07
 **Builds on:** ADR [`0016-temporal-aware-retrieval.md`](0016-temporal-aware-retrieval.md) (read-time recency);
 relates to MemPalace idea #2 (temporal validity windows), [`../architecture/epoch-x-memory-and-retrieval.md`](../architecture/epoch-x-memory-and-retrieval.md).
