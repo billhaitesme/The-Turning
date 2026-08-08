@@ -12,13 +12,13 @@ The short version:
   2. Click Next through the installer, keeping the defaults.
      Leave "Download and install Ollama" checked.
   3. Tick "Launch OMEGA-ARC now" on the last page and click Finish.
-  4. First launch only: a console asks to download the AI models (~6 GB).
+  4. First launch only: a console asks to download the AI models (~10 GB).
      Press Enter and wait — this happens once.
   5. Your browser opens the Command Deck automatically. Start typing.
 
 Everything runs locally on your machine. Nothing you say leaves it.
 
-Requirements: Windows 10/11 64-bit, ~15 GB free disk, 16 GB RAM recommended,
+Requirements: Windows 10/11 64-bit, ~20 GB free disk, 16 GB RAM recommended,
 internet for the one-time setup. No admin rights needed.
 
 Project: https://github.com/billhaitesme/The-Turning

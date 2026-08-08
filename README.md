@@ -68,6 +68,28 @@ future Tutelage/Learning epoch depends on. Techniques adapted from
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
 
+## Models
+
+The default conversational model is **`mo-shakib/gemma4-e4b-uncensored:q4_k_m`** (uncensored,
+~10 GB), chosen by the operator after side-by-side trials. It is a *thinking-capable* model: in raw
+`ollama run` it visibly reasons (grey text) and can run away mid-thought. In-app this is a non-issue —
+the runtime disables the hidden reasoning phase deterministically (`OLLAMA_THINK=false`, the default;
+verified to produce clean, fast answers via the API). Set `OLLAMA_THINK=true` to opt back in.
+
+The operator can switch models at any time from the console selector (Model-Lock-recorded); reasons
+you might:
+
+| Selectable model | Why you would switch to it |
+|---|---|
+| `richardyoung/llama-3.1-8b-instruct-abliterated` | Smaller download (~5 GB) and lighter in RAM; a strong uncensored 8B if disk/bandwidth are tight. |
+| `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — worth it only with serious RAM/GPU; on a CPU-only host it is impractically slow. |
+| `llama2-uncensored:7b` | Legacy lightweight fallback; fastest to load, older generation — compatibility more than quality. |
+| `llama3.1:8b` | The one *aligned* model in the list — pick it if you want refusal-style safety behavior (e.g., demos to others). Note this departs from the project's uncensored default posture. |
+
+Auxiliary roles: `embeddinggemma` (memory embeddings — retained after a measured bake-off),
+`qwen3-vl` (vision default, currently dormant), `gemma3:1b` (router, disabled under Model Lock),
+`llama3.1:8b` (fallback). Model changes only ever happen by explicit operator action (ADR IX-001).
+
 ## License
 
 Dual-licensed under either the [MIT License](LICENSE-MIT) or the

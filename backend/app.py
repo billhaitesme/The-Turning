@@ -119,7 +119,12 @@ DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
-DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "richardyoung/llama-3.1-8b-instruct-abliterated:latest")
+DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "mo-shakib/gemma4-e4b-uncensored:q4_k_m")
+# Thinking-capable models (e.g. the gemma4 default) emit a hidden reasoning phase before answering.
+# In the app that reads as dead air on the stream and, when reasoning runs away, a cut-off with no
+# answer — so thinking is disabled deterministically unless the operator opts in. Safe to send for
+# non-thinking models (Ollama accepts think=false universally; verified empirically).
+OLLAMA_THINK = os.getenv("OLLAMA_THINK", "false").strip().lower() == "true"
 
 ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "false").lower() == "true"
 WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "5"))
@@ -1474,7 +1479,7 @@ def generate_response_text(*, history: List[Dict[str, str]], user_message: str, 
     with httpx.Client(timeout=120.0) as client:
         for index, candidate in enumerate(attempts):
             try:
-                response = client.post(f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": False})
+                response = client.post(f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": False, "think": OLLAMA_THINK})
                 response.raise_for_status()
                 data = response.json()
                 actual_model = str(data.get("model") or candidate)
@@ -1529,7 +1534,7 @@ def stream_response_text(*, history: List[Dict[str, str]], user_message: str, us
         for index, candidate in enumerate(attempts):
             collected: List[str] = []
             try:
-                with client.stream("POST", f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": True}) as response:
+                with client.stream("POST", f"{OLLAMA_BASE_URL}/chat", json={"model": candidate, "messages": messages, "stream": True, "think": OLLAMA_THINK}) as response:
                     response.raise_for_status()
                     for line in response.iter_lines():
                         if not line:

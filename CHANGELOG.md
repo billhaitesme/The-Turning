@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Default chat model is now `mo-shakib/gemma4-e4b-uncensored:q4_k_m` (operator decision after
+  side-by-side trials; ~10 GB). The abliterated llama-3.1-8b remains selectable, with switch
+  guidance recorded in the README Models section. Because the new default is thinking-capable, the
+  backend now sends `think: OLLAMA_THINK` (default **false**) on all Ollama chat calls — probed:
+  clean fast answers with it off, 1.6k chars of hidden dead-air reasoning with it on, and
+  `think:false` is accepted harmlessly by non-thinking models. Vision default advanced
+  `llava:7b` -> `qwen3-vl` (dormant role; llava was two generations stale).
 - The repository is now dual-licensed **MIT OR Apache-2.0** (previously a license placeholder). See
   `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`.
 

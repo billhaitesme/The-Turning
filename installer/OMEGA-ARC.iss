@@ -43,7 +43,7 @@ Name: "{userdesktop}\OMEGA-ARC"; Filename: "{app}\app\OMEGA-ARC.cmd"; WorkingDir
 
 [Run]
 Filename: "{tmp}\OllamaSetup.exe"; Parameters: "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"; StatusMsg: "Installing Ollama (model runtime)..."; Tasks: ollama; Flags: waituntilterminated
-Filename: "{app}\app\OMEGA-ARC.cmd"; Description: "Launch OMEGA-ARC now (first launch downloads ~6 GB of models)"; Flags: postinstall nowait skipifsilent unchecked
+Filename: "{app}\app\OMEGA-ARC.cmd"; Description: "Launch OMEGA-ARC now (first launch downloads ~10 GB of models)"; Flags: postinstall nowait skipifsilent unchecked
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\logs"

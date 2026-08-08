@@ -1,6 +1,6 @@
 # Direct Model Mode
 
-Direct Model mode is an explicit operator-selected conversation mode. It pins the conversational model to `DIRECT_CHAT_MODEL` (default: `richardyoung/llama-3.1-8b-instruct-abliterated:latest`) and sends only the stored user/assistant transcript plus the new user message to that model.
+Direct Model mode is an explicit operator-selected conversation mode. It pins the conversational model to `DIRECT_CHAT_MODEL` (default: `mo-shakib/gemma4-e4b-uncensored:q4_k_m`) and sends only the stored user/assistant transcript plus the new user message to that model.
 
 ## Request path
 
