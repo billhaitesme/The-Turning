@@ -142,6 +142,94 @@
               ]
             }
           ]
+        },
+        {
+          "id": "lesson-3-the-operator-surfaces",
+          "title": "The Operator Surfaces",
+          "prerequisites": [
+            "lesson-2-the-memory-system"
+          ],
+          "review_lessons": [
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system"
+          ],
+          "sources": [
+            "curriculum/omega-arc-architecture/lesson-3-the-operator-surfaces.md"
+          ],
+          "pass_threshold": 0.8,
+          "quiz": [
+            {
+              "id": "q1",
+              "question": "Where does conversation with the runtime happen?",
+              "expect": [
+                "command deck"
+              ]
+            },
+            {
+              "id": "q2",
+              "question": "What confirms an approval decision on a mobile console?",
+              "expect": [
+                "biometric"
+              ],
+              "answer_expect": [
+                [
+                  "biometric",
+                  "face id",
+                  "biometricprompt"
+                ]
+              ]
+            },
+            {
+              "id": "q3",
+              "question": "What happens to an outdated operator console?",
+              "expect": [
+                "update required"
+              ],
+              "answer_expect": [
+                [
+                  "update required"
+                ],
+                [
+                  "disable",
+                  "disabled",
+                  "disables"
+                ]
+              ]
+            },
+            {
+              "id": "q4",
+              "question": "Can any runtime action bypass the approval gate?",
+              "expect": [
+                "no action bypasses"
+              ],
+              "answer_expect": [
+                [
+                  "no action",
+                  "cannot bypass",
+                  "never bypass",
+                  "bypasses"
+                ]
+              ]
+            },
+            {
+              "id": "q5",
+              "question": "What does the Windows installer bundle?",
+              "expect": [
+                "embedded python"
+              ],
+              "answer_expect": [
+                [
+                  "embedded python"
+                ],
+                [
+                  "core runtime"
+                ],
+                [
+                  "ollama"
+                ]
+              ]
+            }
+          ]
         }
       ]
     }

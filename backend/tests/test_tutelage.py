@@ -46,6 +46,7 @@ CURRICULUM = {
                 "id": "lesson-b",
                 "title": "Lesson B",
                 "prerequisites": ["lesson-a"],
+                "review_lessons": ["lesson-a"],
                 "sources": [],
                 "pass_threshold": 0.6,
                 "quiz": [{"id": "q1", "question": "anything", "expect": ["zubrowka city"]}],
@@ -162,6 +163,38 @@ def test_chunking_is_deterministic_and_paragraph_safe():
     # no paragraph is ever split
     for c in chunks:
         assert "capital of Freedonia is Zubrowka City" in c or "capital" not in c
+
+
+def test_cumulative_quiz_sections_and_interference(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    app.run_study_cycle("lesson-a")
+    record = app.run_study_cycle("lesson-b")  # cumulative: reviews lesson-a's questions
+    # 1 own + 3 review questions were graded
+    assert record["recall_post"]["questions"] == 4
+    assert record["recall_post"]["sections"]["own"] == 1.0
+    assert record["recall_post"]["sections"]["review"] == 1.0
+    assert record["status"] == "passed"
+
+    # interference: perfect own-lesson answers but failed review section fails the lesson
+    def selective_answer(model, question, notes):
+        return " ".join(notes) if "anything" in question else "no idea"
+    monkeypatch.setattr(app, "study_answer", selective_answer)
+    record2 = app.run_study_cycle("lesson-b")
+    assert record2["comprehension"]["sections"]["own"] == 1.0
+    assert record2["comprehension"]["sections"]["review"] == 0.0
+    assert record2["status"] == "failed"
+
+
+def test_retention_report_tracks_history(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    app.run_study_cycle("lesson-a")
+    app.run_study_cycle("lesson-a")  # spaced re-quiz (no re-ingest)
+    report = tutelage.retention_report(tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH))
+    entry = next(r for r in report if r["lesson_id"] == "lesson-a")
+    assert entry["attempts"] == 2
+    assert entry["first_recall"] == 1.0 and entry["latest_recall"] == 1.0
+    assert entry["retention_delta"] == 0.0
+    assert len(entry["history"]) == 2
 
 
 def test_strip_think_and_or_groups():
