@@ -44,6 +44,10 @@ Metrics, all in [0,1]: `hit@1`, `recall@k`, `MRR`.
 - `recall_v2.json` — v1 + more temporal pairs (slice 2, temporal-aware retrieval, ADR 0016).
 - `recall_v3.json` — v2 + lexical "twin" pairs separable only by a specific token (slice 3, hybrid
   retrieval, ADR 0017).
+- `recall_scoped_v1.json` — two "rooms" with parallel name-free facts; only scope resolves them
+  (slice 5, scoped retrieval, ADR 0019; flat hit@1 0.500 → scoped 1.000).
+- `recall_scoped_v2.json` — rooms + a global wing (unscoped preferences recallable inside any room,
+  other rooms excluded) (slice 6, scope assignment, ADR 0020; hit@1 1.000).
 
 ## Ranking signals (tunable, bounded)
 

@@ -220,9 +220,11 @@ def init_db() -> None:
         user_id TEXT,
         title TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        scope TEXT
     )
     """)
+    _ensure_column(cur, "conversations", "scope", "TEXT")
     cur.execute("""
     CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -276,18 +278,29 @@ def utc_now() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
-def create_conversation(user_id: Optional[str] = None, title: Optional[str] = None) -> str:
+def create_conversation(user_id: Optional[str] = None, title: Optional[str] = None, scope: Optional[str] = None) -> str:
     cid = str(uuid.uuid4())
     now = utc_now()
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        (cid, user_id, title, now, now),
+        "INSERT INTO conversations (id, user_id, title, created_at, updated_at, scope) VALUES (?, ?, ?, ?, ?, ?)",
+        (cid, user_id, title, now, now, scope),
     )
     conn.commit()
     conn.close()
     return cid
+
+
+def set_conversation_scope(conversation_id: str, scope: Optional[str]) -> None:
+    """Assign (or clear, with None) the conversation's memory room. Explicit operator/API
+    action — scope is never inferred (ADR 0020)."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE conversations SET scope = ?, updated_at = ? WHERE id = ?",
+                (scope, utc_now(), conversation_id))
+    conn.commit()
+    conn.close()
 
 
 def touch_conversation(conversation_id: str) -> None:
@@ -566,12 +579,14 @@ def _rank_memories(scored: List[Dict[str, Any]]) -> None:
     scored.sort(key=lambda item: item["ranking_score"], reverse=True)
 
 
-def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS, scope: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS, scope: Optional[str] = None, include_global: bool = True) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
     query_tokens = _tokenize(query) if MEMORY_LEXICAL_WEIGHT > 0 else set()
     query_trigrams = _char_trigrams(query) if MEMORY_FUZZY_WEIGHT > 0 else set()
     # Scope = MemPalace's "room": recall within a topic/subject when a scope is given (ADR 0019).
     # Omitting scope preserves prior behavior (recall across all of the user's/conversation's rooms).
+    # With a scope, unscoped ("global wing") memories are included by default — room-agnostic facts
+    # like operator preferences stay recallable in every room; OTHER rooms stay excluded (ADR 0020).
     clauses = ["(superseded IS NULL OR superseded = 0)"]
     params: List[Any] = []
     if user_id:
@@ -581,7 +596,10 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
         clauses.append("conversation_id = ?")
         params.append(conversation_id)
     if scope is not None:
-        clauses.append("scope = ?")
+        if include_global:
+            clauses.append("(scope = ? OR scope IS NULL)")
+        else:
+            clauses.append("scope = ?")
         params.append(scope)
     conn = get_db()
     cur = conn.cursor()
@@ -1325,7 +1343,8 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
         },
     )
 
-    # Memory summaries
+    # Memory summaries — memories born in a scoped conversation inherit its room (ADR 0020).
+    conversation_scope = (get_conversation_meta(conversation_id) or {}).get("scope")
     user_summary = f"User asked: {user_message[:1000]}"
     assistant_summary = f"Assistant answered: {assistant_message[:1000]}"
 
@@ -1359,6 +1378,7 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
             save_memory(
                 conversation_id=conversation_id,
                 user_id=user_id,
+                scope=conversation_scope,
                 **kwargs,
             )
         except Exception:
@@ -1376,6 +1396,16 @@ def persist_learning(*, conversation_id: str, user_id: Optional[str], user_messa
 class CreateConversationRequest(BaseModel):
     user_id: Optional[str] = None
     title: Optional[str] = None
+    scope: Optional[str] = None
+
+
+class ConversationScopeRequest(BaseModel):
+    scope: Optional[str] = None  # None clears the room
+
+
+class ConversationScopeResponse(BaseModel):
+    conversation_id: str
+    scope: Optional[str]
 
 
 class CreateConversationResponse(BaseModel):
@@ -1496,8 +1526,18 @@ def get_system_assumptions() -> Dict[str, Any]:
 
 @app.post("/conversations", response_model=CreateConversationResponse)
 def new_conversation(req: CreateConversationRequest) -> CreateConversationResponse:
-    cid = create_conversation(user_id=req.user_id, title=req.title)
+    cid = create_conversation(user_id=req.user_id, title=req.title, scope=req.scope)
     return CreateConversationResponse(conversation_id=cid)
+
+
+@app.post("/conversations/{conversation_id}/scope", response_model=ConversationScopeResponse)
+def assign_conversation_scope(conversation_id: str, req: ConversationScopeRequest) -> ConversationScopeResponse:
+    """Assign or clear (scope=null) the conversation's memory room — an explicit operator
+    action; scope is never inferred (ADR 0020)."""
+    if not conversation_exists(conversation_id):
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    set_conversation_scope(conversation_id, req.scope)
+    return ConversationScopeResponse(conversation_id=conversation_id, scope=req.scope)
 
 
 @app.get("/conversations/{conversation_id}", response_model=ConversationHistoryResponse)
@@ -1512,7 +1552,7 @@ def get_conversation_memories(conversation_id: str, q: str) -> MemorySearchRespo
     if not conversation_exists(conversation_id):
         raise HTTPException(status_code=404, detail="Conversation not found.")
     meta = get_conversation_meta(conversation_id)
-    memories = search_memories(query=q, conversation_id=conversation_id, user_id=meta.get("user_id") if meta else None)
+    memories = search_memories(query=q, conversation_id=conversation_id, user_id=meta.get("user_id") if meta else None, scope=meta.get("scope") if meta else None)
     sanitized = [{"kind": m["kind"], "summary_text": m["summary_text"], "similarity": m["similarity"], "created_at": m["created_at"]} for m in memories]
     return MemorySearchResponse(conversation_id=conversation_id, memories=sanitized)
 
@@ -1580,7 +1620,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     effective_user_id = req.user_id or meta.get("user_id")
     user_profile = get_user_profile(effective_user_id)
     user_profile = {**user_profile, "preferences": build_backend_awareness_preferences(user_profile, req.message)}
-    memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id)
+    memories = search_memories(query=req.message, conversation_id=conversation_id, user_id=effective_user_id, scope=meta.get("scope"))
     summary_intent = detect_summary_intent(req.message)
     planning_intent = detect_planning_intent(req.message)
     deliberation_intent = detect_deliberation_intent(req.message)
@@ -1898,6 +1938,7 @@ def chat_stream(req: ChatRequest):
         query=req.message,
         conversation_id=conversation_id,
         user_id=effective_user_id,
+        scope=meta.get("scope"),
     )
     summary_intent = detect_summary_intent(req.message)
 
