@@ -82,9 +82,13 @@ you might:
 | Selectable model | Why you would switch to it |
 |---|---|
 | `richardyoung/llama-3.1-8b-instruct-abliterated` | Smaller download (~5 GB) and lighter in RAM; a strong uncensored 8B if disk/bandwidth are tight. |
-| `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — worth it only with serious RAM/GPU; on a CPU-only host it is impractically slow. |
+| `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — needs far more VRAM than a laptop GPU, so most of it spills to CPU and responses crawl. Worth it only with serious hardware. |
 | `llama2-uncensored:7b` | Legacy lightweight fallback; fastest to load, older generation — compatibility more than quality. |
 | `llama3.1:8b` | The one *aligned* model in the list — pick it if you want refusal-style safety behavior (e.g., demos to others). Note this departs from the project's uncensored default posture. |
+
+Note on hardware: OMEGA-ARC never chooses CPU vs GPU — Ollama auto-offloads each model to the GPU
+up to available VRAM and spills the remainder to CPU. On an 8 GB GPU, models up to ~7 GB run fully
+GPU-accelerated; larger ones degrade gracefully toward CPU speed.
 
 Auxiliary roles: `embeddinggemma` (memory embeddings — retained after a measured bake-off),
 `qwen3-vl` (vision default, currently dormant), `gemma3:1b` (router, disabled under Model Lock),
