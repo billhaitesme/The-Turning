@@ -424,10 +424,42 @@ def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind:
     conn.close()
 
 
-# Epoch X — temporal-aware retrieval. A small, bounded recency term breaks near-ties in
-# cosine similarity toward the more recent memory, so a superseded fact does not outrank the
-# fact that replaced it. MEMORY_RECENCY_WEIGHT=0 restores pure-similarity ranking.
+# Epoch X — hybrid memory ranking. Final score blends three bounded, tunable signals:
+#   ranking_score = cosine + MEMORY_LEXICAL_WEIGHT*lexical + MEMORY_RECENCY_WEIGHT*recency
+# Each added term is normalized to [0,1] so it can only reorder genuine near-ties; a weight of 0
+# removes that signal (0/0 = exact pure-cosine behavior).
+#   - recency (default on): breaks near-ties toward the fact that superseded an older one (ADR 0016).
+#   - lexical (default OFF): exact query/memory term overlap. Evaluated in ADR 0017 (a technique from
+#     MemPalace, MIT) and found to give no measured gain on the current corpus — embeddinggemma
+#     already handles exact-term recall — so it ships available-but-disabled. NOTE: exact lexical does
+#     NOT help typos (a misspelled token won't match either); typo robustness is a separate, future
+#     fuzzy-matching question (ADR 0017, "Future").
 MEMORY_RECENCY_WEIGHT = float(os.getenv("MEMORY_RECENCY_WEIGHT", "0.05"))
+MEMORY_LEXICAL_WEIGHT = float(os.getenv("MEMORY_LEXICAL_WEIGHT", "0.0"))
+
+_LEXICAL_STOPWORDS = {
+    "the", "a", "an", "is", "are", "was", "were", "be", "of", "to", "in", "on", "for",
+    "and", "or", "what", "which", "who", "whom", "does", "do", "did", "how", "when",
+    "where", "why", "that", "this", "it", "its", "with", "at", "by", "as", "from",
+    "about", "into", "over", "use", "uses", "used", "using", "now", "currently", "current",
+    "right", "you", "your", "their", "operator",
+}
+
+
+def _tokenize(text: Any) -> set:
+    return {
+        tok for tok in re.split(r"[^a-z0-9]+", str(text).lower())
+        if len(tok) > 1 and tok not in _LEXICAL_STOPWORDS
+    }
+
+
+def _lexical_score(query_tokens: set, record: Dict[str, Any]) -> float:
+    """Fraction of the query's content tokens present in the memory text — [0, 1]."""
+    if not query_tokens:
+        return 0.0
+    text = f"{record.get('summary_text', '')} {record.get('source_text', '')}"
+    overlap = query_tokens & _tokenize(text)
+    return len(overlap) / len(query_tokens)
 
 
 def _memory_timestamp(value: Any) -> Optional[datetime]:
@@ -439,26 +471,27 @@ def _memory_timestamp(value: Any) -> Optional[datetime]:
         return None
 
 
-def _apply_recency_ranking(scored: List[Dict[str, Any]]) -> None:
-    """Sort in place by cosine similarity, with a bounded recency nudge that only changes
-    order among near-ties. recency_norm maps oldest→0, newest→1 across the candidate set,
-    so the additive term is at most MEMORY_RECENCY_WEIGHT."""
-    if MEMORY_RECENCY_WEIGHT > 0 and scored:
-        times = [_memory_timestamp(r.get("created_at")) for r in scored]
-        valid = [t for t in times if t is not None]
-        tmin = min(valid) if valid else None
-        span = (max(valid) - tmin).total_seconds() if len(valid) >= 2 else 0.0
-        for record, ts in zip(scored, times):
-            recency_norm = (ts - tmin).total_seconds() / span if (span > 0 and ts is not None) else 0.0
-            record["recency_norm"] = recency_norm
-            record["ranking_score"] = record["similarity"] + MEMORY_RECENCY_WEIGHT * recency_norm
-        scored.sort(key=lambda item: item["ranking_score"], reverse=True)
-    else:
-        scored.sort(key=lambda item: item["similarity"], reverse=True)
+def _rank_memories(scored: List[Dict[str, Any]]) -> None:
+    """Sort in place by the hybrid score. `lexical` is expected on each record (0 if unset);
+    recency_norm is derived here from created_at across the candidate set."""
+    times = [_memory_timestamp(r.get("created_at")) for r in scored]
+    valid = [t for t in times if t is not None]
+    tmin = min(valid) if valid else None
+    span = (max(valid) - tmin).total_seconds() if len(valid) >= 2 else 0.0
+    for record, ts in zip(scored, times):
+        recency_norm = (ts - tmin).total_seconds() / span if (span > 0 and ts is not None) else 0.0
+        record["recency_norm"] = recency_norm
+        record["ranking_score"] = (
+            record["similarity"]
+            + MEMORY_LEXICAL_WEIGHT * record.get("lexical", 0.0)
+            + MEMORY_RECENCY_WEIGHT * recency_norm
+        )
+    scored.sort(key=lambda item: item["ranking_score"], reverse=True)
 
 
 def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
+    query_tokens = _tokenize(query) if MEMORY_LEXICAL_WEIGHT > 0 else set()
     conn = get_db()
     cur = conn.cursor()
     if user_id:
@@ -473,11 +506,12 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
             emb = json.loads(row["embedding_json"])
         except Exception:
             continue
-        sim = cosine_similarity(query_embedding, emb)
         record = dict(row)
-        record["similarity"] = sim
+        record["similarity"] = cosine_similarity(query_embedding, emb)
+        if MEMORY_LEXICAL_WEIGHT > 0:
+            record["lexical"] = _lexical_score(query_tokens, record)
         scored.append(record)
-    _apply_recency_ranking(scored)
+    _rank_memories(scored)
     return scored[:k]
 
 

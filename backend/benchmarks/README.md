@@ -38,6 +38,26 @@ Metrics, all in [0,1]: `hit@1`, `recall@k`, `MRR`.
 | recall@3 | 1.000 |
 | recall@5 | 1.000 |
 
+## Fixtures
+
+- `recall_v1.json` — original set; one temporal-supersession case.
+- `recall_v2.json` — v1 + more temporal pairs (slice 2, temporal-aware retrieval, ADR 0016).
+- `recall_v3.json` — v2 + lexical "twin" pairs separable only by a specific token (slice 3, hybrid
+  retrieval, ADR 0017).
+
+## Ranking signals (tunable, bounded)
+
+`search_memories` ranks by `cosine + MEMORY_LEXICAL_WEIGHT*lexical + MEMORY_RECENCY_WEIGHT*recency`.
+Each added term is normalized to [0,1], so it only reorders near-ties. Set either weight to `0` to
+isolate a signal, e.g. measure the pre-hybrid baseline:
+
+```bash
+MEMORY_LEXICAL_WEIGHT=0 MEMORY_RECENCY_WEIGHT=0.05 python backend/benchmarks/recall_benchmark.py --fixture backend/benchmarks/fixtures/recall_v3.json
+```
+
+Defaults: `MEMORY_RECENCY_WEIGHT=0.05` (on), `MEMORY_LEXICAL_WEIGHT=0` (off — hybrid showed no measured
+gain on the current corpus; see ADR 0017). Set `MEMORY_LEXICAL_WEIGHT>0` to enable and re-measure.
+
 Retrieval is strong out of the box. The **only** miss is the temporal query ("which model *currently*
 generates responses"): the current flat cosine ranking returned the older, superseded fact above the
 newer one. That single measured failure is the concrete motivation for the next slice —

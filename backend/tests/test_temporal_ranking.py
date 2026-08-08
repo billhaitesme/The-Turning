@@ -16,7 +16,7 @@ def test_recency_breaks_near_ties_toward_newer(monkeypatch):
         _rec("old", 0.80, "2026-01-01T00:00:00Z"),
         _rec("new", 0.79, "2026-08-01T00:00:00Z"),
     ]
-    app._apply_recency_ranking(scored)
+    app._rank_memories(scored)
     # cosine gap (0.01) < weight (0.05) -> the newer, superseding fact wins
     assert scored[0]["id"] == "new"
 
@@ -27,7 +27,7 @@ def test_recency_does_not_flip_a_clear_match(monkeypatch):
         _rec("strong_old", 0.90, "2026-01-01T00:00:00Z"),
         _rec("weak_new", 0.70, "2026-08-01T00:00:00Z"),
     ]
-    app._apply_recency_ranking(scored)
+    app._rank_memories(scored)
     # cosine gap (0.20) > weight -> similarity still decides
     assert scored[0]["id"] == "strong_old"
 
@@ -38,7 +38,7 @@ def test_weight_zero_is_pure_similarity(monkeypatch):
         _rec("newer_lower", 0.70, "2026-08-01T00:00:00Z"),
         _rec("older_higher", 0.80, "2026-01-01T00:00:00Z"),
     ]
-    app._apply_recency_ranking(scored)
+    app._rank_memories(scored)
     assert [r["id"] for r in scored] == ["older_higher", "newer_lower"]
 
 
@@ -48,5 +48,5 @@ def test_missing_or_invalid_timestamps_are_safe(monkeypatch):
         _rec("a", 0.80, None),
         _rec("b", 0.75, "not-a-date"),
     ]
-    app._apply_recency_ranking(scored)  # must not raise
+    app._rank_memories(scored)  # must not raise
     assert scored[0]["id"] == "a"
