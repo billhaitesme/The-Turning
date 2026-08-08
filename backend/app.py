@@ -424,6 +424,39 @@ def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind:
     conn.close()
 
 
+# Epoch X — temporal-aware retrieval. A small, bounded recency term breaks near-ties in
+# cosine similarity toward the more recent memory, so a superseded fact does not outrank the
+# fact that replaced it. MEMORY_RECENCY_WEIGHT=0 restores pure-similarity ranking.
+MEMORY_RECENCY_WEIGHT = float(os.getenv("MEMORY_RECENCY_WEIGHT", "0.05"))
+
+
+def _memory_timestamp(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _apply_recency_ranking(scored: List[Dict[str, Any]]) -> None:
+    """Sort in place by cosine similarity, with a bounded recency nudge that only changes
+    order among near-ties. recency_norm maps oldest→0, newest→1 across the candidate set,
+    so the additive term is at most MEMORY_RECENCY_WEIGHT."""
+    if MEMORY_RECENCY_WEIGHT > 0 and scored:
+        times = [_memory_timestamp(r.get("created_at")) for r in scored]
+        valid = [t for t in times if t is not None]
+        tmin = min(valid) if valid else None
+        span = (max(valid) - tmin).total_seconds() if len(valid) >= 2 else 0.0
+        for record, ts in zip(scored, times):
+            recency_norm = (ts - tmin).total_seconds() / span if (span > 0 and ts is not None) else 0.0
+            record["recency_norm"] = recency_norm
+            record["ranking_score"] = record["similarity"] + MEMORY_RECENCY_WEIGHT * recency_norm
+        scored.sort(key=lambda item: item["ranking_score"], reverse=True)
+    else:
+        scored.sort(key=lambda item: item["similarity"], reverse=True)
+
+
 def search_memories(*, query: str, conversation_id: Optional[str], user_id: Optional[str], k: int = MAX_MEMORY_RESULTS) -> List[Dict[str, Any]]:
     query_embedding = get_embedding(query)
     conn = get_db()
@@ -444,7 +477,7 @@ def search_memories(*, query: str, conversation_id: Optional[str], user_id: Opti
         record = dict(row)
         record["similarity"] = sim
         scored.append(record)
-    scored.sort(key=lambda item: item["similarity"], reverse=True)
+    _apply_recency_ranking(scored)
     return scored[:k]
 
 
