@@ -5,7 +5,16 @@ State as of 2026-08-08 late (first tutelage training run, ADR 0024):
 - **v1 adapter DONE + chain PROVEN**: trained (32 steps), converted to GGUF, and served —
   `ollama create omega-arc-tutored` succeeded and the model answers. But 4 epochs was too weak a
   signal (final loss 4.46): answers were generic, not the studied ones.
-- **v2 retrain IN FLIGHT, DETACHED + OFFLINE** (`HF_HUB_OFFLINE=1` — needs no internet): 40 epochs
+- **v2 OUTCOME (2026-08-09): crashed at step ~100/320** — native crash, almost certainly VRAM
+  contention (Ollama model loads during training). BUT checkpoint-100 (~12.5 epochs) was converted
+  and served: the proof visibly landed — "Machine ID is O3M3G4ARC" (studied fact, slightly garbled),
+  "superseded memories aren't deleted; they're hidden" (correct paraphrase). Knowledge is in the
+  weights; the identity string needs the full run to come out exact.
+- **v3 IN FLIGHT, DETACHED + OFFLINE + GPU-EXCLUSIVE** (all Ollama models stopped first — the lesson
+  from v2): output `adapters/...-v3/`, log `train_v3_detached.log`. On `adapter saved` + `EXIT=0`,
+  repeat convert→Modelfile→create→proof against -v3. RULE: never run Ollama generations while
+  training.
+- (superseded) **v2 retrain WAS IN FLIGHT, DETACHED + OFFLINE** (`HF_HUB_OFFLINE=1` — needs no internet): 40 epochs
   (~320 steps) for deliberate memorization. Log: `training/train_v2_detached.log`; output:
   `training/adapters/adapter-omega-arc-architecture-20260808T112646-v2/`. When it shows
   `adapter saved` + `EXIT=0`:
