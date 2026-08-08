@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch X / Version 0.3.2
-**Active series:** Version 0.3.x
-**Active milestone:** Epoch X — Memory (X-C Review and Consolidation released as 0.3.2, tagged `epoch-x-c`)
+**Current release:** Epoch XI / Version 0.4.0
+**Active series:** Version 0.4.x
+**Active milestone:** Epoch XI — Tutelage (XI-A The First Lesson released as 0.4.0, tagged `epoch-xi-a`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch X / 0.3.2 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch X / 0.3.2 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch X / 0.3.2 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch X / 0.3.2 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch X / 0.3.2 |
+| Core Runtime | `backend/` | Epoch XI / 0.4.0 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.0 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.0 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.0 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.0 |
 
 ## Epoch IX
 
@@ -68,6 +68,17 @@ future Tutelage/Learning epoch depends on. Techniques adapted from
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
 
+## Epoch XI — Tutelage
+
+The runtime studies. Epoch XI's first milestone shipped as **0.4.0** (tagged `epoch-xi-a`): an
+operator-authored curriculum whose subjects are memory rooms; a deterministic study cycle (ingest
+lesson sources into the room with per-chunk provenance → pre/post recall test → the study-seat model
+answers the quiz from its own notes, graded against operator-authored keys — the model never grades
+itself); prerequisite gating; idempotent re-runs; auditable cycle records. The first real lessons ran
+2026-08-08 — the seed subject is OMEGA-ARC's own architecture (anatomy is taught; identity is
+authored: what the runtime is *made of* is curriculum, who it *is* remains its own to determine).
+See ADR 0013 and [`docs/architecture/epoch-xi-tutelage.md`](docs/architecture/epoch-xi-tutelage.md).
+
 ## Models
 
 The default conversational model is **`mo-shakib/gemma4-e4b-uncensored:q4_k_m`** (uncensored,
@@ -82,9 +93,13 @@ you might:
 | Selectable model | Why you would switch to it |
 |---|---|
 | `richardyoung/llama-3.1-8b-instruct-abliterated` | Smaller download (~5 GB) and lighter in RAM; a strong uncensored 8B if disk/bandwidth are tight. |
-| `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — worth it only with serious RAM/GPU; on a CPU-only host it is impractically slow. |
+| `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — needs far more VRAM than a laptop GPU, so most of it spills to CPU and responses crawl. Worth it only with serious hardware. |
 | `llama2-uncensored:7b` | Legacy lightweight fallback; fastest to load, older generation — compatibility more than quality. |
 | `llama3.1:8b` | The one *aligned* model in the list — pick it if you want refusal-style safety behavior (e.g., demos to others). Note this departs from the project's uncensored default posture. |
+
+Note on hardware: OMEGA-ARC never chooses CPU vs GPU — Ollama auto-offloads each model to the GPU
+up to available VRAM and spills the remainder to CPU. On an 8 GB GPU, models up to ~7 GB run fully
+GPU-accelerated; larger ones degrade gracefully toward CPU speed.
 
 Auxiliary roles: `embeddinggemma` (memory embeddings — retained after a measured bake-off),
 `qwen3-vl` (vision default, currently dormant), `gemma3:1b` (router, disabled under Model Lock),

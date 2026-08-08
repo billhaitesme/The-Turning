@@ -1,6 +1,6 @@
 # OMEGA-ARC System Overview
 
-This overview reflects the current epoch (**Epoch X — Memory**, release 0.3.2). For
+This overview reflects the current epoch (**Epoch XI — Tutelage**, release 0.4.0). For
 delivery status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`ROADMAP.md`](ROADMAP.md); the
 release-identity authority is [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
 
@@ -77,9 +77,9 @@ Epoch IX makes the runtime observable and operable rather than adding a new cogn
   tools (VIII)
 - **Operations Era** — Runtime Operations (IX): mobile + desktop operator consoles, telemetry,
   operator actions
-- **Memory Era (current)** — Memory (X): benchmarked recall, rooms, reviewed revision and
-  consolidation
-- **Next** — Tutelage and Learning (proposed)
+- **Memory Era** — Memory (X): benchmarked recall, rooms, reviewed revision and consolidation
+- **Learning Era (current)** — Tutelage (XI): curriculum, study cycles, measured comprehension
+- **Next** — retention/compounding (XI-B), consolidation gate (XI-C)
 
 ## Subsystem Summary
 
@@ -114,12 +114,12 @@ The backend uses regression and acceptance tests run under `pytest`, hermetic (t
 stores to a temporary data directory and leave tracked runtime data unchanged).
 
 - `backend/tests/` — service and integration tests
-- Current suite count: **382 passing** on the Epoch X line (see [`CHANGELOG.md`](CHANGELOG.md) for per-release counts)
+- Current suite count: **389 passing** on the Epoch XI line (see [`CHANGELOG.md`](CHANGELOG.md) for per-release counts)
 
 ## Roadmap Summary
 
 Reasoning, planning, deliberation, bounded tools, and runtime operations are delivered. Epoch X —
 Memory — is the current epoch: benchmarked recall, temporal-aware ranking, rooms with scope
 assignment, reviewed supersession, a memory review surface, and consolidation are shipped (ADRs
-0016–0023). The next major phase is the proposed **Tutelage and Learning** epoch, which this memory
-substrate exists to serve. See [`ROADMAP.md`](ROADMAP.md) for the living plan.
+0016–0023). Epoch XI — Tutelage — is live: the runtime studies an operator-authored curriculum and its learning
+is measured, never assumed. See [`ROADMAP.md`](ROADMAP.md) for the living plan.

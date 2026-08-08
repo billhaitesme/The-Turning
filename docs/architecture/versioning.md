@@ -6,18 +6,18 @@ This document is the single source of truth for OMEGA-ARC release identity.
 
 | Field | Value |
 |---|---|
-| Epoch | Epoch X — Memory |
-| Release | 0.3.2 |
-| Active series | 0.3.x |
-| Active milestone | Epoch X-C — Review and Consolidation (released as 0.3.2; tag `epoch-x-c`) |
+| Epoch | Epoch XI — Tutelage |
+| Release | 0.4.0 |
+| Active series | 0.4.x |
+| Active milestone | Epoch XI-A — The First Lesson (released as 0.4.0; tag `epoch-xi-a`) |
 | Mobile API major | 1 |
-| Prior milestone tags | `epoch-ix-a` (IX-B, 0.2.0) · `epoch-ix-c` (IX-C, 0.2.1) · `epoch-x-a` (X-A, 0.3.0) · `epoch-x-b` (X-B, 0.3.1) |
+| Prior milestone tags | `epoch-ix-a` (IX-B, 0.2.0) · `epoch-ix-c` (IX-C, 0.2.1) · `epoch-x-a` (X-A, 0.3.0) · `epoch-x-b` (X-B, 0.3.1) · `epoch-x-c` (X-C, 0.3.2) |
 
 The Epoch communicates architectural continuity. Semantic versioning communicates compatibility and delivery. They are related but independent: an epoch can contain multiple compatible releases in its series (Epoch IX spanned 0.2.0–0.2.1; Epoch X begins the 0.3.x series per the milestone-versioning rule below).
 
 ## Component sources
 
-Every active component must report Epoch X / 0.3.2 until the release version is advanced here.
+Every active component must report Epoch XI / 0.4.0 until the release version is advanced here.
 
 | Component | Authoritative field |
 |---|---|
@@ -29,7 +29,7 @@ Every active component must report Epoch X / 0.3.2 until the release version is 
 | Shared contract | OpenAPI `info.version` and `design-tokens.json` version |
 | Documentation | root `README.md`, `CHANGELOG.md`, and `ROADMAP.md` |
 
-The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.3.2`.
+The mobile protocol remains API major `1`. A protocol major is not the product version and must not be rewritten to `0.4.0`.
 
 ## Compatibility rules
 

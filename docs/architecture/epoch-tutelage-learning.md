@@ -1,6 +1,8 @@
 # Epoch (future) — Tutelage and Learning
 
-**Status:** Proposed sketch. Not scheduled. Sequenced **after** Epoch X (memory).
+**Status:** Superseded (2026-08-08) by the accepted epoch design,
+[`epoch-xi-tutelage.md`](epoch-xi-tutelage.md). Retained as the original sketch. Its prerequisite
+("do not start before memory recall is measurable and good") was satisfied by Epoch X (0.3.0–0.3.2).
 See ADR [`0013-learning-and-tutelage.md`](../decisions/0013-learning-and-tutelage.md).
 
 This is a design sketch for the epoch where OMEGA-ARC begins studying — turning the "education" and

@@ -61,6 +61,12 @@ Durable, scoped, benchmarked long-term memory (ADRs 0016–0023; MemPalace techn
 - **X-C** — Review and Consolidation: memory review surface, consolidation scan. Released as
   **0.3.2**, tagged `epoch-x-c` (382 backend tests).
 
-## Future
+## Epoch XI — Tutelage
 
-- **Tutelage and Learning** — proposed, review-gated study loop; sequenced after Memory.
+The runtime studies: curriculum, measured study cycles, review-gated growth (ADR 0013).
+
+- **XI-A** — The First Lesson: curriculum + study cycle (recall + comprehension, operator-key
+  grading), study-seat bake-off, seed subject = its own architecture. Released as **0.4.0**, tagged
+  `epoch-xi-a` (389 backend tests).
+- **XI-B** — Retention and Compounding (planned).
+- **XI-C** — Consolidation Gate (planned; approval-gated LoRA).

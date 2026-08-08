@@ -5,14 +5,14 @@
 | Field | Current value |
 |---|---|
 | Last updated | 2026-08-08 |
-| Current epoch | Epoch X — Memory |
-| Current version | 0.3.2 |
-| Release line | 0.3.x |
+| Current epoch | Epoch XI — Tutelage |
+| Current version | 0.4.0 |
+| Release line | 0.4.x |
 | Status | Active Development |
-| Current phase | Epoch X-C (Review and Consolidation) released as **0.3.2** (tag `epoch-x-c`), merged to `main` |
+| Current phase | Epoch XI-A (The First Lesson) released as **0.4.0** (tag `epoch-xi-a`), merged to `main` |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
-| Theme | Epoch X: “The Runtime Remembers” (Epoch IX was “The Runtime Becomes Visible”) |
+| Theme | Epoch XI: “The Runtime Learns” (X: “Remembers”, IX: “Becomes Visible”) |
 
 ## Completed
 
@@ -106,6 +106,23 @@ Two slices from `feature/epoch-x-memory`, tagged **`epoch-x-c`**, merged to `mai
 
 Epoch X's committed scope (durable, scoped, benchmarked memory) is delivered. Next: Tutelage design
 (ADR 0013), a Bridge Zero memory panel, and floor calibration against a grown corpus remain open.
+
+## Epoch XI-A — The First Lesson, released as 0.4.0 (2026-08-08)
+
+Tutelage is live from `feature/epoch-xi-tutelage`, tagged **`epoch-xi-a`**, merged to `main`.
+Backend suite **389 passing**, hermetic.
+
+- ✓ Curriculum store + full study cycle (idempotent ingestion → pre/post recall test →
+  comprehension test with deterministic operator-key grading; prerequisite gating; audit records)
+- ✓ First real lessons: seed subject = OMEGA-ARC's own architecture; recall 0.0 → 1.0 both lessons;
+  true comprehension 12/12 on the honest instrument
+- ✓ Study-seat bake-off: default model retained (no challenger strictly better); think-leak false
+  positives caught and fixed by the instrument itself
+- ✓ Deck truthfulness: panels read authoritative stores; reasoning snapshot persists across restarts
+- Boundary: *anatomy is taught; identity is authored* (self-authored personality preserved)
+
+Remaining Epoch XI: XI-B Retention and Compounding, XI-C Consolidation Gate. Carried-forward
+obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device icon checks.
 
 ## Native Device Validation Gate (IX-B — closed)
 

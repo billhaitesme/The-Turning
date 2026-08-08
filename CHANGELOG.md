@@ -18,6 +18,36 @@ Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substra
 (Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
 validation (see 0.2.1 below).
 
+## [0.4.0] - 2026-08-08 — Epoch XI-A (The First Lesson)
+
+Epoch XI — Tutelage — begins: the runtime studies. Released from `feature/epoch-xi-tutelage`,
+tagged `epoch-xi-a`. New epoch → minor bump. Backend suite: **389 passing**, hermetic.
+
+### Added
+
+- **Curriculum + study cycle** (ADR 0013; `docs/architecture/epoch-xi-tutelage.md`): operator-
+  authored curriculum (`backend/data/curriculum.json`) whose subjects are memory rooms; lessons
+  carry local sources, prerequisites, and quizzes. `POST /system/tutelage/cycles` runs a cycle:
+  idempotent provenance-tagged ingestion into the room → pre/post **recall test** (deterministic,
+  no LLM) → **comprehension test** (the study-seat model answers from its own retrieved notes;
+  grading is deterministic against operator-authored keys with OR-group synonyms — the model never
+  grades itself). Lessons pass only when both scores clear the threshold; passing unlocks
+  dependents; every cycle is an auditable record (the first real records are committed).
+- **Study seat**: `OLLAMA_STUDY_MODEL` (empty → active chat model) with per-cycle override. Live
+  bake-off (gemma4 vs lfm2.5 vs granite3.3) retained the default — the challengers did not strictly
+  beat it; the first run's think-leak false positives were caught and fixed (`_strip_think`).
+- **Seed curriculum**: OMEGA-ARC's own architecture — first lessons ran 2026-08-08, recall
+  0.0 → 1.0 on both, true comprehension 12/12. *Anatomy is taught; identity is authored.*
+
+### Fixed
+
+- Command Deck panels now read their authoritative stores (evidence = resolved beliefs, same source
+  as reasoning; deliberation polled), stale hardcoded literals removed, and the reasoning snapshot
+  persists across backend restarts (`reasoning_snapshot.json`) — runtime visibility no longer has
+  amnesia. Tracked UI dists refreshed.
+- CPU-only host mischaracterization corrected across docs: Ollama auto-offloads to GPU up to VRAM
+  (RTX 5060 8 GB here — sub-7 GB models run fully accelerated).
+
 ## [0.3.2] - 2026-08-08 — Epoch X-C (Review and Consolidation)
 
 Released from `feature/epoch-x-memory`, tagged `epoch-x-c`. Completes Epoch X's committed scope.
