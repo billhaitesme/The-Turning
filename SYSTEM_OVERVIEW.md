@@ -1,6 +1,6 @@
 # OMEGA-ARC System Overview
 
-This overview reflects the current epoch (**Epoch IX — Runtime Operations**, release 0.3.1). For
+This overview reflects the current epoch (**Epoch X — Memory**, release 0.3.2). For
 delivery status see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`ROADMAP.md`](ROADMAP.md); the
 release-identity authority is [`docs/architecture/versioning.md`](docs/architecture/versioning.md).
 
@@ -20,7 +20,7 @@ The long-term vision is a system that can:
 - reason over structured evidence rather than raw assumptions
 - change the active model only through an explicit, recorded operator action (Model Lock)
 - be observed and operated from native operator consoles without a redeploy
-- eventually remember durably and learn under review (future Epochs X and Tutelage)
+- remember durably, by subject, under review (Epoch X); eventually learn under review (Tutelage)
 - remain legible and reversible for future contributors
 
 ## Repository Structure
@@ -77,7 +77,9 @@ Epoch IX makes the runtime observable and operable rather than adding a new cogn
   tools (VIII)
 - **Operations Era** — Runtime Operations (IX): mobile + desktop operator consoles, telemetry,
   operator actions
-- **Next** — Memory (Epoch X), then Tutelage and Learning (proposed)
+- **Memory Era (current)** — Memory (X): benchmarked recall, rooms, reviewed revision and
+  consolidation
+- **Next** — Tutelage and Learning (proposed)
 
 ## Subsystem Summary
 
@@ -89,6 +91,9 @@ Epoch IX makes the runtime observable and operable rather than adding a new cogn
 - Bounded Tools — approval-gated, scoped adapters that turn results into evidence (execution off by default)
 - Model Control — Model Lock and Direct Model mode; the operator selects the active chat model
 - Runtime Operations — RuntimeStore, typed events, telemetry, and the operator consoles
+- Memory — embedded recall over a single SQLite-backed store: hybrid ranking (cosine + recency, with
+  lexical/fuzzy knobs), rooms (scoped recall + global wing), reviewed supersession and consolidation,
+  and an operator review surface — all measured by the recall benchmark
 
 ## Persistence Summary
 
@@ -100,7 +105,8 @@ SQLite-backed runtime store when needed.
 - `deliberations.json`, `assumptions.json`, `approvals.json` — deliberation state
 - `tool_requests.json`, `tool_results.json` — bounded-tool requests and results
 - `constitution.json` — operating principles
-- `omega_arc.db` — runtime persistence used by the application
+- `omega_arc.db` — runtime persistence, including the `memories`, `supersession_candidates`, and
+  `memory_events` tables (long-term memory, its review queue, and its audit trail)
 
 ## Testing Summary
 
@@ -108,11 +114,12 @@ The backend uses regression and acceptance tests run under `pytest`, hermetic (t
 stores to a temporary data directory and leave tracked runtime data unchanged).
 
 - `backend/tests/` — service and integration tests
-- Current suite count: **345 passing** on the IX-C branch (344 at the `epoch-ix-a` checkpoint)
+- Current suite count: **382 passing** on the Epoch X line (see [`CHANGELOG.md`](CHANGELOG.md) for per-release counts)
 
 ## Roadmap Summary
 
-Reasoning, planning, deliberation, and bounded tools are delivered; Epoch IX has made the runtime
-observable and operable. The next major phase is **Epoch X — Memory**: durable, scoped, benchmarked
-long-term memory, which the proposed **Tutelage and Learning** work depends on. See
-[`ROADMAP.md`](ROADMAP.md) for the living plan.
+Reasoning, planning, deliberation, bounded tools, and runtime operations are delivered. Epoch X —
+Memory — is the current epoch: benchmarked recall, temporal-aware ranking, rooms with scope
+assignment, reviewed supersession, a memory review surface, and consolidation are shipped (ADRs
+0016–0023). The next major phase is the proposed **Tutelage and Learning** epoch, which this memory
+substrate exists to serve. See [`ROADMAP.md`](ROADMAP.md) for the living plan.

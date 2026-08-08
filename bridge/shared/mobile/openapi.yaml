@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OMEGA-ARC Mobile Operator API
-  version: 0.3.1
+  version: 0.3.2
 servers:
   - url: /api/mobile/v1
 security:

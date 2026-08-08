@@ -1,6 +1,8 @@
 # Epoch X notes — Memory and Retrieval
 
-**Status:** Future / not scheduled. Captured 2026-07-24. Not IX-B or IX-C scope.
+**Status:** Delivered (Epoch X, 0.3.0–0.3.2). Captured 2026-07-24 as a future-work assessment; the
+ideas below shipped via ADRs [0016](../decisions/0016-temporal-aware-retrieval.md)–[0023](../decisions/0023-memory-consolidation.md).
+Retained as the record of the MemPalace evaluation and the epoch's rationale.
 
 These are ideas to evaluate for a future memory epoch, recorded after assessing
 [MemPalace](https://github.com/MemPalace/mempalace) (MIT-licensed, local-first semantic
@@ -28,7 +30,12 @@ It is also a large dependency (ChromaDB, gRPC, ~300 MB embeddings, 301 open issu
 time), and roughly half its surface (mining Claude Code / Cursor sessions) targets coding
 assistants, not a persistent local intelligence.
 
-## Ideas worth borrowing (techniques, not code)
+## Ideas worth borrowing (techniques, not code) — delivery status
+
+All five were adopted or resolved during Epoch X: (1) scoped retrieval → ADR 0019/0020; (2) temporal
+validity → recency tie-break (ADR 0016) + declared-change supersession (ADR 0021); (3) hybrid
+retrieval → built, measured neutral, ships disabled (ADR 0017); (4) reranking → rejected as
+non-deterministic (ADR 0017); (5) recall benchmark → `backend/benchmarks/` (the first slice).
 
 1. **Scoped retrieval.** MemPalace's "wings/rooms/drawers" is scoped search — recall within a
    person / project / topic instead of one flat corpus. If `search_memories` is a flat cosine
@@ -49,7 +56,8 @@ assistants, not a persistent local intelligence.
 - Preserve the deterministic runtime authority and local-first / offline posture.
 - Keep records human-readable and reversible, per the Covenant.
 
-## Recommended first step (when scheduled)
+## Recommended first step (as executed)
 
-Audit the current `search_memories` ranking, then decide whether scoped + hybrid + temporal
-retrieval improves it — measured against a small recall benchmark — before any larger design.
+The recommendation below was followed as written: the recall benchmark landed first, and every
+subsequent retrieval change (temporal, hybrid, scoped) was judged against it — including the honest
+negative result that kept hybrid disabled. See ADRs 0016–0023.

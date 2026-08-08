@@ -2,7 +2,7 @@
 
 ## Current Backend Test Count
 
-The backend test suite currently includes 59 tests.
+The backend test suite has grown with each epoch (382 tests as of Epoch X-C); see [`CHANGELOG.md`](../../CHANGELOG.md) for per-release counts.
 
 ## How Tests Are Organized
 

@@ -24,6 +24,7 @@ checkpoints/
 .cache/
 logs/
 *.log
+.runtime-logs/
 backups/
 *.zip
 .vscode/
@@ -43,3 +44,6 @@ backend/data/approvals.json
 backend/data/assumptions.json
 backend/data/deliberations.json
 backend/data/tool_approvals.json
+
+# Local-only stale snapshot (untracked as of 0.3.2; recoverable from git history)
+ZIP for CA/

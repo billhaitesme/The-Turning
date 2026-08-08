@@ -74,13 +74,30 @@ boundary. Release line 0.2.x.
   measured telemetry; Operations Dashboard; shared cross-platform design tokens. Validated on hardware
   (Android 8/8, iOS 8/8); 344 backend tests. Committed on `release/epoch-ix-0.2.0` and tagged
   `epoch-ix-a`.
-- **IX-C — Operator Actions (in progress):** operator model selector, in-app New Conversation control,
-  operator approvals with on-device biometric confirmation, and the OMEGA-ARC app icon / real Aurebesh
-  branding. 345 backend tests. Push delivery (APNs/FCM) designed but infra-blocked.
+- **IX-C — Operator Actions:** operator model selector, in-app New Conversation control, operator
+  approvals with on-device biometric confirmation, and the OMEGA-ARC app icon / real Aurebesh
+  branding. 345 backend tests. **Released as 0.2.1**, tagged `epoch-ix-c` (with a documented Android
+  on-device validation exception). Push delivery (APNs/FCM) designed but infra-blocked.
 - **IX-D — Command Console (designed):** operator-initiated commands through the existing gates. ADR 0015.
+
+## Epoch X — Memory ("The Runtime Remembers")
+
+Durable, scoped, benchmarked long-term memory — the substrate the learning pillar depends on.
+Techniques adapted from MemPalace (MIT) are credited in ADRs 0016–0023.
+
+- **X-A — Memory Foundation (0.3.0, `epoch-x-a`):** recall benchmark (hit@1 / recall@k / MRR);
+  temporal-aware retrieval (recency tie-break, on); hybrid lexical + typo-fuzzy signals (available,
+  off — honest neutral measurement); write-time supersession (reversible flags); scoped retrieval
+  ("rooms"). 366 backend tests.
+- **X-B — Rooms and Revision (0.3.1, `epoch-x-b`):** scope assignment (the conversation carries the
+  room; recall = room + global wing); robust supersession (declared-change auto + reviewed
+  candidates, two-tier calibrated floors); embedder bake-off (embeddinggemma retained). 372 backend
+  tests.
+- **X-C — Review and Consolidation (0.3.2, `epoch-x-c`):** memory review surface (browse rooms,
+  re-room, restore, audited in `memory_events`); consolidation scan proposing near-duplicates into
+  the review queue. 382 backend tests.
 
 ## Future
 
-- **Epoch X — Memory:** durable, scoped, benchmarked long-term memory (scope not yet committed).
 - **Tutelage and Learning (proposed):** a runtime-driven, review-gated study loop, sequenced after
   Memory. ADR 0013.

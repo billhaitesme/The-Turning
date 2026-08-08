@@ -1,7 +1,7 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch X — Memory
-**Current release:** 0.3.1
+**Current release:** 0.3.2
 **Active release line:** 0.3.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
@@ -89,7 +89,7 @@ trustworthy before real actions depend on it. Designed in ADR
 [`0015-command-console.md`](docs/decisions/0015-command-console.md) and
 [`docs/architecture/epoch-ix-d-command-console.md`](docs/architecture/epoch-ix-d-command-console.md).
 
-## Epoch X — Memory (active; X-A released as 0.3.0)
+## Epoch X — Memory (delivered through X-C / 0.3.2)
 
 Durable, scoped, benchmarked long-term memory — the substrate the learning pillar depends on. See
 [`docs/architecture/epoch-x-memory-and-retrieval.md`](docs/architecture/epoch-x-memory-and-retrieval.md).
@@ -124,10 +124,20 @@ Five measured slices on `feature/epoch-x-memory`, techniques credited to
 - **Embedder bake-off** — `embeddinggemma` retained on a pre-registered decision rule; challengers
   lost recall (0.867–0.895 vs 1.000 hit@1). Recorded in `backend/benchmarks/README.md`.
 
-### Epoch X remaining (unscheduled)
+### X-C — Review and Consolidation (released as 0.3.2, tagged `epoch-x-c`)
 
-- Memory consolidation and richer review/re-scoping surfaces (operator-visible memory, per the
-  Covenant's human-readable records) — possibly surfacing the supersession queue in Bridge Zero.
+- **Memory review surface** (ADR 0022) — rooms overview, filtered browse (embeddings never exposed),
+  detail with audit trail, re-rooming, and supersession restore; every correction audited in
+  `memory_events`; deletion deliberately not offered.
+- **Consolidation** (ADR 0023) — operator-invoked scan clusters near-duplicate residue (same
+  kind/room/user, 0.95 floor) and proposes older rows into the supersession review queue
+  (`origin='consolidation'`); no auto path; approved rows remain restorable.
+
+### Epoch X follow-ons (unscheduled)
+
+- A Bridge Zero Mission Control panel over the memory review endpoints (no new backend work needed).
+- Supersession/consolidation floor calibration against a grown real corpus.
+- A proposal-only scope suggester, only if a measured need appears (ADR 0020).
 
 ## Future — Tutelage and Learning (proposed, unscheduled)
 

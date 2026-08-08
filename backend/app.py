@@ -273,7 +273,18 @@ def init_db() -> None:
         declared INTEGER DEFAULT 0,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        resolved_at TEXT
+        resolved_at TEXT,
+        origin TEXT DEFAULT 'write'
+    )
+    """)
+    _ensure_column(cur, "supersession_candidates", "origin", "TEXT DEFAULT 'write'")
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS memory_events (
+        id TEXT PRIMARY KEY,
+        memory_id TEXT NOT NULL,
+        event TEXT NOT NULL,
+        detail TEXT,
+        created_at TEXT NOT NULL
     )
     """)
     conn.commit()
@@ -566,6 +577,180 @@ def resolve_supersession_candidate(candidate_id: str, approve: bool) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# Epoch X — memory review surface (ADR 0022). The store must be browsable and correctable by a
+# human: rooms overview, filtered browsing, re-rooming, and supersession restore. Corrections are
+# explicit operator actions, audited in memory_events; nothing is ever deleted.
+_MEMORY_PUBLIC_COLS = ("id, conversation_id, user_id, kind, source_text, summary_text, score, "
+                       "created_at, scope, superseded, superseded_by, superseded_at")
+
+
+def _record_memory_event(cur: sqlite3.Cursor, memory_id: str, event: str, detail: str) -> None:
+    cur.execute("INSERT INTO memory_events (id, memory_id, event, detail, created_at) VALUES (?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), memory_id, event, detail, utc_now()))
+
+
+def memory_rooms() -> List[Dict[str, Any]]:
+    """Every room (scope) with active/superseded counts; the unscoped global wing reports as None."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT scope, "
+        "SUM(CASE WHEN superseded IS NULL OR superseded = 0 THEN 1 ELSE 0 END) AS active, "
+        "SUM(CASE WHEN superseded = 1 THEN 1 ELSE 0 END) AS superseded "
+        "FROM memories GROUP BY scope ORDER BY scope IS NULL, scope"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def browse_memories(*, scope: Optional[str] = None, unscoped: bool = False, kind: Optional[str] = None,
+                    status: str = "active", q: Optional[str] = None,
+                    limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    """Filtered, human-readable browse (no embeddings). status: active | superseded | all."""
+    clauses, params = ["1=1"], []
+    if unscoped:
+        clauses.append("scope IS NULL")
+    elif scope is not None:
+        clauses.append("scope = ?")
+        params.append(scope)
+    if kind:
+        clauses.append("kind = ?")
+        params.append(kind)
+    if status == "active":
+        clauses.append("(superseded IS NULL OR superseded = 0)")
+    elif status == "superseded":
+        clauses.append("superseded = 1")
+    if q:
+        clauses.append("(summary_text LIKE ? OR source_text LIKE ?)")
+        params.extend([f"%{q}%", f"%{q}%"])
+    params.extend([max(1, min(int(limit), 200)), max(0, int(offset))])
+    conn = get_db()
+    rows = conn.execute(
+        f"SELECT {_MEMORY_PUBLIC_COLS} FROM memories WHERE " + " AND ".join(clauses) +
+        " ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        params,
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_memory_detail(memory_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_db()
+    row = conn.execute(f"SELECT {_MEMORY_PUBLIC_COLS} FROM memories WHERE id = ?", (memory_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return None
+    events = conn.execute("SELECT event, detail, created_at FROM memory_events WHERE memory_id = ? "
+                          "ORDER BY created_at", (memory_id,)).fetchall()
+    conn.close()
+    record = dict(row)
+    record["events"] = [dict(e) for e in events]
+    return record
+
+
+def set_memory_scope(memory_id: str, scope: Optional[str]) -> bool:
+    """Re-room a memory (None moves it to the global wing). Audited; returns False if not found."""
+    conn = get_db()
+    cur = conn.cursor()
+    row = cur.execute("SELECT scope FROM memories WHERE id = ?", (memory_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return False
+    cur.execute("UPDATE memories SET scope = ? WHERE id = ?", (scope, memory_id))
+    _record_memory_event(cur, memory_id, "rescope", f"{row['scope']!r} -> {scope!r}")
+    conn.commit()
+    conn.close()
+    return True
+
+
+def restore_memory(memory_id: str) -> bool:
+    """Reverse a supersession: the row returns to active recall. Audited; returns False unless the
+    memory exists and is currently superseded."""
+    conn = get_db()
+    cur = conn.cursor()
+    row = cur.execute("SELECT superseded, superseded_by FROM memories WHERE id = ?", (memory_id,)).fetchone()
+    if row is None or not row["superseded"]:
+        conn.close()
+        return False
+    cur.execute("UPDATE memories SET superseded = 0, superseded_by = NULL, superseded_at = NULL WHERE id = ?",
+                (memory_id,))
+    _record_memory_event(cur, memory_id, "restore", f"was superseded by {row['superseded_by']!r}")
+    conn.commit()
+    conn.close()
+    return True
+
+
+# Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per
+# exchange, so near-duplicate residue accumulates. An operator-invoked scan finds near-duplicate
+# clusters (same kind + room + user, cosine >= a high floor), keeps the NEWEST row as the
+# representative, and PROPOSES the older ones into the existing supersession review queue
+# (origin='consolidation'). Batch consolidation never auto-hides anything — every proposal awaits
+# explicit approval, and approved rows remain restorable.
+MEMORY_CONSOLIDATION_THRESHOLD = float(os.getenv("MEMORY_CONSOLIDATION_THRESHOLD", "0.95"))
+
+
+def consolidation_scan(*, threshold: Optional[float] = None, kinds: Optional[List[str]] = None,
+                       max_rows: int = 500) -> Dict[str, int]:
+    """Propose near-duplicate memories for consolidation. Deterministic, greedy newest-first
+    clustering within (kind, room, user); returns summary counts."""
+    floor = threshold if threshold is not None else MEMORY_CONSOLIDATION_THRESHOLD
+    if not (0.0 < floor <= 1.0):
+        raise ValueError("threshold must be in (0, 1].")
+    conn = get_db()
+    cur = conn.cursor()
+    clauses = ["(superseded IS NULL OR superseded = 0)"]
+    params: List[Any] = []
+    if kinds:
+        clauses.append("kind IN (" + ",".join("?" * len(kinds)) + ")")
+        params.extend(kinds)
+    params.append(max(1, min(int(max_rows), 2000)))
+    rows = cur.execute(
+        "SELECT id, kind, scope, user_id, embedding_json, created_at FROM memories "
+        "WHERE " + " AND ".join(clauses) + " ORDER BY created_at DESC LIMIT ?",
+        params,
+    ).fetchall()
+    already = {r["old_id"] for r in cur.execute(
+        "SELECT old_id FROM supersession_candidates WHERE status IN ('pending', 'approved', 'auto')"
+    ).fetchall()}
+
+    groups: Dict[tuple, List[Dict[str, Any]]] = {}
+    parsed = 0
+    for row in rows:
+        try:
+            emb = json.loads(row["embedding_json"])
+        except Exception:
+            continue
+        parsed += 1
+        groups.setdefault((row["kind"], row["scope"] or "", row["user_id"] or ""), []).append(
+            {"id": row["id"], "emb": emb})
+
+    now = utc_now()
+    proposed = skipped = 0
+    for members in groups.values():  # members are newest-first
+        assigned: set = set()
+        for i, rep in enumerate(members):
+            if rep["id"] in assigned:
+                continue
+            for older in members[i + 1:]:
+                if older["id"] in assigned:
+                    continue
+                if cosine_similarity(rep["emb"], older["emb"]) >= floor:
+                    assigned.add(older["id"])
+                    if older["id"] in already:
+                        skipped += 1
+                        continue
+                    cur.execute(
+                        "INSERT INTO supersession_candidates (id, new_id, old_id, similarity, declared, "
+                        "status, created_at, origin) VALUES (?, ?, ?, ?, 0, 'pending', ?, 'consolidation')",
+                        (str(uuid.uuid4()), rep["id"], older["id"],
+                         cosine_similarity(rep["emb"], older["emb"]), now),
+                    )
+                    proposed += 1
+    conn.commit()
+    conn.close()
+    return {"rows_scanned": parsed, "groups": len(groups), "proposed": proposed,
+            "skipped_existing": skipped}
 
 
 def save_memory(*, conversation_id: Optional[str], user_id: Optional[str], kind: str, source_text: str, summary_text: str, score: float = 0.0, scope: Optional[str] = None) -> None:
@@ -1496,6 +1681,12 @@ class SupersessionResolveRequest(BaseModel):
     action: str  # "approve" | "reject"
 
 
+class ConsolidationScanRequest(BaseModel):
+    threshold: Optional[float] = None  # defaults to MEMORY_CONSOLIDATION_THRESHOLD
+    kinds: Optional[List[str]] = None
+    max_rows: int = 500
+
+
 class ConversationScopeResponse(BaseModel):
     conversation_id: str
     scope: Optional[str]
@@ -1531,7 +1722,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="0.3.1")
+app = FastAPI(title=f"{APP_NAME} API", version="0.3.2")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -1631,6 +1822,57 @@ def post_resolve_supersession(candidate_id: str, req: SupersessionResolveRequest
     if not resolve_supersession_candidate(candidate_id, approve=req.action == "approve"):
         raise HTTPException(status_code=404, detail="Pending candidate not found.")
     return {"candidate_id": candidate_id, "status": "approved" if req.action == "approve" else "rejected"}
+
+
+@app.post("/system/memory/consolidation-scan")
+def post_consolidation_scan(req: ConsolidationScanRequest) -> Dict[str, Any]:
+    """Operator-invoked consolidation scan (ADR 0023): proposes near-duplicate memories into the
+    supersession review queue (origin='consolidation'). Nothing is hidden without approval."""
+    try:
+        return consolidation_scan(threshold=req.threshold, kinds=req.kinds, max_rows=req.max_rows)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+
+
+@app.get("/system/memory/rooms")
+def get_memory_rooms() -> Dict[str, Any]:
+    """Rooms overview (ADR 0022): every scope with active/superseded counts; None = the global wing."""
+    return {"rooms": memory_rooms()}
+
+
+@app.get("/system/memory")
+def get_memory_browse(scope: Optional[str] = None, unscoped: bool = False, kind: Optional[str] = None,
+                      status: str = "active", q: Optional[str] = None,
+                      limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    """Human-readable memory browse (ADR 0022). status: active | superseded | all."""
+    if status not in ("active", "superseded", "all"):
+        raise HTTPException(status_code=422, detail="status must be 'active', 'superseded', or 'all'.")
+    return {"memories": browse_memories(scope=scope, unscoped=unscoped, kind=kind,
+                                        status=status, q=q, limit=limit, offset=offset)}
+
+
+@app.get("/system/memory/{memory_id}")
+def get_memory_by_id(memory_id: str) -> Dict[str, Any]:
+    record = get_memory_detail(memory_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Memory not found.")
+    return record
+
+
+@app.post("/system/memory/{memory_id}/scope")
+def post_memory_scope(memory_id: str, req: ConversationScopeRequest) -> Dict[str, Any]:
+    """Re-room a memory (null moves it to the global wing). Explicit operator action, audited."""
+    if not set_memory_scope(memory_id, req.scope):
+        raise HTTPException(status_code=404, detail="Memory not found.")
+    return {"memory_id": memory_id, "scope": req.scope}
+
+
+@app.post("/system/memory/{memory_id}/restore")
+def post_memory_restore(memory_id: str) -> Dict[str, Any]:
+    """Reverse a supersession — the memory returns to active recall. Audited."""
+    if not restore_memory(memory_id):
+        raise HTTPException(status_code=404, detail="Memory not found or not superseded.")
+    return {"memory_id": memory_id, "restored": True}
 
 
 @app.post("/conversations", response_model=CreateConversationResponse)

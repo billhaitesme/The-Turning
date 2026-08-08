@@ -2,7 +2,7 @@
 
 Native Jetpack Compose operator console for the OMEGA-ARC Core Runtime.
 
-**Release:** Epoch IX / Version 0.2.0 · **Milestone:** IX-B
+**Release:** tracks the shared identity in [`docs/architecture/versioning.md`](../../docs/architecture/versioning.md) (currently Epoch X / 0.3.2)
 
 Open this directory in Android Studio with JDK 17 and Android SDK 37 installed. The Gradle Wrapper is a release gate: generate it with the project-pinned Gradle version, commit `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, and `gradle-wrapper.properties`, then verify `./gradlew --version`, `./gradlew test`, and `./gradlew assembleDebug` from a clean checkout. Until those files are present, use Android Studio only for local validation and do not mark Android reproducibility complete.
 
