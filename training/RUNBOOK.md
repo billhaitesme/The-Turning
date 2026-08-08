@@ -1,6 +1,24 @@
 # Training runbook — consolidation → adapter → served model
 
-State as of 2026-08-08 (first tutelage training run, ADR 0024):
+State as of 2026-08-08 late (first tutelage training run, ADR 0024):
+
+- **v1 adapter DONE + chain PROVEN**: trained (32 steps), converted to GGUF, and served —
+  `ollama create omega-arc-tutored` succeeded and the model answers. But 4 epochs was too weak a
+  signal (final loss 4.46): answers were generic, not the studied ones.
+- **v2 retrain IN FLIGHT, DETACHED + OFFLINE** (`HF_HUB_OFFLINE=1` — needs no internet): 40 epochs
+  (~320 steps) for deliberate memorization. Log: `training/train_v2_detached.log`; output:
+  `training/adapters/adapter-omega-arc-architecture-20260808T112646-v2/`. When it shows
+  `adapter saved` + `EXIT=0`:
+  1. Re-run Stage 3 step 1 (convert) against the **-v2** directory (use the local HF snapshot path
+     under `~/.cache/huggingface/hub/models--Qwen--Qwen2.5-3B-Instruct/snapshots/<hash>/` as --base).
+  2. Update `Modelfile`'s ADAPTER line to the -v2 adapter.gguf, then
+     `ollama create omega-arc-tutored -f Modelfile` (overwrites in place).
+  3. Proof: `ollama run omega-arc-tutored "What is the machine identity of the runtime?"` —
+     expect **0M3-G4-ARC** from bare weights. Free VRAM first if loads hang: `ollama stop <model>`.
+  4. Registry: with the backend up, POST /system/tutelage/adapters/adapter-omega-arc-architecture-20260808T112646
+     {"action":"mark-trained"} then {"action":"activate"}.
+
+Original context:
 
 - **Artifact:** `distillation/adapter-omega-arc-architecture-20260808T112646.jsonl` (16 key-verified pairs)
 - **Env:** `training/.venv` (torch 2.11 cu128, CUDA verified on the RTX 5060) — rebuild with the
