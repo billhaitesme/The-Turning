@@ -6,10 +6,10 @@
 |---|---|
 | Last updated | 2026-08-07 |
 | Current epoch | Epoch X — Memory |
-| Current version | 0.3.0 |
+| Current version | 0.3.1 |
 | Release line | 0.3.x |
 | Status | Active Development |
-| Current phase | Epoch X-A (Memory Foundation) released as **0.3.0** (tag `epoch-x-a`), merged to `main` |
+| Current phase | Epoch X-B (Rooms and Revision) released as **0.3.1** (tag `epoch-x-b`), merged to `main` |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
 | Theme | Epoch X: “The Runtime Remembers” (Epoch IX was “The Runtime Becomes Visible”) |
@@ -76,6 +76,22 @@ supersession, consolidation/review surfaces — see [`ROADMAP.md`](ROADMAP.md).
 
 Carried-forward obligations (unchanged by this release): the **Android on-device approval/biometric
 pass** (0.2.1 release exception; also gates IX-D) and on-device icon confirmation on both platforms.
+
+## Epoch X-B — Rooms and Revision, released as 0.3.1 (2026-08-08)
+
+Two measured slices from `feature/epoch-x-memory`, tagged **`epoch-x-b`**, merged to `main`. Backend
+suite **372 passing**, hermetic.
+
+- ✓ **Scope assignment** (ADR 0020) — conversations carry the memory room (explicit action only);
+  memories inherit it; recall = room + global wing. `recall_scoped_v2` hit@1 1.000.
+- ✓ **Robust supersession** (ADR 0021; off by default) — declared changes auto-supersede (reversible),
+  undeclared collisions queue for operator review (`/system/memory/supersession-candidates`) — the
+  first memory review surface. Calibrated two-tier floors 0.80/0.45 (8/9; residual ambiguity measured).
+- ✓ **Embedder bake-off** — `embeddinggemma` retained on a pre-registered rule; challengers lost
+  recall. Recorded in `backend/benchmarks/README.md`.
+
+Remaining Epoch X: memory consolidation, richer review/re-scoping surfaces. Carried-forward
+obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device icon checks.
 
 ## Native Device Validation Gate
 

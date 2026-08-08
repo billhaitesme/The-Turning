@@ -62,6 +62,23 @@ MEMORY_LEXICAL_WEIGHT=0 MEMORY_RECENCY_WEIGHT=0.05 python backend/benchmarks/rec
 Defaults: `MEMORY_RECENCY_WEIGHT=0.05` (on), `MEMORY_LEXICAL_WEIGHT=0` (off — hybrid showed no measured
 gain on the current corpus; see ADR 0017). Set `MEMORY_LEXICAL_WEIGHT>0` to enable and re-measure.
 
+## Embedder bake-off (2026-08-08) — embeddinggemma retained
+
+Decision rule (pre-registered): swap only if a candidate matches every recall ceiling AND strictly
+beats the supersession calibration. Run: recall_v2/v3 + recall_scoped_v2 + supersession (0.80/0.45)
+under each embedder via `OLLAMA_EMBED_MODEL=<m>`.
+
+| embedder | recall_v2 hit@1 | recall_v3 hit@1 | scoped_v2 hit@1 | supersession |
+|---|---|---|---|---|
+| **embeddinggemma (kept)** | **1.000** | **1.000** | 1.000 | 8/9 |
+| nomic-embed-text | 0.867 | 0.895 | 1.000 | 8/9 |
+| mxbai-embed-large | 0.867 | 0.895 | 1.000 | 8/9 |
+
+Both candidates lose recall — the primary function — and nothing dominates on supersession
+(nomic separates the ambiguous undeclared band slightly better; mxbai errs toward noise). Switching
+would also invalidate all stored embeddings and the calibrated floors. Re-run this bake-off if the
+memory corpus or embedder landscape changes materially.
+
 Retrieval is strong out of the box. The **only** miss is the temporal query ("which model *currently*
 generates responses"): the current flat cosine ranking returned the older, superseded fact above the
 newer one. That single measured failure is the concrete motivation for the next slice —

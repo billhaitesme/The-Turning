@@ -1531,7 +1531,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="0.3.0")
+app = FastAPI(title=f"{APP_NAME} API", version="0.3.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

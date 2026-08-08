@@ -1,7 +1,7 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch X — Memory
-**Current release:** 0.3.0
+**Current release:** 0.3.1
 **Active release line:** 0.3.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
@@ -110,14 +110,24 @@ Five measured slices on `feature/epoch-x-memory`, techniques credited to
   0.500 → 1.000 vs flat recall on parallel cross-room facts — the substrate a curriculum-driven
   learner recalls by subject with.
 
+### X-B — Rooms and Revision (released as 0.3.1, tagged `epoch-x-b`)
+
+- **Scope assignment** (ADR 0020) — the conversation carries the room, set only by explicit action;
+  memories inherit it; recall searches the room plus the global wing (unscoped facts recallable
+  everywhere, other rooms excluded). Measured: `recall_scoped_v2` hit@1 1.000. *A lesson is a scoped
+  conversation* — the curriculum hook.
+- **Robust supersession** (ADR 0021, upgrading ADR 0018; off by default) — declared changes
+  auto-supersede (reversible, audited); undeclared collisions queue as pending candidates for
+  operator review (`/system/memory/supersession-candidates`) — the first memory review surface.
+  Two-tier floors calibrated on the real embedder (0.80/0.45 → 8/9; the residual undeclared band is
+  measured as irreducibly ambiguous, which is why it gets review, never auto).
+- **Embedder bake-off** — `embeddinggemma` retained on a pre-registered decision rule; challengers
+  lost recall (0.867–0.895 vs 1.000 hit@1). Recorded in `backend/benchmarks/README.md`.
+
 ### Epoch X remaining (unscheduled)
 
-- Scope assignment — who names the room (operator, conversation context, or a deterministic
-  classifier).
-- Robust supersession — validity windows / contradiction-aware replacement (then calibrate and enable
-  ADR 0018).
-- Memory consolidation and review surfaces (operator-visible memory, per the Covenant's
-  human-readable records).
+- Memory consolidation and richer review/re-scoping surfaces (operator-visible memory, per the
+  Covenant's human-readable records) — possibly surfacing the supersession queue in Bridge Zero.
 
 ## Future — Tutelage and Learning (proposed, unscheduled)
 
