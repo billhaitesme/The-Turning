@@ -25,17 +25,14 @@ def _digest_fixture():
             {"status": "pending"},
             {"status": "approved", "resolved_at": "2026-08-08T12:00:00Z"},
         ],
-        tool_requests=[
-            {"status": "completed", "tool_name": "tutelage_consolidation",
-             "created_at": "2026-08-08T12:30:00Z"},
-            {"status": "approved", "tool_name": "backend_health_check",
-             "created_at": "2026-08-08T09:00:00Z"},
-        ],
         memory_events=[
             {"event": "rescope", "created_at": "2026-08-08T13:00:00Z"},
             {"event": "restore", "created_at": "2026-08-08T13:30:00Z"},
         ],
-        adapters={"adapters": [{"status": "candidate"}, {"status": "active"}]},
+        adapters={"adapters": [
+            {"status": "candidate", "created_at": "2026-08-08T12:30:00Z"},
+            {"status": "active", "created_at": "2026-08-07T12:00:00Z"},
+        ]},
         reflection_cycles={"cycles": [{"id": "r1"}]},
     )
 
@@ -51,7 +48,7 @@ def test_digest_is_deterministic_and_traceable():
     assert digest["memory_governance"]["supersessions_pending"] == 1
     assert digest["memory_governance"]["supersessions_resolved"] == 1
     assert digest["memory_governance"]["operator_corrections"] == 2
-    assert digest["consolidation"]["gated_runs"] == 1
+    assert digest["consolidation"]["gated_runs"] == 2  # every registry entry is a durable gated-run record
     assert digest["consolidation"]["adapters_total"] == 2
     assert digest["consolidation"]["adapters_active"] == 1
     assert digest["reflection"]["prior_observations"] == 1
@@ -66,7 +63,7 @@ def test_digest_summary_lines_carry_the_facts():
     assert "l1" in joined and "l2" in joined
     assert "1 supersession candidate(s)" in joined
     assert "2 operator correction(s)" in joined
-    assert "1 operator-gated run(s)" in joined
+    assert "2 operator-gated run(s)" in joined
 
 
 def test_reflection_cycle_writes_only_the_room_and_records(monkeypatch, tmp_path):

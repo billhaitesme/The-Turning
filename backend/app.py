@@ -970,7 +970,6 @@ def run_reflection_cycle(*, window_since: Optional[str] = None,
         supersession_candidates=list_supersession_candidates(status="pending")
             + list_supersession_candidates(status="approved")
             + list_supersession_candidates(status="rejected"),
-        tool_requests=tool_approval_service.list_tool_requests(),
         memory_events=_all_memory_events(),
         adapters=tutelage.load_adapters(tutelage.DEFAULT_ADAPTERS_PATH),
         reflection_cycles=reflection_room.load_reflection_cycles(
@@ -995,12 +994,12 @@ def run_reflection_cycle(*, window_since: Optional[str] = None,
         "model": seat_model,
         "digest": digest,
         "digest_lines": digest_lines,
-        "observation_preview": observation_text.strip()[:300],
+        "observation_preview": observation_text.strip()[:500],
     }
     store = reflection_room.load_reflection_cycles(reflection_room.DEFAULT_REFLECTION_CYCLES_PATH)
     store.setdefault("cycles", []).append(record)
     reflection_room.save_reflection_cycles(store, reflection_room.DEFAULT_REFLECTION_CYCLES_PATH)
-    return record
+    return {**record, "observation": observation_text.strip()}
 
 
 # Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per

@@ -44,7 +44,6 @@ def build_digest(
     since: Optional[str],
     study_cycles: Dict[str, Any],
     supersession_candidates: List[Dict[str, Any]],
-    tool_requests: List[Dict[str, Any]],
     memory_events: List[Dict[str, Any]],
     adapters: Dict[str, Any],
     reflection_cycles: Dict[str, Any],
@@ -69,15 +68,13 @@ def build_digest(
     resolved = [s for s in supersession_candidates
                 if s.get("status") in ("approved", "rejected") and _in_window(s.get("resolved_at"), since)]
 
-    approvals_decided = [r for r in tool_requests
-                         if r.get("status") in ("approved", "completed", "rejected")
-                         and _in_window(r.get("created_at"), since)]
-    consolidations = [r for r in approvals_decided if r.get("tool_name") == "tutelage_consolidation"]
-
     corrections = [e for e in memory_events if _in_window(e.get("created_at"), since)
                    and e.get("event") in ("rescope", "restore")]
 
+    # Every adapter entry IS the durable record of a gated consolidation run (it carries its
+    # approval_id) — tool_requests is operational state and may be reset; the registry is history.
     adapter_entries = adapters.get("adapters", [])
+    consolidations = [a for a in adapter_entries if _in_window(a.get("created_at"), since)]
     prior_reflections = len([c for c in reflection_cycles.get("cycles", [])])
 
     return {
