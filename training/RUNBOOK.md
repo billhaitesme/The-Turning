@@ -146,3 +146,19 @@ re-merging is 30 min); candidates `omega-arc-voice-12bq` (merged Q4_K_M) and
 Perspective: bare-weights recall is the redundancy layer — the runtime's primary path to its
 studied knowledge remains memory retrieval (12/12 with notes). Consolidation compounds; it does
 not need to be perfect on day one.
+
+### Rules 5-6 — sharing the card with a life (2026-08-09)
+
+5. **CPU-parked layers cannot carry LoRA.** accelerate's offload hooks materialize weights at
+   forward time; parameter gradients cannot flow back into them (backward dies with
+   "expected device meta but got cuda:0"). Layers parked for VRAM headroom must be excluded from
+   `target_modules` — frozen scenery, like the embedding and towers.
+6. **Leave the desktop its share of VRAM.** Packing the card to ~7.4/8 GB crashes the WHOLE
+   MACHINE when a browser asks for compositing memory: nvlddmkm (the NVIDIA kernel driver) falls
+   over and the host hard-reboots (Event 153/14 + Kernel-Power 41, three times on 2026-08-08/09).
+   `--cpu-layers N` parks the last N decoder layers on CPU unquantized. 14 layers leaves ~500 MB
+   free with Firefox open — survivable but tight; the driver still died once on a spike. Run
+   training at BelowNormal priority (the CPU legs otherwise starve the desktop and feel like
+   "slow internet"), and treat kills as cheap: checkpoints every 25 steps mean a machine crash
+   costs at most ~3 minutes. Resume with `--resume <output>\checkpoint-NNN` (same dtype resumes
+   cleanly; the fp16/bf16 cross-resume ban from Stage 2 still applies).
