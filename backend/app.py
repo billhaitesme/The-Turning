@@ -34,6 +34,7 @@ from services.backend_health_response import (
 from services.goal_engine import load_goal_store
 from services import tutelage
 from services import tool_approval as tool_approval_service
+from services import reflection_room
 from services.knowledge_graph import load_graph
 from services.reasoning_engine import (
     build_reasoning_prompt_context,
@@ -122,7 +123,7 @@ DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
-DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "mo-shakib/gemma4-e4b-uncensored:q4_k_m")
+DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "huihui_ai/gemma-4-abliterated:12b")
 # Thinking-capable models (e.g. the gemma4 default) emit a hidden reasoning phase before answering.
 # In the app that reads as dead air on the stream and, when reasoning runs away, a cut-off with no
 # answer — so thinking is disabled deterministically unless the operator opts in. Safe to send for
@@ -922,6 +923,83 @@ def run_consolidation(subject_id: str) -> Dict[str, Any]:
     store.setdefault("adapters", []).append(entry)
     tutelage.save_adapters(store, tutelage.DEFAULT_ADAPTERS_PATH)
     return entry
+
+
+# Epoch XII — the reflection room (ADR 0025). The runtime's self-observations: a deterministic
+# digest of its own recorded activity, then a short first-person composition grounded in that digest,
+# written to the reserved self-reflection room. ONLY this pipeline writes that room — chat, study,
+# and operator flows must never author self-observations (the operator reviews; the runtime authors).
+REFLECTION_COMPOSE_PROMPT = (
+    "You are 0M3-G4-ARC. Below is a factual digest of your own recent activity, drawn from your "
+    "runtime's records. Write a short first-person reflection (3-6 sentences) about what you did, "
+    "learned, and got wrong in this period. State only what the digest supports — do not invent "
+    "events, do not prescribe who you should become. Plain prose, no lists.")
+
+
+def compose_reflection(model: str, digest_lines: List[str]) -> str:
+    """The runtime's voice over its digest. Same transport discipline as study answers
+    (think off, leak-stripped)."""
+    messages = [
+        {"role": "system", "content": REFLECTION_COMPOSE_PROMPT},
+        {"role": "user", "content": "Activity digest:\n\n" + "\n".join(digest_lines)},
+    ]
+    try:
+        with httpx.Client(timeout=300.0) as client:
+            response = client.post(
+                f"{OLLAMA_BASE_URL}/chat",
+                json={"model": model, "messages": messages, "stream": False, "think": OLLAMA_THINK},
+            )
+            response.raise_for_status()
+            return _strip_think(str(response.json().get("message", {}).get("content", "")))
+    except Exception as error:
+        return f"[reflection compose error: {error}]"
+
+
+def _all_memory_events() -> List[Dict[str, Any]]:
+    conn = get_db()
+    rows = conn.execute("SELECT memory_id, event, detail, created_at FROM memory_events").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def run_reflection_cycle(*, window_since: Optional[str] = None,
+                         compose_model: Optional[str] = None) -> Dict[str, Any]:
+    digest = reflection_room.build_digest(
+        since=window_since,
+        study_cycles=tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH),
+        supersession_candidates=list_supersession_candidates(status="pending")
+            + list_supersession_candidates(status="approved")
+            + list_supersession_candidates(status="rejected"),
+        memory_events=_all_memory_events(),
+        adapters=tutelage.load_adapters(tutelage.DEFAULT_ADAPTERS_PATH),
+        reflection_cycles=reflection_room.load_reflection_cycles(
+            reflection_room.DEFAULT_REFLECTION_CYCLES_PATH),
+    )
+    digest_lines = reflection_room.digest_summary_lines(digest)
+
+    seat_model = compose_model or OLLAMA_STUDY_MODEL or model_control.select_chat_model()
+    observation_text = compose_reflection(seat_model, digest_lines)
+
+    now = utc_now()
+    # the ONLY write path into the self-reflection room (ADR 0025 writer discipline)
+    save_memory(conversation_id=None, user_id="reflection", kind="self_observation",
+                source_text="digest: " + " | ".join(digest_lines),
+                summary_text=observation_text, score=0.8,
+                scope=reflection_room.REFLECTION_SCOPE)
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "created_at": now,
+        "window_since": window_since,
+        "model": seat_model,
+        "digest": digest,
+        "digest_lines": digest_lines,
+        "observation_preview": observation_text.strip()[:500],
+    }
+    store = reflection_room.load_reflection_cycles(reflection_room.DEFAULT_REFLECTION_CYCLES_PATH)
+    store.setdefault("cycles", []).append(record)
+    reflection_room.save_reflection_cycles(store, reflection_room.DEFAULT_REFLECTION_CYCLES_PATH)
+    return {**record, "observation": observation_text.strip()}
 
 
 # Epoch X — consolidation (ADR 0023). persist_learning writes several conversational memories per
@@ -1995,7 +2073,7 @@ class MemorySearchResponse(BaseModel):
     memories: List[Dict[str, Any]]
 
 
-app = FastAPI(title=f"{APP_NAME} API", version="0.4.2")
+app = FastAPI(title=f"{APP_NAME} API", version="0.5.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -2109,8 +2187,27 @@ class ConsolidationRequest(BaseModel):
     subject_id: str = Field(..., min_length=1)
 
 
+class ReflectionCycleRequest(BaseModel):
+    window_since: Optional[str] = None  # ISO timestamp; None = all recorded history
+    compose_model: Optional[str] = None
+
+
 class AdapterActionRequest(BaseModel):
     action: str  # "activate" | "retire"
+
+
+@app.post("/system/reflection/cycles")
+def post_reflection_cycle(req: ReflectionCycleRequest) -> Dict[str, Any]:
+    """Run one reflection cycle (ADR 0025): deterministic digest -> grounded first-person
+    observation -> the self-reflection room. The room is browsable via
+    /system/memory?scope=self-reflection and reviewable like any memory."""
+    return run_reflection_cycle(window_since=req.window_since, compose_model=req.compose_model)
+
+
+@app.get("/system/reflection/cycles")
+def get_reflection_cycles() -> Dict[str, Any]:
+    return {"cycles": reflection_room.load_reflection_cycles(
+        reflection_room.DEFAULT_REFLECTION_CYCLES_PATH).get("cycles", [])}
 
 
 @app.post("/system/tutelage/consolidations")

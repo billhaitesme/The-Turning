@@ -22,6 +22,8 @@ parser.add_argument("--data", required=True, help="distillation JSONL (messages 
 parser.add_argument("--output", required=True, help="adapter output directory")
 parser.add_argument("--base", default="Qwen/Qwen2.5-3B-Instruct", help="HF base model")
 parser.add_argument("--epochs", type=float, default=4, help="tiny datasets need a few passes")
+parser.add_argument("--resume", default=None, help="checkpoint dir to resume from")
+parser.add_argument("--save-steps", type=int, default=25, help="frequent saves: crashes lose little")
 args = parser.parse_args()
 
 print("CUDA available:", torch.cuda.is_available())
@@ -32,7 +34,10 @@ tokenizer = AutoTokenizer.from_pretrained(args.base, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
-model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=torch.float16).to("cuda")
+# bf16 on Blackwell: no GradScaler (fp16 scaler runs crashed natively twice on this host)
+DTYPE = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+print("dtype:", DTYPE)
+model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=DTYPE).to("cuda")
 
 peft_config = LoraConfig(
     r=8,
@@ -54,14 +59,15 @@ train_args = TrainingArguments(
     num_train_epochs=args.epochs,
     learning_rate=2e-4,
     logging_steps=1,
-    save_steps=100,
-    save_total_limit=1,
-    fp16=True,
+    save_steps=args.save_steps,
+    save_total_limit=2,
+    bf16=DTYPE == torch.bfloat16,
+    fp16=DTYPE == torch.float16,
     report_to="none",
 )
 
 trainer = SFTTrainer(model=model, train_dataset=dataset, args=train_args)
-trainer.train()
+trainer.train(resume_from_checkpoint=args.resume)
 trainer.save_model(args.output)
 tokenizer.save_pretrained(args.output)
 print("adapter saved to", Path(args.output).resolve())

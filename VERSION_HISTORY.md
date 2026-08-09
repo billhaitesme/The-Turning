@@ -113,3 +113,16 @@ review-gated study cycles, and measured growth (ADR 0013; anatomy is taught, ide
   (single-use operator approval), key-verified distillation only, versioned adapter registry with
   Model-Lock-style activation; training operator-executed. First artifact: 16 verified pairs.
   394 backend tests. **Epoch XI complete.**
+
+## Epoch XII — Reflection ("The Runtime Considers Itself")
+
+The epoch in which the runtime begins to observe itself — deterministic digests of its own recorded
+activity, first-person observations grounded only in those digests, all operator-reviewed
+(ADR 0025; no ungrounded self-narrative).
+
+- **XII-A — The Mirror (0.5.0, `epoch-xii-a`):** reserved `self-reflection` room written only by
+  the reflection pipeline; digest-then-compose cycles with the digest stored as provenance; first
+  real self-observations recorded. Rode along: the training chain closed (first tutored adapter
+  trained → 5/5 verbatim from bare weights → active in the registry) and the default voice
+  advanced to `huihui_ai/gemma-4-abliterated:12b` (12/12 bake-off + operator voice trial;
+  publisher-matched HF ancestry). 397 backend tests.

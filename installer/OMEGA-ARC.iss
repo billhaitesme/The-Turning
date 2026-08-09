@@ -3,7 +3,7 @@
 ; Per-user install, no admin required. Ollama is downloaded and installed silently if missing.
 
 #define AppName "OMEGA-ARC"
-#define AppVersion "0.4.2"
+#define AppVersion "0.5.0"
 #define AppPublisher "The Turning (billhaitesme)"
 #define AppURL "https://github.com/billhaitesme/The-Turning"
 
@@ -43,7 +43,7 @@ Name: "{userdesktop}\OMEGA-ARC"; Filename: "{app}\app\OMEGA-ARC.cmd"; WorkingDir
 
 [Run]
 Filename: "{tmp}\OllamaSetup.exe"; Parameters: "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"; StatusMsg: "Installing Ollama (model runtime)..."; Tasks: ollama; Flags: waituntilterminated
-Filename: "{app}\app\OMEGA-ARC.cmd"; Description: "Launch OMEGA-ARC now (first launch downloads ~10 GB of models)"; Flags: postinstall nowait skipifsilent unchecked
+Filename: "{app}\app\OMEGA-ARC.cmd"; Description: "Launch OMEGA-ARC now (first launch downloads ~8 GB of models)"; Flags: postinstall nowait skipifsilent unchecked
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\logs"

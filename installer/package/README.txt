@@ -1,4 +1,4 @@
-OMEGA-ARC 0.4.2 — Windows install package
+OMEGA-ARC 0.5.0 — Windows install package
 ==========================================
 
   >> Open START-HERE.html for the full step-by-step guide with pictures of
@@ -6,13 +6,13 @@ OMEGA-ARC 0.4.2 — Windows install package
 
 The short version:
 
-  1. Double-click OMEGA-ARC-Setup-0.4.2.exe
+  1. Double-click OMEGA-ARC-Setup-0.5.0.exe
      (Windows will warn "Windows protected your PC" — click "More info",
       then "Run anyway". Expected for independent software.)
   2. Click Next through the installer, keeping the defaults.
      Leave "Download and install Ollama" checked.
   3. Tick "Launch OMEGA-ARC now" on the last page and click Finish.
-  4. First launch only: a console asks to download the AI models (~10 GB).
+  4. First launch only: a console asks to download the AI models (~8 GB).
      Press Enter and wait — this happens once.
   5. Your browser opens the Command Deck automatically. Start typing.
 

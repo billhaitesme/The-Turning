@@ -4,9 +4,9 @@
     {
       "id": "adapter-omega-arc-architecture-20260808T112646",
       "subject_id": "omega-arc-architecture",
-      "status": "candidate",
+      "status": "active",
       "created_at": "2026-08-08T11:26:46.279965Z",
-      "updated_at": "2026-08-08T11:26:46.279965Z",
+      "updated_at": "2026-08-08T23:55:25.209300Z",
       "pairs_file": "training\\distillation\\adapter-omega-arc-architecture-20260808T112646.jsonl",
       "pairs_count": 16,
       "skipped_unverified": 1,
@@ -17,7 +17,7 @@
       ],
       "study_model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
       "approval_id": "approval-toolreq-42de09baf45040bcbcbffc0d8c1862b2",
-      "activated_at": null,
+      "activated_at": "2026-08-08T23:55:25.209300Z",
       "rationale": "Distilled 16 key-verified answers from 3 passed lesson(s)."
     }
   ]

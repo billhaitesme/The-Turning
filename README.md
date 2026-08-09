@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch XI / Version 0.4.2
-**Active series:** Version 0.4.x
-**Active milestone:** Epoch XI — Tutelage complete (XI-C Consolidation Gate released as 0.4.2, tagged `epoch-xi-c`)
+**Current release:** Epoch XII / Version 0.5.0
+**Active series:** Version 0.5.x
+**Active milestone:** Epoch XII — Reflection (XII-A The Mirror released as 0.5.0, tagged `epoch-xii-a`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch XI / 0.4.2 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.2 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.2 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.2 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.2 |
+| Core Runtime | `backend/` | Epoch XII / 0.5.0 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XII / 0.5.0 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XII / 0.5.0 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XII / 0.5.0 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch XII / 0.5.0 |
 
 ## Epoch IX
 
@@ -78,20 +78,40 @@ itself); prerequisite gating; idempotent re-runs; auditable cycle records. The f
 2026-08-08 — the seed subject is OMEGA-ARC's own architecture (anatomy is taught; identity is
 authored: what the runtime is *made of* is curriculum, who it *is* remains its own to determine).
 See ADR 0013 and [`docs/architecture/epoch-xi-tutelage.md`](docs/architecture/epoch-xi-tutelage.md).
+XI-B added retention (cumulative quizzes, interference gating, spaced re-quizzes; 0.4.1) and XI-C
+the consolidation gate (key-verified distillation behind single-use operator approval, a versioned
+adapter registry; 0.4.2) — closed out for real when the first tutored adapter was trained, served,
+and answered its quiz **5/5 verbatim from bare weights**, then activated in the registry.
+
+## Epoch XII — Reflection
+
+The runtime considers itself. XII-A "The Mirror" shipped as **0.5.0** (tagged `epoch-xii-a`): a
+reserved memory scope, `self-reflection`, written only by the reflection pipeline — the operator
+reviews and may supersede, but never authors there (the inverse of the tutelage discipline, same
+governance spine). A reflection cycle builds a deterministic digest of the runtime's actual recorded
+activity (study cycles, memory events, gated consolidation runs, prior reflections), and only then
+does the voice model compose a short first-person observation grounded in that digest, which is
+stored beside it as provenance — *no ungrounded self-narrative*. Identity consolidation, when it
+eventually happens, draws only from this room and remains double-gated. See ADR 0025 and
+[`docs/architecture/epoch-xii-reflection.md`](docs/architecture/epoch-xii-reflection.md).
 
 ## Models
 
-The default conversational model is **`mo-shakib/gemma4-e4b-uncensored:q4_k_m`** (uncensored,
-~10 GB), chosen by the operator after side-by-side trials. It is a *thinking-capable* model: in raw
-`ollama run` it visibly reasons (grey text) and can run away mid-thought. In-app this is a non-issue —
-the runtime disables the hidden reasoning phase deterministically (`OLLAMA_THINK=false`, the default;
-verified to produce clean, fast answers via the API). Set `OLLAMA_THINK=true` to opt back in.
+The default conversational model is **`huihui_ai/gemma-4-abliterated:12b`** (uncensored, ~7.6 GB,
+Apache 2.0): an 11.9B Gemma-4 with 131K context and vision/tools/audio capabilities, chosen by the
+operator after a hands-on voice trial and a perfect 12/12 on the tutelage comprehension quizzes —
+the first candidate to run the table. Its HF original (`huihui-ai/Huihui-gemma-4-12B-it-abliterated`)
+is publisher-matched, which keeps the future consolidation path traceable. It is thinking-capable:
+raw `ollama run` shows reasoning text, but in-app the runtime disables the hidden reasoning phase
+deterministically (`OLLAMA_THINK=false`, the default; leaked `<think>` blocks are stripped anyway).
 
 The operator can switch models at any time from the console selector (Model-Lock-recorded); reasons
 you might:
 
 | Selectable model | Why you would switch to it |
 |---|---|
+| `mo-shakib/gemma4-e4b-uncensored` | The previous default voice — lighter effective-4B compute; a familiar fallback. |
+| `huihui_ai/gemma-4-abliterated:e4b` | Same family as the default, smaller effective compute; 11/12 on the quizzes. |
 | `richardyoung/llama-3.1-8b-instruct-abliterated` | Smaller download (~5 GB) and lighter in RAM; a strong uncensored 8B if disk/bandwidth are tight. |
 | `dolphin-mixtral:8x7b` | The largest and most capable of the set (26 GB MoE) — needs far more VRAM than a laptop GPU, so most of it spills to CPU and responses crawl. Worth it only with serious hardware. |
 | `llama2-uncensored:7b` | Legacy lightweight fallback; fastest to load, older generation — compatibility more than quality. |

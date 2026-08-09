@@ -1,6 +1,6 @@
 # OMEGA-ARC Core Runtime
 
-**Current release:** Epoch X / Version 0.3.2 (see [`docs/architecture/versioning.md`](../docs/architecture/versioning.md))
+**Current release:** tracks the shared identity in [`docs/architecture/versioning.md`](../docs/architecture/versioning.md) (currently Epoch XII / 0.5.0)
 
 The backend is the deterministic authority for identity, evidence, planning, deliberation, tools, conversation persistence, Model Lock, and Bridge Zero synchronization.
 

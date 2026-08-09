@@ -29,7 +29,7 @@ export default function BridgeZeroApp() {
           <div className="brand-sub">Bridge Zero</div>
         </div>
         <div className="bridge-status">
-          Epoch IX | VERSION 0.2.0 | LINK: {connectionState}{stale ? " | DATA: STALE" : " | DATA: LIVE"}        </div>
+          {metadata.epoch} | VERSION {metadata.architectureVersion} | LINK: {connectionState}{stale ? " | DATA: STALE" : " | DATA: LIVE"}        </div>
       </header>
 
       <SignalBus subsystems={subsystems} activeSubsystem={bridge.busActive} />

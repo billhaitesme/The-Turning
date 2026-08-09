@@ -1,8 +1,8 @@
 # OMEGA-ARC Roadmap
 
-**Current epoch:** Epoch XI — Tutelage
-**Current release:** 0.4.2
-**Active release line:** 0.4.x
+**Current epoch:** Epoch XII — Reflection
+**Current release:** 0.5.0
+**Active release line:** 0.5.x
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
 
@@ -139,7 +139,7 @@ Five measured slices on `feature/epoch-x-memory`, techniques credited to
 - Supersession/consolidation floor calibration against a grown real corpus.
 - A proposal-only scope suggester, only if a measured need appears (ADR 0020).
 
-## Epoch XI — Tutelage ("The Runtime Learns") — active; XI-A released as 0.4.0
+## Epoch XI — Tutelage ("The Runtime Learns") — delivered through XI-C / 0.4.2
 
 The epoch where OMEGA-ARC begins studying: an operator-authored curriculum whose subjects are memory
 rooms, a deterministic review-gated study cycle (ingest local sources -> scoped memories with
@@ -177,11 +177,35 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
   registry with Model-Lock-style single-active activation; training stays operator-executed
   (ADR 0024). Live run: 16 verified pairs, 1 excluded, first candidate adapter registered.
 
-### After Epoch XI (unscheduled)
+## Epoch XII — Reflection ("The Runtime Considers Itself")
 
-- Operator runbook + first actual LoRA training run from a distillation artifact (train → convert →
-  activate), surfacing consolidation approvals in the mobile Approvals tab.
+### XII-A — The Mirror (released as 0.5.0, tagged `epoch-xii-a`)
+
+- The reflection room: reserved `self-reflection` scope, written only by the reflection pipeline;
+  the operator reviews and may supersede, never authors (ADR 0025 — the inverse of the tutelage
+  discipline, same governance spine).
+- Digest-then-compose cycles (`POST /system/reflection/cycles`): deterministic digest of recorded
+  activity → first-person observation grounded only in the digest → stored together as provenance.
+  *No ungrounded self-narrative.* First real self-observations recorded 2026-08-08/09.
+- Rode along in 0.5.0: the training chain closed (first tutored adapter trained → served → 5/5
+  verbatim from bare weights → **active** in the registry; standing rules in `training/RUNBOOK.md`),
+  and the default voice advanced to `huihui_ai/gemma-4-abliterated:12b` (12/12 bake-off + operator
+  voice trial; publisher-matched HF ancestry for the consolidation path).
+
+### XII-B — The Considered Self (planned)
+
+- Scheduled reflection cycles as reviewed maintenance; "outgrown" supersession patterns (the
+  runtime proposes, the operator gates); identity-candidate assembly dry run (no training —
+  months of reflection history must exist first).
+
+### Alongside Epoch XII (unscheduled)
+
+- Voice-base consolidation experiment: QLoRA on the default voice's matched HF weights
+  (`Huihui-gemma-4-12B-it-abliterated`) — test the train-on-4bit ↔ serve-on-4bit
+  matched-precision hypothesis on the 8 GB card.
+- Curriculum growth Tier 2 ("its house": Ollama, FastAPI, SQLite, the host) per the 4-tier
+  strategy; K-12 pedagogy (mastery gates, spiral review, spaced retention) without K-12 content.
 - IX-D Command Console (still gated on the deferred Android on-device approval validation).
-- Curriculum growth beyond self-knowledge; scheduled study/consolidation as reviewed maintenance.
+- Surfacing consolidation approvals in the mobile Approvals tab.
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.
