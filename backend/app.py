@@ -123,7 +123,7 @@ DB_PATH = os.getenv("TURNING_DB_PATH", "omega_arc.db")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "embeddinggemma")
-DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "mo-shakib/gemma4-e4b-uncensored:q4_k_m")
+DIRECT_CHAT_MODEL = os.getenv("DIRECT_CHAT_MODEL", "huihui_ai/gemma-4-abliterated:12b")
 # Thinking-capable models (e.g. the gemma4 default) emit a hidden reasoning phase before answering.
 # In the app that reads as dead air on the stream and, when reasoning runs away, a cut-off with no
 # answer — so thinking is disabled deterministically unless the operator opts in. Safe to send for

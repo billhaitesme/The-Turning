@@ -63,7 +63,7 @@ function Get-EnvValue([string]$Name, [string]$Fallback) {
     return $Fallback
 }
 
-$ChatModel = Get-EnvValue 'ACTIVE_CHAT_MODEL' 'mo-shakib/gemma4-e4b-uncensored:q4_k_m'
+$ChatModel = Get-EnvValue 'ACTIVE_CHAT_MODEL' 'huihui_ai/gemma-4-abliterated:12b'
 $EmbedModel = Get-EnvValue 'OLLAMA_EMBED_MODEL' 'embeddinggemma'
 
 $deadline = (Get-Date).AddSeconds(60)
@@ -82,7 +82,7 @@ if ($missing.Count -gt 0) {
     Write-Host ''
     Write-Host '[first run] The following models are required and will be downloaded now:' -ForegroundColor Yellow
     $missing | ForEach-Object { Write-Host "    $_" }
-    Write-Host '  The chat model is ~10 GB and the embedder ~0.6 GB. This is a one-time download.'
+    Write-Host '  The chat model is ~8 GB and the embedder ~0.6 GB. This is a one-time download.'
     $answer = Read-Host 'Download now? [Y/n]'
     if ($answer -and $answer.ToLower().StartsWith('n')) {
         Write-Host 'Cannot run without the models. Exiting.'

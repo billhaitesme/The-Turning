@@ -12,7 +12,7 @@ The short version:
   2. Click Next through the installer, keeping the defaults.
      Leave "Download and install Ollama" checked.
   3. Tick "Launch OMEGA-ARC now" on the last page and click Finish.
-  4. First launch only: a console asks to download the AI models (~10 GB).
+  4. First launch only: a console asks to download the AI models (~8 GB).
      Press Enter and wait — this happens once.
   5. Your browser opens the Command Deck automatically. Start typing.
 
