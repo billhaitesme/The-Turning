@@ -2340,6 +2340,570 @@
       },
       "pass_threshold": 0.8,
       "status": "passed"
+    },
+    {
+      "id": "6d8c964d-ff3e-4671-b9ca-56cb215e9228",
+      "lesson_id": "lesson-1-identity-and-principles",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "5e732f86-c81e-4496-a445-e04142f917a7",
+      "started_at": "2026-08-09T00:17:10.722569Z",
+      "finished_at": "2026-08-09T00:18:26.088157Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 3
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 3
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "The machine identity of the runtime is 0M3-G4-ARC."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "Only explicit operator action can change the active language model."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "The **deterministic runtime** owns the state and persistence in OMEGA-ARC."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "The desktop Bridge Zero is Mission Control; it is a read-only operations console that has no chat by design."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "Epoch ten."
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "The system runs entirely locally on Ollama, and nothing the operator says leaves the machine."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "bffcbc26-c281-4705-a4d0-ce8009e4f3d6",
+      "lesson_id": "lesson-2-the-memory-system",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "7df5e14e-da95-4da6-9a20-acbfe3965bae",
+      "started_at": "2026-08-09T00:18:26.435688Z",
+      "finished_at": "2026-08-09T00:19:30.487006Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-2-the-memory-system.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "Embeddings for recall are produced by the local embeddinggemma model."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "A room is a scope label on a memory where recall can search within that specific scope."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "The global wing consists of unscoped memories that stay recallable from inside every room."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "During retrieval, when two memories are near-ties, the newer fact wins (the temporal tie-break)."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "It becomes a pending candidate that waits for operator review."
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "No, superseded memories are never deleted and can always be restored."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "669c478c-96ea-46a5-a645-32e56165db86",
+      "lesson_id": "lesson-1-identity-and-principles",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "8ef5203b-2c75-4743-93ed-e68a44c4ea7c",
+      "started_at": "2026-08-09T00:19:30.829023Z",
+      "finished_at": "2026-08-09T00:20:46.668678Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-1-identity-and-principles.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 3
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 3
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 0.8333,
+        "hits": 5,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "0M3-G4-ARC"
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "The active language model changes only by explicit operator action, and every change is recorded."
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "answer_preview": "The runtime's long-term memory lives in a single SQLite store, and every memory carries provenance."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "The desktop Bridge Zero is Mission Control: a read-only operations console with no chat by design."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "Epoch ten"
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "It runs entirely locally on Ollama: nothing the operator says leaves the machine."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:e4b",
+        "sections": {
+          "own": 0.8333,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "556f9982-6a4a-4ffe-9b41-8661adb63d88",
+      "lesson_id": "lesson-2-the-memory-system",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "ce495a62-baef-4a50-b4ad-9cc8969117a6",
+      "started_at": "2026-08-09T00:20:47.004324Z",
+      "finished_at": "2026-08-09T00:21:46.052188Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-2-the-memory-system.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "Embeddings for recall are produced by the local embeddinggemma model."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "A room is a scope label on a memory, and recall can search within a single room."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "Unscoped memories form the global wing, which stays recallable from inside every room, while other rooms stay excluded."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "The newer fact wins in retrieval ranking blends cosine similarity with a bounded recency term, which is called the temporal tie-break."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "An undeclared collision becomes a pending candidate that waits for operator review; nothing is hidden from recall without approval."
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "Superseded memories are never deleted and can always be restored."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:e4b",
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
     }
   ]
 }

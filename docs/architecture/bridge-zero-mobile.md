@@ -1,6 +1,6 @@
 # Bridge Zero Mobile — Epoch IX
 
-**Release line:** tracks [`versioning.md`](versioning.md) (currently 0.3.x)
+**Release line:** tracks [`versioning.md`](versioning.md) (currently 0.5.x)
 
 Bridge Zero Mobile is an operator console for the existing Core Runtime. Desktop Bridge Zero remains Mission Control. Mobile clients do not own inference, select substitute models, rewrite responses, or manufacture runtime activity.
 

@@ -4,15 +4,15 @@
 
 | Field | Current value |
 |---|---|
-| Last updated | 2026-08-08 |
-| Current epoch | Epoch XI — Tutelage |
-| Current version | 0.4.2 |
-| Release line | 0.4.x |
+| Last updated | 2026-08-09 |
+| Current epoch | Epoch XII — Reflection |
+| Current version | 0.5.0 |
+| Release line | 0.5.x |
 | Status | Active Development |
-| Current phase | Epoch XI complete — XI-C (Consolidation Gate) released as **0.4.2** (tag `epoch-xi-c`) |
+| Current phase | Epoch XII begun — XII-A (The Mirror) released as **0.5.0** (tag `epoch-xii-a`) |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
-| Theme | Epoch XI: “The Runtime Learns” (X: “Remembers”, IX: “Becomes Visible”) |
+| Theme | Epoch XII: “The Runtime Considers Itself” (XI: “Learns”, X: “Remembers”, IX: “Becomes Visible”) |
 
 ## Completed
 
@@ -135,6 +135,21 @@ Tagged **`epoch-xi-c`**. Backend suite **394 passing**. The ADR 0013 loop is who
 pairs (1 unverified excluded) into the first candidate adapter; approval consumed single-use.
 Training remains operator-executed (ADR 0024).
 
+## Epoch XII-A — The Mirror, released as 0.5.0 (2026-08-09) — Epoch XII begins
+
+Tagged **`epoch-xii-a`**. Backend suite **397 passing**. The runtime considers itself: a reserved
+`self-reflection` room written only by the reflection pipeline (operator reviews, never authors);
+digest-then-compose cycles — a deterministic digest of recorded activity first, then a first-person
+observation grounded only in it, stored with the digest as provenance (ADR 0025). The first real
+self-observations are live in the room.
+
+Also in 0.5.0: the **training chain closed** — the first tutored adapter (from XI-C's distillation
+artifact) trained, converted, served, answered its quiz **5/5 verbatim from bare weights**, and was
+activated in the registry (`training/RUNBOOK.md` holds the standing rules it paid for). And the
+**default voice advanced** to `huihui_ai/gemma-4-abliterated:12b` after a measured 12/12 bake-off
+plus a hands-on operator voice trial — publisher-matched HF ancestry keeps the future
+voice-consolidation path traceable.
+
 Carried-forward obligations (unchanged): Android on-device approval pass (gates IX-D) and on-device
 icon checks.
 
@@ -200,13 +215,16 @@ tokens in a usable time; the model selection does not affect the streaming trans
 
 ## Future
 
+- Epoch XII-B — The Considered Self (scheduled reflection, supersession patterns,
+  identity-candidate dry run; see `ROADMAP.md`)
+- Voice-base consolidation experiment (QLoRA on the default voice's matched HF weights)
+- Curriculum growth Tier 2 ("its house")
 - Epoch IX-D — Command Console (designed in ADR 0015; build gated on the deferred Android on-device
   approval validation)
-- Tutelage and Learning (proposed, ADR 0013; sequenced after Epoch X — now unblocked by the memory
-  substrate)
 
-IX-C and Epoch X (A/B/C) are released; see the sections above. IX-D build remains gated on IX-C
-operator approvals being validated on physical Android hardware (documented 0.2.1 exception).
+IX-C, Epoch X (A/B/C), Epoch XI (A/B/C), and XII-A are released; see the sections above. IX-D build
+remains gated on IX-C operator approvals being validated on physical Android hardware (documented
+0.2.1 exception).
 
 ## Authorities
 

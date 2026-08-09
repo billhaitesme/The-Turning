@@ -73,3 +73,14 @@ The runtime studies: curriculum, measured study cycles, review-gated growth (ADR
 - **XI-C** — Consolidation Gate: bounded mutation tool + single-use approvals, key-verified
   distillation, versioned adapter registry. Released as **0.4.2**, tagged `epoch-xi-c`
   (394 backend tests). **Epoch XI complete.**
+
+## Epoch XII — Reflection
+
+The runtime considers itself: grounded self-observation, operator-reviewed, never self-invented
+(ADR 0025).
+
+- **XII-A** — The Mirror: reserved `self-reflection` room (pipeline-written only),
+  digest-then-compose reflection cycles with the digest stored as provenance. Also closed the
+  training chain (first tutored adapter active after a 5/5 verbatim bare-weights proof) and
+  advanced the default voice to `huihui_ai/gemma-4-abliterated:12b`. Released as **0.5.0**, tagged
+  `epoch-xii-a` (397 backend tests).

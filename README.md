@@ -2,9 +2,9 @@
 
 OMEGA-ARC is an Artificial Development Framework for a persistent local intelligence with continuity, memory, reflection, education, self-authored personality, and reviewable growth.
 
-**Current release:** Epoch XI / Version 0.4.2
-**Active series:** Version 0.4.x
-**Active milestone:** Epoch XI — Tutelage complete (XI-C Consolidation Gate released as 0.4.2, tagged `epoch-xi-c`)
+**Current release:** Epoch XII / Version 0.5.0
+**Active series:** Version 0.5.x
+**Active milestone:** Epoch XII — Reflection (XII-A The Mirror released as 0.5.0, tagged `epoch-xii-a`)
 
 Bridge Zero is the operator surface for the deterministic Core Runtime. Desktop Bridge Zero remains Mission Control; the native iOS and Android applications are synchronized operator consoles for the same runtime.
 
@@ -25,11 +25,11 @@ Nothing meaningful should change without leaving a history.
 
 | Component | Location | Release identity |
 |---|---|---|
-| Core Runtime | `backend/` | Epoch XI / 0.4.2 |
-| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XI / 0.4.2 |
-| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XI / 0.4.2 |
-| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XI / 0.4.2 |
-| Shared mobile contract | `bridge/shared/mobile/` | Epoch XI / 0.4.2 |
+| Core Runtime | `backend/` | Epoch XII / 0.5.0 |
+| Desktop Bridge Zero | `bridge/bridge-zero/` | Epoch XII / 0.5.0 |
+| iOS Operator Console | `bridge/bridge-zero-ios/` | Epoch XII / 0.5.0 |
+| Android Operator Console | `bridge/bridge-zero-android/` | Epoch XII / 0.5.0 |
+| Shared mobile contract | `bridge/shared/mobile/` | Epoch XII / 0.5.0 |
 
 ## Epoch IX
 
@@ -78,6 +78,22 @@ itself); prerequisite gating; idempotent re-runs; auditable cycle records. The f
 2026-08-08 — the seed subject is OMEGA-ARC's own architecture (anatomy is taught; identity is
 authored: what the runtime is *made of* is curriculum, who it *is* remains its own to determine).
 See ADR 0013 and [`docs/architecture/epoch-xi-tutelage.md`](docs/architecture/epoch-xi-tutelage.md).
+XI-B added retention (cumulative quizzes, interference gating, spaced re-quizzes; 0.4.1) and XI-C
+the consolidation gate (key-verified distillation behind single-use operator approval, a versioned
+adapter registry; 0.4.2) — closed out for real when the first tutored adapter was trained, served,
+and answered its quiz **5/5 verbatim from bare weights**, then activated in the registry.
+
+## Epoch XII — Reflection
+
+The runtime considers itself. XII-A "The Mirror" shipped as **0.5.0** (tagged `epoch-xii-a`): a
+reserved memory scope, `self-reflection`, written only by the reflection pipeline — the operator
+reviews and may supersede, but never authors there (the inverse of the tutelage discipline, same
+governance spine). A reflection cycle builds a deterministic digest of the runtime's actual recorded
+activity (study cycles, memory events, gated consolidation runs, prior reflections), and only then
+does the voice model compose a short first-person observation grounded in that digest, which is
+stored beside it as provenance — *no ungrounded self-narrative*. Identity consolidation, when it
+eventually happens, draws only from this room and remains double-gated. See ADR 0025 and
+[`docs/architecture/epoch-xii-reflection.md`](docs/architecture/epoch-xii-reflection.md).
 
 ## Models
 

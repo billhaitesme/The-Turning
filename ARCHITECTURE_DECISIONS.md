@@ -96,6 +96,8 @@ Epoch X memory decisions are recorded as detailed ADRs under [`docs/decisions/`]
 | [0021](docs/decisions/0021-declared-change-supersession.md) | Auto-supersede only on declared change; undeclared collisions become reviewed candidates |
 | [0022](docs/decisions/0022-memory-review-surface.md) | Memory is browsable and correctable (re-room, restore), audited, never deleted |
 | [0023](docs/decisions/0023-memory-consolidation.md) | Near-duplicate cleanup is proposed into the review queue, never automatic |
+| [0024](docs/decisions/0024-consolidation-gate.md) | Weight consolidation is a bounded mutation tool: single-use operator approval, key-verified pairs only, versioned adapter registry |
+| [0025](docs/decisions/0025-the-reflection-room.md) | The `self-reflection` room is written only by the reflection pipeline; observations are digest-grounded; the operator reviews, never authors |
 
 Earlier detailed ADRs (0001–0015) cover the foundational epochs and Epoch IX operator surfaces.
 

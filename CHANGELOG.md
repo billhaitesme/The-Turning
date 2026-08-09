@@ -2,21 +2,51 @@
 
 ## [Unreleased]
 
+Next: XII-B (The Considered Self — scheduled reflection, supersession patterns), the
+voice-consolidation experiment (QLoRA on the default voice's matched HF weights — the
+train-on-4bit ↔ serve-on-4bit hypothesis), Tier-2 curriculum growth ("its house"), and Epoch IX-D
+(Command Console; still gated on the deferred Android on-device approval validation).
+
+## [0.5.0] - 2026-08-09 — Epoch XII-A (The Mirror) — Epoch XII begins
+
+Epoch XII — Reflection — begins: the runtime considers itself. Released from
+`feature/epoch-xii-reflection`, tagged `epoch-xii-a`. New epoch → minor bump. Backend suite:
+**397 passing**.
+
+### Added
+
+- **The reflection room** (ADR 0025; `docs/architecture/epoch-xii-reflection.md`): a reserved
+  memory scope, `self-reflection`, written **only** by the reflection pipeline. The operator
+  reviews and may supersede; the operator never authors here — inverse of the tutelage discipline,
+  same governance spine.
+- **Digest-then-compose cycles** (`POST /system/reflection/cycles`, `GET` to list): a
+  deterministic digest of the runtime's actual recorded activity (study cycles and scores,
+  memory events, supersession candidates, operator-gated consolidation runs read from the adapter
+  registry, prior reflections) is built first; the voice model then composes a short first-person
+  observation grounded **only** in that digest. The digest is stored beside every observation as
+  provenance — *no ungrounded self-narrative*. Cycle records persist in
+  `backend/data/reflection_cycles.json`.
+- The first real self-observations were recorded 2026-08-08/09 and live in the room as history.
+
 ### Changed
 
-- Default chat model is now `mo-shakib/gemma4-e4b-uncensored:q4_k_m` (operator decision after
-  side-by-side trials; ~10 GB). The abliterated llama-3.1-8b remains selectable, with switch
-  guidance recorded in the README Models section. Because the new default is thinking-capable, the
-  backend now sends `think: OLLAMA_THINK` (default **false**) on all Ollama chat calls — probed:
-  clean fast answers with it off, 1.6k chars of hidden dead-air reasoning with it on, and
-  `think:false` is accepted harmlessly by non-thinking models. Vision default advanced
-  `llava:7b` -> `qwen3-vl` (dormant role; llava was two generations stale).
-- The repository is now dual-licensed **MIT OR Apache-2.0** (previously a license placeholder). See
-  `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`.
+- **Default voice → `huihui_ai/gemma-4-abliterated:12b`** (operator decision after a hands-on
+  voice trial and a first-ever perfect 12/12 on the tutelage comprehension quizzes). Uncensored,
+  Apache 2.0, 11.9B Q4_K_M — and a *smaller* first-run download than the previous default (7.6 vs
+  9.6 GB; installer copy now says ~8 GB). 131K context; vision/tools/audio capable. Decisive
+  differentiator: publisher-matched HF safetensors ancestry
+  (`huihui-ai/Huihui-gemma-4-12B-it-abliterated`), which keeps the voice-consolidation path
+  traceable. The previous default and both e4b variants remain selectable (Model-Lock-recorded).
 
-Next: Tutelage/Learning design (ADR 0013 — now unblocked by the memory substrate) and Epoch IX-D
-(Command Console, designed). IX-D build remains gated on the deferred Android on-device approval
-validation (see 0.2.1 below).
+### Measured (live)
+
+- **The training chain closed** (follow-through on XI-C, recorded in `training/RUNBOOK.md`): the
+  first distillation artifact (16 key-verified pairs) was trained as a LoRA adapter (bf16, 320
+  steps, final loss 0.060), converted to GGUF, served over the base model, and answered **5/5
+  quiz questions verbatim from bare weights** — memory retrieval off. The adapter is **active** in
+  the registry: the runtime's first operator-gated weight change, end to end. Two standing rules
+  were paid for and recorded: train in bf16 (fp16 GradScaler crashes this host's GPU), and serve
+  adapters over fp16 bases (a bf16-trained adapter confabulates over q4 quantization).
 
 ## [0.4.2] - 2026-08-08 — Epoch XI-C (Consolidation Gate) — Epoch XI complete
 
@@ -66,6 +96,17 @@ Released from `feature/epoch-xi-tutelage`, tagged `epoch-xi-b`. Backend suite: *
 
 Epoch XI — Tutelage — begins: the runtime studies. Released from `feature/epoch-xi-tutelage`,
 tagged `epoch-xi-a`. New epoch → minor bump. Backend suite: **389 passing**, hermetic.
+
+### Changed (shipped in this release; recorded late)
+
+- Default chat model became `mo-shakib/gemma4-e4b-uncensored:q4_k_m` (operator decision after
+  side-by-side trials; ~10 GB). Because that default is thinking-capable, the backend began
+  sending `think: OLLAMA_THINK` (default **false**) on all Ollama chat calls — probed: clean fast
+  answers with it off, 1.6k chars of hidden dead-air reasoning with it on, and `think:false` is
+  accepted harmlessly by non-thinking models. Vision default advanced `llava:7b` -> `qwen3-vl`
+  (dormant role; llava was two generations stale).
+- The repository became dual-licensed **MIT OR Apache-2.0** (previously a license placeholder).
+  See `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`.
 
 ### Added
 

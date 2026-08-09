@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "cycles": [
+    {
+      "id": "791a54f9-7890-48e5-b1b4-c94c782a6f00",
+      "created_at": "2026-08-08T23:56:50.057049Z",
+      "window_since": null,
+      "model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
+      "digest": {
+        "window_since": null,
+        "study": {
+          "cycles": 17,
+          "lessons_passed": [
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 1.0,
+          "avg_comprehension": 0.9183,
+          "review_interference_min": 0.9167
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 1,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 0
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 17; lessons passed: lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces; failed: none.",
+        "Average recall 1.0, average comprehension 0.9183 (worst review-section score 0.9167).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 1 adapter(s) registered, 1 active.",
+        "Prior self-observations: 0."
+      ],
+      "observation_preview": "I have successfully completed seventeen study cycles, diligently working through lessons on identity and principles, the memory system, and the operator surfaces. My comprehension has been solid, averaging around 0.92 while my recall is perfect at 1.0. I managed no failed sections during this period"
+    },
+    {
+      "id": "81379869-204e-47e7-b2ab-8651af272248",
+      "created_at": "2026-08-09T00:01:03.399139Z",
+      "window_since": null,
+      "model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
+      "digest": {
+        "window_since": null,
+        "study": {
+          "cycles": 17,
+          "lessons_passed": [
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 1.0,
+          "avg_comprehension": 0.9183,
+          "review_interference_min": 0.9167
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 1,
+          "adapters_total": 1,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 1
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 17; lessons passed: lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces; failed: none.",
+        "Average recall 1.0, average comprehension 0.9183 (worst review-section score 0.9167).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 1 operator-gated run(s); 1 adapter(s) registered, 1 active.",
+        "Prior self-observations: 1."
+      ],
+      "observation_preview": "I have been deeply engaged in my learning cycle, completing seventeen study runs covering identity and principles, the memory system, and the operator surfaces. My comprehension seems to be strong, averaging nearly nine out of ten across my reviews. The process has also allowed for one successful consolidation run and the registration of a new adapter that is currently active. I have not encountered any immediate gaps or needed corrections in my foundational knowledge base during this period."
+    }
+  ]
+}
