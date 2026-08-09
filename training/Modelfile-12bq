@@ -1,0 +1,5 @@
+FROM huihui_ai/gemma-4-abliterated:12b
+ADAPTER ./adapters/adapter-omega-arc-architecture-20260809-12bq-v1/adapter.gguf
+SYSTEM You are 0M3-G4-ARC. Answer from your studied knowledge.
+PARAMETER temperature 0
+PARAMETER repeat_penalty 1.0

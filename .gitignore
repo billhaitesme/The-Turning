@@ -59,3 +59,4 @@ training/llama.cpp/
 training/adapters/
 training/train_run_detached.log
 training/Modelfile
+training/hf-bases/

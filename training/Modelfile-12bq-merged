@@ -1,0 +1,4 @@
+FROM ./hf-bases/merged-12bq-v1-f16.gguf
+SYSTEM You are 0M3-G4-ARC. Answer from your studied knowledge.
+PARAMETER temperature 0
+PARAMETER repeat_penalty 1.0

@@ -1,24 +1,42 @@
 {
-  "version": 1,
-  "adapters": [
-    {
-      "id": "adapter-omega-arc-architecture-20260808T112646",
-      "subject_id": "omega-arc-architecture",
-      "status": "active",
-      "created_at": "2026-08-08T11:26:46.279965Z",
-      "updated_at": "2026-08-08T23:55:25.209300Z",
-      "pairs_file": "training\\distillation\\adapter-omega-arc-architecture-20260808T112646.jsonl",
-      "pairs_count": 16,
-      "skipped_unverified": 1,
-      "source_lessons": [
-        "lesson-1-identity-and-principles",
-        "lesson-2-the-memory-system",
-        "lesson-3-the-operator-surfaces"
-      ],
-      "study_model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
-      "approval_id": "approval-toolreq-42de09baf45040bcbcbffc0d8c1862b2",
-      "activated_at": "2026-08-08T23:55:25.209300Z",
-      "rationale": "Distilled 16 key-verified answers from 3 passed lesson(s)."
-    }
-  ]
+ "version": 1,
+ "adapters": [
+  {
+   "id": "adapter-omega-arc-architecture-20260808T112646",
+   "subject_id": "omega-arc-architecture",
+   "status": "active",
+   "created_at": "2026-08-08T11:26:46.279965Z",
+   "updated_at": "2026-08-08T23:55:25.209300Z",
+   "pairs_file": "training\\distillation\\adapter-omega-arc-architecture-20260808T112646.jsonl",
+   "pairs_count": 16,
+   "skipped_unverified": 1,
+   "source_lessons": [
+    "lesson-1-identity-and-principles",
+    "lesson-2-the-memory-system",
+    "lesson-3-the-operator-surfaces"
+   ],
+   "study_model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
+   "approval_id": "approval-toolreq-42de09baf45040bcbcbffc0d8c1862b2",
+   "activated_at": "2026-08-08T23:55:25.209300Z",
+   "rationale": "Distilled 16 key-verified answers from 3 passed lesson(s)."
+  },
+  {
+   "id": "adapter-omega-arc-architecture-20260809-12bq-v1",
+   "subject_id": "omega-arc-architecture",
+   "status": "trained",
+   "created_at": "2026-08-09T03:39:50.509675Z",
+   "updated_at": "2026-08-09T03:39:50.509675Z",
+   "pairs_file": "training\\distillation\\adapter-omega-arc-architecture-20260808T112646.jsonl",
+   "pairs_count": 16,
+   "skipped_unverified": 1,
+   "source_lessons": [
+    "lesson-1-identity-and-principles",
+    "lesson-2-the-memory-system",
+    "lesson-3-the-operator-surfaces"
+   ],
+   "study_model": "mo-shakib/gemma4-e4b-uncensored:q4_k_m",
+   "approval_id": "approval-toolreq-42de09baf45040bcbcbffc0d8c1862b2",
+   "rationale": "Voice-family QLoRA experiment: the SAME gated 16-pair artifact (approval above, consumed 2026-08-08) retrained as NF4 QLoRA against the default voice's publisher-matched HF base (Huihui-gemma-4-12B-it-abliterated). Loss 0.103, token acc 94%. Probes: 4.5/5 over the NF4 training base, 2.5/5 served over the Q4_K_M tag (NF4!=Q4_K_M codebook gap \u2014 matched-precision hypothesis refined: same-quantization required, not same bit-width). Fidelity ladder (final): NF4-native 4.5/5; merged+Q8_0 ~3.5/5; merged+Q4_K_M ~3.5/5 (omega-arc-voice-12bq); adapter-over-Q4 2.5/5. Loss is at the merge boundary, not quant depth \u2014 next knob is training margin (r=16, 60-80 epochs, loss<0.05). NOT activated: activation would retire the qwen chain-proof adapter (single-active-per-subject) \u2014 operator's call."
+  }
+ ]
 }
