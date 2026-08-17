@@ -1,8 +1,8 @@
 # Epoch IX-D — Command Console
 
-**Status:** Slice 1 **built and device-validated 2026-08-17** (backend + Android). ADR
+**Status:** Slices 1 (backend + Android) and 2 (iOS) **built and device-validated 2026-08-17**. ADR
 [`0015-command-console.md`](../decisions/0015-command-console.md) is Accepted and carries the recorded
-policy shift. Slice 2 (iOS Commands tab) and a desktop Bridge Zero panel are open. The design below is
+policy shift. Slice 3 (desktop Bridge Zero panel, broader registry) is open. The design below is
 as proposed; **[As built](#as-built-slice-1)** at the end records what actually shipped.
 
 Promotes the operator consoles from *observe + approve* to *initiate* — a command surface where the
