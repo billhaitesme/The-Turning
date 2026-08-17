@@ -130,6 +130,15 @@ path proven end-to-end on hardware before broadening:
   Two UI defects found on-device were fixed in the same slice (the "approval created" notice was not
   visible; the bottom bar wrapped at six tabs) and re-confirmed by the operator.
 
-Not in slice 1: iOS Commands tab (slice 2 — needs the CI build + sideload cycle), a desktop Bridge
-Zero Commands panel (the `/system/commands` endpoints exist; the UI does not), and any command beyond
-the three above.
+**Slice 2 (same day, 2026-08-17 ~18:50):** iOS Bridge Zero gains the same **Commands** tab
+(`bridge/bridge-zero-ios/Sources/CommandsView.swift`; models, API, state mirrored from Android;
+`Tests/CommandModelsTests.swift`), built by the GitHub Actions macOS runner (run 32081331882, all
+tests green) and sideloaded to Bill's iPhone with Sideloadly. **Device-validated on iOS** against
+the backend over the USB-tether link (`172.20.10.6:8001`): Commands → REQUEST → Approvals → Approve →
+Face ID → history **EXECUTED**; backend: approval `confirmation: biometric`, single-use approval
+consumed, `backend_health_check` result `completed/success`. A stale `MobileVersionTests` pin (0.3.0)
+that had broken iOS CI since the 0.5.0 bump was fixed in passing. **IX-D is now validated on both
+mobile platforms.**
+
+Still open: a desktop Bridge Zero Commands panel (the `/system/commands` endpoints exist; the UI does
+not), and any command beyond the three above.

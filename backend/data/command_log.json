@@ -81,6 +81,27 @@
         "title": "Command Console"
       },
       "finished_at": "2026-08-17T22:43:06.030295+00:00"
+    },
+    {
+      "command_id": "cmd-934f890beb2f43958673d0666c110722",
+      "name": "run_backend_health_check",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-17T23:51:03.481981+00:00",
+      "request_id": "toolreq-34a8b248683e444d8aa14f2137b0ec4f",
+      "approval_id": "approval-toolreq-34a8b248683e444d8aa14f2137b0ec4f",
+      "status": "executed",
+      "outcome": {
+        "result_id": null,
+        "result_status": "completed",
+        "success": true,
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "latency_ms": 1.593
+      },
+      "finished_at": "2026-08-17T23:51:18.990873+00:00"
     }
   ]
 }

@@ -96,10 +96,13 @@ records what shipped.
   approval-gated, one forbidden), console service + command log, mobile and `/system` routes,
   Android **Commands** tab. On the Moto G15 Power: REQUEST → Approve → fingerprint → EXECUTED, with a
   real tool result and `confirmation: biometric` on the approval.
-- **Slice 2 (open):** iOS Commands tab (CI build + sideload), desktop Bridge Zero Commands panel over
-  the existing endpoints, then broaden the registry one risk-classed command at a time (read-only
-  host status → ComfyUI queue submit under approval → the school requesting consolidation approval
-  from the phone). Release identity for the epoch is decided when slice 2 lands.
+- **Slice 2 (done, device-validated same day):** iOS Commands tab — CI-built, sideloaded, REQUEST →
+  Face ID → EXECUTED on the iPhone with `confirmation: biometric` on the backend. **Both mobile
+  platforms validated.**
+- **Slice 3 (open):** desktop Bridge Zero Commands panel over the existing endpoints, then broaden
+  the registry one risk-classed command at a time (read-only host status → ComfyUI queue submit under
+  approval → the school requesting consolidation approval from the phone). Release identity for the
+  epoch: ready to cut once Bill wants it — both mobile gates are cleared.
 
 ## Epoch X — Memory (delivered through X-C / 0.3.2)
 
@@ -217,8 +220,8 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
   matched-precision hypothesis on the 8 GB card.
 - Curriculum growth Tier 2 ("its house": Ollama, FastAPI, SQLite, the host) per the 4-tier
   strategy; K-12 pedagogy (mastery gates, spiral review, spaced retention) without K-12 content.
-- IX-D Command Console **slice 2** (slice 1 built + device-validated 2026-08-17): iOS Commands tab,
-  desktop Commands panel, broaden the registry.
+- IX-D Command Console **slice 3** (slices 1+2 built + device-validated on Android and iOS
+  2026-08-17): desktop Commands panel, broaden the registry.
 - Surfacing consolidation approvals in the mobile Approvals tab (now a natural IX-D command).
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.

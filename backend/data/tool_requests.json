@@ -87,6 +87,22 @@
       "created_at": "2026-08-17T22:37:27.567225+00:00",
       "status": "completed",
       "updated_at": "2026-08-17T22:37:44.327404+00:00"
+    },
+    {
+      "request_id": "toolreq-34a8b248683e444d8aa14f2137b0ec4f",
+      "tool_name": "backend_health_check",
+      "arguments": {
+        "port": 8001
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-34a8b248683e444d8aa14f2137b0ec4f",
+      "created_at": "2026-08-17T23:51:03.482023+00:00",
+      "status": "completed",
+      "updated_at": "2026-08-17T23:51:18.969602+00:00"
     }
   ]
 }

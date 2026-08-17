@@ -127,7 +127,14 @@ backend: tool request `completed`, approval `approved` + `confirmation: biometri
 same slice (notice line after REQUEST; six-tab bottom bar wrapping — 10 sp single-line labels,
 "Diagnostics" → "Diag") and re-confirmed by the operator.
 
-**Open (slice 2+):** iOS Commands tab; desktop Bridge Zero Commands panel over the existing
+**Slice 2 — iOS (2026-08-17, same day):** `bridge/bridge-zero-ios/Sources/CommandsView.swift` +
+models/API/state; CI-built `.ipa` (run 32081261519 → 32081331882 after the stale-test fix), Sideloadly
+onto the iPhone, backend reached over the iPhone USB-tether subnet (`172.20.10.6:8001` — the phone can
+hit the PC with no Wi-Fi). Validated: REQUEST → Approve → Face ID → EXECUTED, `confirmation: biometric`,
+real tool result. Six tabs on iOS = Runtime · Console · Commands · Approvals · More (Diagnostics,
+Settings) — deliberate: the two operator-action tabs stay on the bar.
+
+**Open (slice 3+):** desktop Bridge Zero Commands panel over the existing
 `/system/commands` endpoints; broadening the registry (candidates, in order: read-only host status;
 ComfyUI queue submit under approval; the school asking for consolidation approval from the phone) —
 each new command needs a risk class, and destructive ones need an explicit undo before they qualify.

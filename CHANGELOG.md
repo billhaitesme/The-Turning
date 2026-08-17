@@ -22,7 +22,14 @@
   **Device-validated 2026-08-17** on the Moto G15 Power: REQUEST → Approve → fingerprint → history
   **EXECUTED**; backend shows the request `completed`, the approval `approved` with
   `confirmation: biometric`, and a real health-check result — the runtime's first operator-initiated,
-  biometric-gated actions. Not in this slice: iOS Commands tab (slice 2), a desktop Bridge Zero panel.
+  biometric-gated actions.
+- **IX-D slice 2 — iOS Commands tab** (`bridge/bridge-zero-ios/Sources/CommandsView.swift`, models,
+  API, state; `Tests/CommandModelsTests.swift`), same day. CI-built (`ios-build.yml`, run
+  32081331882, all tests green), sideloaded with Sideloadly, and **device-validated on Bill's
+  iPhone**: REQUEST → Approve → Face ID → EXECUTED; backend approval `confirmation: biometric`,
+  single-use approval consumed, real `backend_health_check` result. Backend reached over the iPhone
+  USB-tether link (`172.20.10.6:8001`). **IX-D validated on both mobile platforms.** Not in this
+  slice: a desktop Bridge Zero Commands panel.
 - **The school day** (`docs/architecture/school-day.md`; XII-B groundwork): an operator-set
   daily learning window, 09:00–14:00 local, fired by the Windows task `OMEGA-ARC School Day`
   (`scripts/Register-SchoolDayTask.ps1` → `scripts/school_day.ps1` → `scripts/school_day.py`).
@@ -60,9 +67,12 @@
 - Mobile approve/deny responses now include the affected `command` entry (or `null`).
 - Android Bridge Zero bottom bar: six tabs at 10 sp single-line labels; "Diagnostics" → "Diag"
   (labels wrapped at six tabs on-device).
+- iOS: `MobileVersionTests.testNewerRequiredVersionIsBlocked` no longer pins 0.3.0 (it silently
+  broke `ios-build.yml` when the app went to 0.5.0, which also blocked `.ipa` packaging); it now
+  uses 99.0.0 and a self-consistency test was added.
 
-Next: IX-D slice 2 (iOS Commands tab; desktop Bridge Zero Commands panel over the existing
-`/system/commands` endpoints; broaden the registry one risk-classed command at a time), XII-B (The
+Next: IX-D slice 3 (desktop Bridge Zero Commands panel over the existing `/system/commands`
+endpoints; broaden the registry one risk-classed command at a time), XII-B (The
 Considered Self — scheduled reflection, supersession patterns), the voice-consolidation experiment
 (QLoRA on the default voice's matched HF weights — the train-on-4bit ↔ serve-on-4bit hypothesis), and
 Tier-2 curriculum growth ("its house").
