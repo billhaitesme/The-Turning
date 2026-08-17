@@ -30,6 +30,9 @@ interface RuntimeService {
     @GET("api/mobile/v1/approvals") suspend fun approvals(): ApprovalList
     @POST("api/mobile/v1/approvals/{id}/approve") suspend fun approve(@Path("id") id: String, @Body decision: ApprovalDecision): ResponseBody
     @POST("api/mobile/v1/approvals/{id}/deny") suspend fun deny(@Path("id") id: String): ResponseBody
+    @GET("api/mobile/v1/commands") suspend fun commands(): CommandList
+    @POST("api/mobile/v1/commands/{name}") suspend fun initiateCommand(@Path("name") name: String, @Body request: CommandInitiateRequest): CommandInitiateResponse
+    @GET("api/mobile/v1/commands/history") suspend fun commandHistory(): CommandHistory
 
     @Streaming
     @Headers("Accept: text/event-stream")
@@ -54,6 +57,9 @@ class RuntimeApi private constructor(private val service: RuntimeService) {
     suspend fun approvals() = service.approvals()
     suspend fun approve(id: String) { service.approve(id, ApprovalDecision(true)).close() }
     suspend fun deny(id: String) { service.deny(id).close() }
+    suspend fun commands() = service.commands()
+    suspend fun initiateCommand(name: String) = service.initiateCommand(name, CommandInitiateRequest())
+    suspend fun commandHistory() = service.commandHistory()
 
     fun streamRuntimeEvents(emit: (RuntimeStoreEvent) -> Unit) {
         val response = service.runtimeEvents().execute()

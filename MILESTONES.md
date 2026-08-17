@@ -48,7 +48,7 @@ The Core Runtime made observable and operable from native mobile consoles and de
   hardware (Android 8/8, iOS 8/8) and tagged `epoch-ix-a` (344 backend tests).
 - **IX-C** — Operator actions: model selector, new conversation, approvals + biometric, app icon.
   Released as **0.2.1**, tagged `epoch-ix-c` (345 backend tests).
-- **IX-D** — Command Console (designed).
+- **IX-D** — Command Console: slice 1 built + device-validated 2026-08-17 (registry, console service, command log, Android Commands tab; ADR 0015 Accepted). Slice 2 (iOS, desktop panel) open.
 
 ## Epoch X — Memory
 

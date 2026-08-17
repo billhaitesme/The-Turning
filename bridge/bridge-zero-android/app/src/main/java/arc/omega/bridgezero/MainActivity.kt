@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Settings
@@ -69,6 +70,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 private val Void = BridgeDesign.Colors.Void
 private val Panel = BridgeDesign.Colors.Panel
@@ -155,7 +157,7 @@ private fun LoginScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
     }
 }
 
-private enum class Tab { Runtime, Console, Approvals, Diagnostics, Settings }
+private enum class Tab { Runtime, Console, Commands, Approvals, Diagnostics, Settings }
 
 @Composable
 private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
@@ -167,13 +169,16 @@ private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) 
                 listOf(
                     Triple(Tab.Runtime, "Runtime", Icons.Default.Home),
                     Triple(Tab.Console, "Console", Icons.Default.Send),
+                    Triple(Tab.Commands, "Commands", Icons.Default.PlayArrow),
                     Triple(Tab.Approvals, "Approvals", Icons.Default.CheckCircle),
-                    Triple(Tab.Diagnostics, "Diagnostics", Icons.Default.Info),
+                    Triple(Tab.Diagnostics, "Diag", Icons.Default.Info),
                     Triple(Tab.Settings, "Settings", Icons.Default.Settings),
                 ).forEach { (value, label, icon) ->
                     NavigationBarItem(
                         selected = tab == value, onClick = { tab = value },
-                        icon = { Icon(icon, null) }, label = { Text(label) },
+                        icon = { Icon(icon, null) },
+                        // six tabs: keep labels on one line at any phone width
+                        label = { Text(label, maxLines = 1, softWrap = false, fontSize = 10.sp) },
                     )
                 }
             }
@@ -183,6 +188,7 @@ private fun ConsoleScreen(state: OperatorUiState, viewModel: OperatorViewModel) 
             when (tab) {
                 Tab.Runtime -> DashboardScreen(state, viewModel)
                 Tab.Console -> ConversationScreen(state, viewModel)
+                Tab.Commands -> CommandsScreen(state, viewModel)
                 Tab.Approvals -> ApprovalsScreen(state, viewModel)
                 Tab.Diagnostics -> DiagnosticsScreen(state)
                 Tab.Settings -> SettingsScreen(state, viewModel)
@@ -323,6 +329,88 @@ private fun inlineMarkdown(value: String) = buildAnnotatedString {
             if (end < 0) { append(value.substring(next)); break }
             withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = Raised)) { append(value.substring(next + 1, end)) }
             index = end + 1
+        }
+    }
+}
+
+@Composable
+private fun CommandsScreen(state: OperatorUiState, viewModel: OperatorViewModel) {
+    // IX-D (ADR 0015): the operator INITIATES bounded runtime commands. The list is the runtime's
+    // command registry, rendered as-is. Approval-gated commands complete in the Approvals tab
+    // behind the biometric; forbidden commands are shown so the boundary is visible, never runnable.
+    LaunchedEffect(Unit) { viewModel.loadCommands() }
+    LazyColumn(
+        Modifier.fillMaxSize().background(Void).padding(BridgeDesign.Spacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(BridgeDesign.Spacing.Md),
+    ) {
+        state.commandNotice?.let { notice ->
+            item {
+                Text(
+                    notice,
+                    color = Warning,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(10.dp)).padding(12.dp),
+                )
+            }
+        }
+        items(state.commands, key = { it.name }) { command ->
+            InstrumentPanel(command.title.uppercase()) {
+                command.description?.let { Text(it, color = Color.LightGray) }
+                val gateColor = when (command.gate) {
+                    "direct" -> Nominal
+                    "approval" -> Warning
+                    else -> Failure
+                }
+                Metric("Risk", command.risk.uppercase(), gateColor)
+                Metric(
+                    "Gate",
+                    when (command.gate) {
+                        "direct" -> "DIRECT - executes now"
+                        "approval" -> "APPROVAL - biometric on this device"
+                        else -> "FORBIDDEN"
+                    },
+                    gateColor,
+                )
+                if (command.gate == "forbidden") {
+                    OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("FORBIDDEN") }
+                } else {
+                    Button(
+                        onClick = { viewModel.initiateCommand(command) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(if (command.gate == "approval") "REQUEST" else "RUN") }
+                }
+            }
+        }
+        if (state.commands.isEmpty()) {
+            item { Text("No commands available.", color = Color.Gray) }
+        }
+        item { Text("HISTORY", color = Color.Gray, modifier = Modifier.padding(top = BridgeDesign.Spacing.Md)) }
+        items(state.commandHistory.take(20), key = { it.commandId }) { entry ->
+            val color = when (entry.status) {
+                "executed" -> Nominal
+                "awaiting_approval", "executing" -> Warning
+                else -> Failure
+            }
+            Row(
+                Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(10.dp)).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(entry.name, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        listOfNotNull(entry.channel, entry.requestedAt?.take(16)?.replace("T", " ")).joinToString("  "),
+                        color = Color.Gray,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+                Text(
+                    (entry.status ?: "?").uppercase(),
+                    color = color,
+                    fontFamily = FontFamily.Monospace,
+                    softWrap = false,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
         }
     }
 }

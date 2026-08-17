@@ -12,4 +12,4 @@ Key boundaries:
 - Mobile and desktop clients render runtime state; they do not invent it.
 - `/api/mobile/v1/telemetry` exposes measured RuntimeStore state.
 - `/api/mobile/v1/events` exposes typed server-sent runtime events.
-- IX-C operator actions (approvals + biometric, model selector) shipped in 0.2.1; Epoch X added the memory subsystem (recall benchmark, rooms, reviewed supersession, consolidation — ADRs 0016–0023). IX-D command-console behavior remains future work.
+- IX-C operator actions (approvals + biometric, model selector) shipped in 0.2.1; Epoch X added the memory subsystem (recall benchmark, rooms, reviewed supersession, consolidation — ADRs 0016–0023). IX-D command console slice 1 (2026-08-17): services/command_registry.py + services/command_console.py, /mobile/commands… and /system/commands…, data/command_log.json; approval-gated commands execute only on a biometric-confirmed approval (COMMAND_EXECUTION, default on).

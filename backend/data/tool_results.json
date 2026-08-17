@@ -1,4 +1,74 @@
 {
   "version": 1,
-  "results": []
+  "results": [
+    {
+      "request_id": "toolreq-be5178f11ff045f7b58f311e0033a877",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-08-17T22:32:32.276229+00:00",
+      "completed_at": "2026-08-17T22:32:32.276229+00:00",
+      "duration_ms": 14.725,
+      "output": {
+        "target": "backend",
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "success": true,
+        "status_code": 200,
+        "latency_ms": 14.725,
+        "checked_at": "2026-08-17T22:32:32.276229+00:00",
+        "error": null
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-3afd6617f21345e9a52f9426d5fc345d",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-08-17T22:32:39.395790+00:00",
+      "completed_at": "2026-08-17T22:32:39.395790+00:00",
+      "duration_ms": 13.190999999999999,
+      "output": {
+        "target": "backend",
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "success": true,
+        "status_code": 200,
+        "latency_ms": 13.190999999999999,
+        "checked_at": "2026-08-17T22:32:39.395790+00:00",
+        "error": null
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    },
+    {
+      "request_id": "toolreq-1dd0491068f14714b8168f8518f5f3de",
+      "tool_name": "backend_health_check",
+      "status": "completed",
+      "success": true,
+      "started_at": "2026-08-17T22:37:44.327404+00:00",
+      "completed_at": "2026-08-17T22:37:44.327404+00:00",
+      "duration_ms": 19.109,
+      "output": {
+        "target": "backend",
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "success": true,
+        "status_code": 200,
+        "latency_ms": 19.109,
+        "checked_at": "2026-08-17T22:37:44.327404+00:00",
+        "error": null
+      },
+      "error": null,
+      "evidence_candidates": [],
+      "side_effects_observed": [],
+      "executor": "local_adapter",
+      "execution_mode": "live"
+    }
+  ]
 }

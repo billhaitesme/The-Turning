@@ -219,12 +219,14 @@ tokens in a usable time; the model selection does not affect the streaming trans
   identity-candidate dry run; see `ROADMAP.md`)
 - Voice-base consolidation experiment (QLoRA on the default voice's matched HF weights)
 - Curriculum growth Tier 2 ("its house")
-- Epoch IX-D — Command Console (designed in ADR 0015; **unblocked** — Android on-device approval
-  validation recorded 2026-08-17)
+- Epoch IX-D — Command Console: **slice 1 built and device-validated 2026-08-17** (ADR 0015 Accepted;
+  registry + console service + command log, mobile and `/system` routes, Android Commands tab; on the
+  Moto G15 Power REQUEST → Approve → fingerprint → EXECUTED with a real tool result). Unreleased on
+  `feature/epoch-ix-d-command-console`. Slice 2 open: iOS Commands tab, desktop panel, broader
+  registry.
 
-IX-C, Epoch X (A/B/C), Epoch XI (A/B/C), and XII-A are released; see the sections above. IX-D build
-remains gated on IX-C operator approvals being validated on physical Android hardware (documented
-0.2.1 exception).
+IX-C, Epoch X (A/B/C), Epoch XI (A/B/C), and XII-A are released; see the sections above. The 0.2.1
+Android on-device approval exception that gated IX-D was cleared 2026-08-17.
 
 ## Authorities
 

@@ -1,7 +1,9 @@
-# Epoch IX-D — Command Console (design sketch)
+# Epoch IX-D — Command Console
 
-**Status:** Proposed. Build gated on IX-C approvals being device-validated.
-See ADR [`0015-command-console.md`](../decisions/0015-command-console.md).
+**Status:** Slice 1 **built and device-validated 2026-08-17** (backend + Android). ADR
+[`0015-command-console.md`](../decisions/0015-command-console.md) is Accepted and carries the recorded
+policy shift. Slice 2 (iOS Commands tab) and a desktop Bridge Zero panel are open. The design below is
+as proposed; **[As built](#as-built-slice-1)** at the end records what actually shipped.
 
 Promotes the operator consoles from *observe + approve* to *initiate* — a command surface where the
 operator can start a bounded runtime action, every one flowing through the existing gates.
@@ -56,6 +58,12 @@ IX-D implies `enable_tool_execution` moves from off-by-default toward on-but-app
 execution passes an IX-C challenge. This is a deliberate policy shift and must be recorded (an ADR
 update), not slipped in.
 
+**Recorded 2026-08-17** in ADR 0015 → *Recorded policy shift*. Summary: a separate switch,
+`COMMAND_EXECUTION` (default on), governs the operator-initiated console path, which executes only
+after a biometric-confirmed approval; `ENABLE_TOOL_EXECUTION` (default off) still governs the
+model-initiated chat path. Approvals now record *how* they were confirmed; only `"biometric"` releases
+a command.
+
 ## Governance fit (the Covenant test)
 
 - *Explain why?* Command + requester + approval + outcome recorded.
@@ -75,3 +83,51 @@ update), not slipped in.
 Define the command registry with three commands only (one direct, one approval-gated, one forbidden),
 wire the approval-gated path end-to-end through the existing IX-C flow, and validate that a
 high-risk command cannot execute without a biometric — before broadening the command set.
+
+**Done — this is slice 1, below.**
+
+## As built (slice 1)
+
+```
+backend/services/command_registry.py   the authority: 3 commands, risk + gate, self-validating
+backend/services/command_console.py    initiate · approval/deny callbacks · gated executor · command log
+backend/routes/mobile.py               GET /mobile/commands · POST /mobile/commands/{name}
+                                       GET /mobile/commands/history
+                                       approve/deny now return the affected "command"
+backend/routes/system.py               GET/POST /system/commands · GET /system/commands/history
+                                       (desktop may initiate; gated commands wait for a mobile biometric)
+backend/services/tool_approval.py      approve_request(..., confirmation=) — records HOW it was confirmed
+backend/data/command_log.json          every command: name, risk, gate, requester, channel, request_id,
+                                       approval_id, status, outcome, timestamps
+backend/tests/test_command_console.py  9 tests
+bridge/bridge-zero-android/…           Commands tab (registry cards RUN / REQUEST / FORBIDDEN + history)
+```
+
+**Command lifecycle as implemented** (statuses in `command_log.json`):
+
+```
+initiate ──► direct    ──► executed
+         ──► forbidden ──► forbidden      (403 to the caller; still logged)
+         ──► approval  ──► awaiting_approval
+                              ├─ mobile approve, confirmation=biometric ──► executing ──► executed | failed
+                              ├─ approve WITHOUT biometric (e.g. desktop /system) ──► stays awaiting_approval (noted)
+                              ├─ deny ──► denied
+                              └─ 300 s TTL passes ──► expired   (marked read-side, idempotent)
+```
+
+**The three commands:** `new_conversation` (low/direct), `run_backend_health_check`
+(medium/approval → IX-C `backend_health_check` tool request, argument `port` = the runtime's own
+port), `change_conversational_routing` (forbidden — shown in the console so the boundary is visible,
+never runnable).
+
+**Device validation, 2026-08-17** — Moto G15 Power, Android 0.5.0 debug build over
+`adb reverse tcp:8001`: Commands → REQUEST → Approvals → Approve → fingerprint → history **EXECUTED**;
+backend: tool request `completed`, approval `approved` + `confirmation: biometric`, real
+`backend_health_check` result recorded. Three executions logged. Two on-device UI defects fixed in the
+same slice (notice line after REQUEST; six-tab bottom bar wrapping — 10 sp single-line labels,
+"Diagnostics" → "Diag") and re-confirmed by the operator.
+
+**Open (slice 2+):** iOS Commands tab; desktop Bridge Zero Commands panel over the existing
+`/system/commands` endpoints; broadening the registry (candidates, in order: read-only host status;
+ComfyUI queue submit under approval; the school asking for consolidation approval from the phone) —
+each new command needs a risk class, and destructive ones need an explicit undo before they qualify.

@@ -39,6 +39,54 @@
       "approval_id": "approval-toolreq-c381598adc034bff82fbb69ce3ff776d",
       "created_at": "2026-08-17T22:00:38.266440+00:00",
       "status": "rejected"
+    },
+    {
+      "request_id": "toolreq-3afd6617f21345e9a52f9426d5fc345d",
+      "tool_name": "backend_health_check",
+      "arguments": {
+        "port": 8001
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-3afd6617f21345e9a52f9426d5fc345d",
+      "created_at": "2026-08-17T22:31:43.219620+00:00",
+      "status": "completed",
+      "updated_at": "2026-08-17T22:32:39.395790+00:00"
+    },
+    {
+      "request_id": "toolreq-be5178f11ff045f7b58f311e0033a877",
+      "tool_name": "backend_health_check",
+      "arguments": {
+        "port": 8001
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-be5178f11ff045f7b58f311e0033a877",
+      "created_at": "2026-08-17T22:31:46.623250+00:00",
+      "status": "completed",
+      "updated_at": "2026-08-17T22:32:32.276229+00:00"
+    },
+    {
+      "request_id": "toolreq-1dd0491068f14714b8168f8518f5f3de",
+      "tool_name": "backend_health_check",
+      "arguments": {
+        "port": 8001
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-1dd0491068f14714b8168f8518f5f3de",
+      "created_at": "2026-08-17T22:37:27.567225+00:00",
+      "status": "completed",
+      "updated_at": "2026-08-17T22:37:44.327404+00:00"
     }
   ]
 }

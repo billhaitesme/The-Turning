@@ -28,6 +28,7 @@ from services.model_control import model_control
 from services.plan_store import load_plan_store
 from services.tool_request_store import load_tool_request_store
 from services.tool_result_store import load_tool_result_store
+from services import command_console, command_registry
 from services.tool_approval import (
     approve_request,
     expire_approvals,
@@ -220,10 +221,13 @@ def approve_operator_request(request_id: str, decision: ApprovalDecision) -> dic
         raise HTTPException(status_code=400, detail="Operator biometric confirmation is required.")
     expire_approvals()
     try:
-        approval = approve_request(request_id, approved_by="operator")
+        # The only route that records a biometric confirmation — IX-D command execution keys on it.
+        approval = approve_request(request_id, approved_by="operator",
+                                   confirmation=command_console.BIOMETRIC_CONFIRMATION)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return {"approval": approval, "pending": _pending_approvals()}
+    command = command_console.on_request_approved(request_id)
+    return {"approval": approval, "pending": _pending_approvals(), "command": command}
 
 
 @router.post("/approvals/{request_id}/deny")
@@ -232,7 +236,38 @@ def deny_operator_request(request_id: str) -> dict[str, Any]:
         approval = reject_request(request_id, rejected_by="operator")
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return {"approval": approval, "pending": _pending_approvals()}
+    command = command_console.on_request_rejected(request_id)
+    return {"approval": approval, "pending": _pending_approvals(), "command": command}
+
+
+# ----------------------------------------------------------------------------- IX-D commands
+class CommandInitiateRequest(BaseModel):
+    arguments: Optional[dict[str, Any]] = None
+    session_id: Optional[str] = Field(default=None, max_length=128)
+
+
+@router.get("/commands")
+def list_commands() -> dict[str, Any]:
+    """The command registry, rendered — the console shows it, the registry defines it (ADR 0015)."""
+    return {"commands": [c for c in command_registry.list_commands() if "mobile" in c.get("surfaces", [])
+                         or c["gate"] == "forbidden"],
+            "execution_enabled": command_console.command_execution_enabled()}
+
+
+@router.post("/commands/{name}")
+def initiate_command(name: str, body: Optional[CommandInitiateRequest] = None) -> dict[str, Any]:
+    body = body or CommandInitiateRequest()
+    try:
+        entry = command_console.initiate_command(name, requested_by="operator", channel="mobile",
+                                                 session_id=body.session_id, arguments=body.arguments)
+    except command_console.CommandError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
+    return {"command": entry, "pending": _pending_approvals()}
+
+
+@router.get("/commands/history")
+def command_history(limit: int = 50) -> dict[str, Any]:
+    return {"history": command_console.list_command_history(limit=limit)}
 
 
 def build_runtime_status() -> dict[str, Any]:

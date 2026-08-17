@@ -41,6 +41,36 @@ data class ApprovalList(val approvals: List<ApprovalRequest> = emptyList())
 
 data class ApprovalDecision(val confirmed: Boolean)
 
+// IX-D — Command Console (ADR 0015). The registry is rendered, never defined, by the console.
+data class RuntimeCommand(
+    val name: String,
+    val title: String,
+    val description: String? = null,
+    val risk: String,
+    val gate: String,
+)
+
+data class CommandList(
+    val commands: List<RuntimeCommand> = emptyList(),
+    @SerializedName("execution_enabled") val executionEnabled: Boolean = true,
+)
+
+data class CommandEntry(
+    @SerializedName("command_id") val commandId: String,
+    val name: String,
+    val risk: String? = null,
+    val gate: String? = null,
+    val channel: String? = null,
+    @SerializedName("requested_at") val requestedAt: String? = null,
+    @SerializedName("request_id") val requestId: String? = null,
+    val status: String? = null,
+    @SerializedName("finished_at") val finishedAt: String? = null,
+)
+
+data class CommandInitiateResponse(val command: CommandEntry, val pending: List<ApprovalRequest> = emptyList())
+data class CommandHistory(val history: List<CommandEntry> = emptyList())
+data class CommandInitiateRequest(val arguments: Map<String, Any>? = null, @SerializedName("session_id") val sessionId: String? = null)
+
 data class RuntimeTelemetry(
     @SerializedName("observed_at") val observedAt: String,
     @SerializedName("uptime_seconds") val uptimeSeconds: Long,
@@ -169,4 +199,7 @@ data class OperatorUiState(
     val server: String = "",
     val hasToken: Boolean = false,
     val approvals: List<ApprovalRequest> = emptyList(),
+    val commands: List<RuntimeCommand> = emptyList(),
+    val commandHistory: List<CommandEntry> = emptyList(),
+    val commandNotice: String? = null,
 )

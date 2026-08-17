@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "command_id": "cmd-9c6ac596e30b468ba6fab21784677d6c",
+      "name": "run_backend_health_check",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-17T22:31:43.219582+00:00",
+      "request_id": "toolreq-3afd6617f21345e9a52f9426d5fc345d",
+      "approval_id": "approval-toolreq-3afd6617f21345e9a52f9426d5fc345d",
+      "status": "executed",
+      "outcome": {
+        "result_id": null,
+        "result_status": "completed",
+        "success": true,
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "latency_ms": 13.190999999999999
+      },
+      "finished_at": "2026-08-17T22:32:39.425803+00:00"
+    },
+    {
+      "command_id": "cmd-c072eed3fd2646fda2e6c90196bf7e41",
+      "name": "run_backend_health_check",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-17T22:31:46.623233+00:00",
+      "request_id": "toolreq-be5178f11ff045f7b58f311e0033a877",
+      "approval_id": "approval-toolreq-be5178f11ff045f7b58f311e0033a877",
+      "status": "executed",
+      "outcome": {
+        "result_id": null,
+        "result_status": "completed",
+        "success": true,
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "latency_ms": 14.725
+      },
+      "finished_at": "2026-08-17T22:32:32.313314+00:00"
+    },
+    {
+      "command_id": "cmd-ea5572d296964b9e99ab9ab61c751966",
+      "name": "run_backend_health_check",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-17T22:37:27.567208+00:00",
+      "request_id": "toolreq-1dd0491068f14714b8168f8518f5f3de",
+      "approval_id": "approval-toolreq-1dd0491068f14714b8168f8518f5f3de",
+      "status": "executed",
+      "outcome": {
+        "result_id": null,
+        "result_status": "completed",
+        "success": true,
+        "checked_url": "http://127.0.0.1:8001/system/status",
+        "latency_ms": 19.109
+      },
+      "finished_at": "2026-08-17T22:37:44.352017+00:00"
+    },
+    {
+      "command_id": "cmd-7c8d6ffd4c33428799915f2940fc9ad7",
+      "name": "new_conversation",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-17T22:43:06.026413+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "conversation_id": "1cf1cc2b-88b5-40a7-baa8-2cc3bebe71a7",
+        "title": "Command Console"
+      },
+      "finished_at": "2026-08-17T22:43:06.030295+00:00"
+    }
+  ]
+}

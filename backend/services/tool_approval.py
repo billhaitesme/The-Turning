@@ -208,7 +208,11 @@ def approve_request(
     approved_by: Optional[str] = None,
     approval_store: Optional[Dict[str, Any]] = None,
     request_store: Optional[Dict[str, Any]] = None,
+    confirmation: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Approve a request. `confirmation` records HOW the operator confirmed — the mobile route
+    passes "biometric" (IX-C). Command execution (IX-D) requires that value; a plain approval
+    from any other channel is recorded but does not release a command."""
     request_store_obj = load_tool_request_store() if request_store is None else request_store
     approval_store_obj = load_tool_approval_store() if approval_store is None else approval_store
     request = get_tool_request(request_id, request_store_obj)
@@ -229,6 +233,7 @@ def approve_request(
     approval["status"] = "approved"
     approval["approved_by"] = approved_by or "user"
     approval["approved_at"] = utc_now_iso()
+    approval["confirmation"] = confirmation
     _upsert_tool_approval(approval, store=approval_store_obj)  # Prevent overwriting store object
 
     request["status"] = "approved"

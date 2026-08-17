@@ -214,8 +214,47 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
                 client.approve(request.requestId)
                 log("Approved ${request.toolName ?: request.requestId}")
                 loadApprovals()
+                loadCommands()
             } catch (error: Exception) {
                 log("Approve failed: ${safeMessage(error)}")
+            }
+        }
+    }
+
+    fun loadCommands() {
+        val client = api ?: return
+        viewModelScope.launch {
+            try {
+                val list = client.commands()
+                val history = client.commandHistory().history
+                mutableState.update { it.copy(commands = list.commands, commandHistory = history) }
+            } catch (error: Exception) {
+                log("Commands unavailable: ${safeMessage(error)}")
+            }
+        }
+    }
+
+    /** IX-D: initiate a command. Direct commands execute now; approval-gated ones land in the
+     *  Approvals tab and execute only after the biometric approve; forbidden ones are refused. */
+    fun initiateCommand(command: RuntimeCommand) {
+        val client = api ?: return
+        viewModelScope.launch {
+            try {
+                val response = client.initiateCommand(command.name)
+                val entry = response.command
+                val notice = when (entry.status) {
+                    "executed" -> "Executed: ${command.title}"
+                    "awaiting_approval" -> "Approval created for ${command.title} - confirm it in the Approvals tab (fingerprint)"
+                    else -> "${command.title}: ${entry.status}"
+                }
+                log(notice)
+                mutableState.update { it.copy(approvals = response.pending, commandNotice = notice) }
+                loadCommands()
+            } catch (error: Exception) {
+                val notice = "Refused: ${safeMessage(error)}"
+                log(notice)
+                mutableState.update { it.copy(commandNotice = notice) }
+                loadCommands()
             }
         }
     }
@@ -227,6 +266,7 @@ class OperatorViewModel(application: Application) : AndroidViewModel(application
                 client.deny(request.requestId)
                 log("Denied ${request.toolName ?: request.requestId}")
                 loadApprovals()
+                loadCommands()
             } catch (error: Exception) {
                 log("Deny failed: ${safeMessage(error)}")
             }

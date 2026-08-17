@@ -95,6 +95,7 @@ from services.user_identity import (
 )
 from services.cognition_pipeline import process_completed_turn
 from services.declarative_acknowledger import build_declarative_acknowledgement
+from services import command_console
 from routes.system import router as system_router
 from routes.mobile import configure_mobile_runtime, router as mobile_router
 from routes.runtime_operations import router as runtime_operations_router
@@ -2966,6 +2967,7 @@ def chat_stream(req: ChatRequest):
     ), conversation_id)
 
 
+command_console.configure(create_conversation=create_conversation)  # IX-D
 configure_mobile_runtime(
     create_conversation=create_conversation,
     conversation_exists=conversation_exists,

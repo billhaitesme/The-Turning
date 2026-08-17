@@ -16,6 +16,7 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
+from services import command_console, command_registry
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -229,3 +230,35 @@ def execute_tool_request(request_id: str, req: BackendHealthExecuteRequest) -> D
     )
     _persist_scoped_evidence_store(str(request_record.get("session_id") or ""), outcome["evidence_store"])
     return outcome
+
+
+# ----------------------------------------------------------------------------- IX-D commands (desktop)
+class SystemCommandInitiateRequest(BaseModel):
+    arguments: Optional[Dict[str, Any]] = None
+    session_id: Optional[str] = None
+
+
+@router.get("/commands")
+def list_system_commands() -> Dict[str, Any]:
+    """Command registry for the desktop console. Desktop may initiate; approval-gated commands
+    still complete only on a mobile biometric (ADR 0015 — desktop cannot self-approve)."""
+    return {"commands": command_registry.list_commands(),
+            "execution_enabled": command_console.command_execution_enabled()}
+
+
+@router.post("/commands/{name}")
+def initiate_system_command(name: str, req: Optional[SystemCommandInitiateRequest] = None) -> Dict[str, Any]:
+    if not settings.enable_tool_framework:
+        raise HTTPException(status_code=503, detail="Tool framework is disabled.")
+    req = req or SystemCommandInitiateRequest()
+    try:
+        entry = command_console.initiate_command(name, requested_by="operator", channel="desktop",
+                                                 session_id=req.session_id, arguments=req.arguments)
+    except command_console.CommandError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
+    return {"command": entry}
+
+
+@router.get("/commands/history")
+def system_command_history(limit: int = 50) -> Dict[str, Any]:
+    return {"history": command_console.list_command_history(limit=limit)}

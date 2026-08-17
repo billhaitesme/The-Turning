@@ -4,6 +4,25 @@
 
 ### Added
 
+- **Epoch IX-D — Command Console, slice 1** (ADR 0015 → **Accepted**;
+  `docs/architecture/epoch-ix-d-command-console.md` → *As built*). The operator consoles go from
+  *observe + approve* to **initiate**: a command registry
+  (`backend/services/command_registry.py`, the authority — consoles render it, never define it) with
+  exactly three commands, one per gate: `new_conversation` (low, **direct**),
+  `run_backend_health_check` (medium, **approval** → an IX-C `backend_health_check` tool request that
+  executes only after a biometric-confirmed operator approval), `change_conversational_routing`
+  (**forbidden** — refused with 403 and the refusal recorded; Model Lock / output fidelity).
+  Console service `backend/services/command_console.py`; routes `GET/POST /mobile/commands…`,
+  `GET /mobile/commands/history`, and desktop `GET/POST /system/commands…` (desktop may initiate;
+  gated commands still complete only on a mobile biometric — the ADR's "desktop cannot self-approve",
+  enforced in the executor). Every command — including forbidden, denied, expired, and failed — is
+  written to `backend/data/command_log.json` with requester, channel, linked request/approval ids,
+  status, and outcome. Android Bridge Zero gains a **Commands** tab (registry cards RUN / REQUEST /
+  greyed FORBIDDEN + history). `backend/tests/test_command_console.py`: 9 tests.
+  **Device-validated 2026-08-17** on the Moto G15 Power: REQUEST → Approve → fingerprint → history
+  **EXECUTED**; backend shows the request `completed`, the approval `approved` with
+  `confirmation: biometric`, and a real health-check result — the runtime's first operator-initiated,
+  biometric-gated actions. Not in this slice: iOS Commands tab (slice 2), a desktop Bridge Zero panel.
 - **The school day** (`docs/architecture/school-day.md`; XII-B groundwork): an operator-set
   daily learning window, 09:00–14:00 local, fired by the Windows task `OMEGA-ARC School Day`
   (`scripts/Register-SchoolDayTask.ps1` → `scripts/school_day.ps1` → `scripts/school_day.py`).
@@ -28,10 +47,25 @@
 - Trainer: `--init-adapter` warm-start and `--lr` for polish legs (`training/train_adapter.py`);
   the 12bq voice-family adapter reached v2f (identity string verbatim, 4/5 probe).
 
-Next: XII-B (The Considered Self — scheduled reflection, supersession patterns), the
-voice-consolidation experiment (QLoRA on the default voice's matched HF weights — the
-train-on-4bit ↔ serve-on-4bit hypothesis), Tier-2 curriculum growth ("its house"), and Epoch IX-D
-(Command Console; **now unblocked** — the Android on-device approval validation was recorded 2026-08-17).
+### Changed
+
+- **Recorded policy shift (ADR 0015):** gated command execution is **on by default** via a new
+  `COMMAND_EXECUTION` setting — every execution on the console path has just passed a device
+  biometric. `ENABLE_TOOL_EXECUTION` (default off) is unchanged and still governs the model-initiated
+  chat tool path; the two switches are deliberately separate.
+- `approve_request(..., confirmation=)` records *how* an approval was confirmed; only the mobile
+  approve route (which already requires the client's biometric `confirmed` flag) passes
+  `"biometric"`, and only that value releases a command. Approvals via `/system` are stored but leave
+  the command `awaiting_approval` with a note.
+- Mobile approve/deny responses now include the affected `command` entry (or `null`).
+- Android Bridge Zero bottom bar: six tabs at 10 sp single-line labels; "Diagnostics" → "Diag"
+  (labels wrapped at six tabs on-device).
+
+Next: IX-D slice 2 (iOS Commands tab; desktop Bridge Zero Commands panel over the existing
+`/system/commands` endpoints; broaden the registry one risk-classed command at a time), XII-B (The
+Considered Self — scheduled reflection, supersession patterns), the voice-consolidation experiment
+(QLoRA on the default voice's matched HF weights — the train-on-4bit ↔ serve-on-4bit hypothesis), and
+Tier-2 curriculum growth ("its house").
 
 ## [0.5.0] - 2026-08-09 — Epoch XII-A (The Mirror) — Epoch XII begins
 
