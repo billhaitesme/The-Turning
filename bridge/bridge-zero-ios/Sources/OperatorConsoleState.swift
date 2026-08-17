@@ -16,6 +16,11 @@ final class OperatorConsoleState: ObservableObject {
     @Published private(set) var roundTripLatencyMs: Double?
     @Published private(set) var logs: [String] = []
     @Published private(set) var approvals: [ApprovalRequest] = []
+    // IX-D command console
+    @Published private(set) var commands: [RuntimeCommand] = []
+    @Published private(set) var commandHistory: [CommandEntry] = []
+    @Published private(set) var commandNotice: String?
+    @Published private(set) var commandExecutionEnabled = true
     @Published var composerText = ""
     @Published var theme: AppTheme {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
@@ -163,6 +168,7 @@ final class OperatorConsoleState: ObservableObject {
                 try await api.decideApproval(requestId: request.requestId, approve: true)
                 appendLog("Approved \(request.toolName ?? request.requestId)")
                 await loadApprovals()
+                await loadCommands()   // an approved command may now read EXECUTED
             } catch { appendLog("Approve failed: \(safeDescription(error))") }
         }
     }
@@ -174,9 +180,59 @@ final class OperatorConsoleState: ObservableObject {
                 try await api.decideApproval(requestId: request.requestId, approve: false)
                 appendLog("Denied \(request.toolName ?? request.requestId)")
                 await loadApprovals()
+                await loadCommands()
             } catch { appendLog("Deny failed: \(safeDescription(error))") }
         }
     }
+
+    // MARK: - IX-D command console (ADR 0015)
+
+    /// Load the runtime's command registry and the command log. The console renders the
+    /// registry; it never defines it.
+    func loadCommands() async {
+        guard let api, isConnected else { return }
+        do {
+            async let list = api.listCommands()
+            async let history = api.commandHistory()
+            let loadedList = try await list
+            commands = loadedList.commands
+            commandExecutionEnabled = loadedList.executionEnabled ?? true
+            commandHistory = try await history
+        } catch { appendLog("Commands unavailable: \(safeDescription(error))") }
+    }
+
+    /// Operator initiates a command. Direct commands execute now; approval-gated ones create an
+    /// IX-C approval that must be confirmed in Approvals behind Face ID / Touch ID; forbidden ones
+    /// are refused by the runtime and the refusal is shown verbatim (and recorded server-side).
+    func initiateCommand(_ command: RuntimeCommand) {
+        guard let api, isConnected else { return }
+        Task {
+            do {
+                let response = try await api.initiateCommand(command.name)
+                let entry = response.command
+                let notice: String
+                switch entry.status {
+                case "executed":
+                    notice = "Executed: \(command.title)"
+                case "awaiting_approval":
+                    notice = "Approval created for \(command.title) — confirm it in the Approvals tab (Face ID / Touch ID)"
+                default:
+                    notice = "\(command.title): \(entry.status ?? "unknown")"
+                }
+                commandNotice = notice
+                appendLog(notice)
+                if let pending = response.pending { approvals = pending }
+                await loadCommands()
+            } catch {
+                let notice = "Refused: \(safeDescription(error))"
+                commandNotice = notice
+                appendLog(notice)
+                await loadCommands()
+            }
+        }
+    }
+
+    func clearCommandNotice() { commandNotice = nil }
 
     private func confirmBiometric(reason: String) async -> Bool {
         let context = LAContext()

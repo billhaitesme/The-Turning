@@ -85,6 +85,11 @@ struct ConsoleTabView: View {
                 .tabItem { Label("Runtime", systemImage: "waveform.path.ecg") }
             NavigationStack { ConversationView() }
                 .tabItem { Label("Console", systemImage: "terminal") }
+            // IX-D: six tabs — iOS shows the first four plus "More" for the rest, so the
+            // operator-action tabs (Commands, Approvals) stay on the bar; Diagnostics and
+            // Settings live under More.
+            NavigationStack { CommandsView() }
+                .tabItem { Label("Commands", systemImage: "play.circle") }
             NavigationStack { ApprovalsView() }
                 .tabItem { Label("Approvals", systemImage: "checkmark.shield") }
             NavigationStack { DiagnosticsView() }

@@ -39,6 +39,43 @@ struct ApprovalList: Codable, Equatable {
     let approvals: [ApprovalRequest]
 }
 
+// IX-D (ADR 0015) — the command registry, rendered by the console, defined by the runtime.
+struct RuntimeCommand: Codable, Equatable, Identifiable {
+    let name: String
+    let title: String
+    let description: String?
+    let risk: String
+    let gate: String   // direct | approval | forbidden
+    var id: String { name }
+}
+
+struct CommandList: Codable, Equatable {
+    let commands: [RuntimeCommand]
+    let executionEnabled: Bool?
+}
+
+struct CommandEntry: Codable, Equatable, Identifiable {
+    let commandId: String
+    let name: String
+    let risk: String?
+    let gate: String?
+    let channel: String?
+    let requestedAt: String?
+    let requestId: String?
+    let status: String?    // executed | awaiting_approval | executing | denied | expired | forbidden | failed
+    let finishedAt: String?
+    var id: String { commandId }
+}
+
+struct CommandInitiateResponse: Codable, Equatable {
+    let command: CommandEntry
+    let pending: [ApprovalRequest]?
+}
+
+struct CommandHistory: Codable, Equatable {
+    let history: [CommandEntry]
+}
+
 struct RuntimeTelemetry: Codable, Equatable {
     let observedAt: String
     let uptimeSeconds: Int

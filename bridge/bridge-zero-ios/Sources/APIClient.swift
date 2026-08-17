@@ -185,6 +185,30 @@ actor RuntimeAPIClient {
         try Self.validate(response)
     }
 
+    // IX-D commands — the registry is read, never defined, here.
+    func listCommands() async throws -> CommandList {
+        try await get("api/mobile/v1/commands")
+    }
+
+    func commandHistory() async throws -> [CommandEntry] {
+        let list: CommandHistory = try await get("api/mobile/v1/commands/history")
+        return list.history
+    }
+
+    /// Initiate a command. Forbidden commands come back as HTTP 403 with a detail message,
+    /// which surfaces as APIClientError.runtime so the console can show the refusal verbatim.
+    func initiateCommand(_ name: String) async throws -> CommandInitiateResponse {
+        var request = self.request("api/mobile/v1/commands/\(name)", method: "POST")
+        request.httpBody = try encoder.encode(["session_id": "command-console"])
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 403 || http.statusCode == 404 {
+            let detail = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["detail"] as? String
+            throw APIClientError.runtime(detail ?? "Command refused (HTTP \(http.statusCode)).")
+        }
+        try Self.validate(response)
+        return try decoder.decode(CommandInitiateResponse.self, from: data)
+    }
+
     func selectModel(_ model: String) async throws -> ModelState {
         var request = self.request("api/mobile/v1/model", method: "POST")
         request.httpBody = try encoder.encode(["model": model])
