@@ -60,3 +60,10 @@ training/adapters/
 training/train_run_detached.log
 training/Modelfile
 training/hf-bases/
+
+# Private curriculum overlay (operator's world — never leaves this machine)
+curriculum-private/
+backend/data/curriculum.private.json
+backend/data/study_cycles.private.json
+backend/data/*.bak-*
+training/*.err

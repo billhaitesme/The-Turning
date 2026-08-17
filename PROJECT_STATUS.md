@@ -11,7 +11,7 @@
 | Status | Active Development |
 | Current phase | Epoch XII begun — XII-A (The Mirror) released as **0.5.0** (tag `epoch-xii-a`) |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
-| IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric deferred** — release exception, owed as follow-up |
+| IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric validated on hardware (2026-08-17, Moto G15 Power, BiometricPrompt)** — the 0.2.1 release exception is cleared |
 | Theme | Epoch XII: “The Runtime Considers Itself” (XI: “Learns”, X: “Remembers”, IX: “Becomes Visible”) |
 
 ## Completed
@@ -219,8 +219,8 @@ tokens in a usable time; the model selection does not affect the streaming trans
   identity-candidate dry run; see `ROADMAP.md`)
 - Voice-base consolidation experiment (QLoRA on the default voice's matched HF weights)
 - Curriculum growth Tier 2 ("its house")
-- Epoch IX-D — Command Console (designed in ADR 0015; build gated on the deferred Android on-device
-  approval validation)
+- Epoch IX-D — Command Console (designed in ADR 0015; **unblocked** — Android on-device approval
+  validation recorded 2026-08-17)
 
 IX-C, Epoch X (A/B/C), Epoch XI (A/B/C), and XII-A are released; see the sections above. IX-D build
 remains gated on IX-C operator approvals being validated on physical Android hardware (documented

@@ -820,8 +820,14 @@ def run_study_cycle(lesson_id: str, *, comprehension: bool = True,
         "pass_threshold": threshold,
         "status": status,
     }
-    cycles.setdefault("cycles", []).append(record)
-    tutelage.save_study_cycles(cycles, tutelage.DEFAULT_STUDY_CYCLES_PATH)
+    # Write to the subject's own store, read raw: a private subject's record must never be
+    # saved into the public file, and the merged view must never be written back anywhere.
+    store_path = tutelage.study_cycles_path_for(subject)
+    store = tutelage.load_study_cycles(store_path, merge_private=False)
+    store.setdefault("cycles", []).append(record)
+    tutelage.save_study_cycles(store, store_path)
+    if tutelage.is_private_subject(subject):
+        record = dict(record, private=True)
     return record
 
 
@@ -860,6 +866,11 @@ def run_consolidation(subject_id: str) -> Dict[str, Any]:
     subject = next((s for s in curriculum.get("subjects", []) if s.get("id") == subject_id), None)
     if subject is None:
         raise LookupError(f"Unknown subject: {subject_id}")
+    if tutelage.is_private_subject(subject):
+        # Distillation artifacts and the adapter registry are repo-tracked; a private subject
+        # is study-only until a private artifact path exists.
+        raise ValueError("Private subjects are study-only: consolidation would write distillation "
+                         "pairs and a registry entry into repo-tracked files.")
 
     approval = _find_approved_consolidation(subject_id)
     if approval is None:
@@ -966,7 +977,10 @@ def run_reflection_cycle(*, window_since: Optional[str] = None,
                          compose_model: Optional[str] = None) -> Dict[str, Any]:
     digest = reflection_room.build_digest(
         since=window_since,
-        study_cycles=tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH),
+        # The digest is stored in the public repo beside every observation — private subjects
+        # appear only as opaque labels (scores kept, names redacted).
+        study_cycles=tutelage.redact_private_cycles(
+            tutelage.load_study_cycles(tutelage.DEFAULT_STUDY_CYCLES_PATH)),
         supersession_candidates=list_supersession_candidates(status="pending")
             + list_supersession_candidates(status="approved")
             + list_supersession_candidates(status="rejected"),

@@ -64,7 +64,7 @@ if (-not (Get-ListenerProcess 11434)) {
 
 if (-not (Get-ListenerProcess 8001)) {
     $process = Start-Process -FilePath $pythonExe -WorkingDirectory $backendRoot -WindowStyle Hidden -PassThru `
-        -ArgumentList @('-u', $backendLauncher) `
+        -ArgumentList @('-u', "`"$backendLauncher`"") `
         -RedirectStandardOutput (Join-Path $logRoot 'backend.stdout.log') `
         -RedirectStandardError (Join-Path $logRoot 'backend.stderr.log')
     $started += [PSCustomObject]@{ Service = 'backend'; PID = $process.Id }

@@ -54,7 +54,8 @@ confirmation. No IX-C behavior is present in the `epoch-ix-a` (IX-B) checkpoint.
   biometric confirmation and is recorded through the existing approval engine (no new authority).
   Backend + both mobile UIs built: an Approvals tab on iOS (Face ID) and Android (BiometricPrompt),
   approve/deny gated by a real device biometric. Backend tested (11 mobile tests); Android compiled;
-  iOS approve→Face ID **validated on a physical iPhone (2026-08-07)**; Android device pass still owed.
+  iOS approve→Face ID **validated on a physical iPhone (2026-08-07)**; Android approve→BiometricPrompt
+  and deny **validated on a physical Moto G15 Power (2026-08-17)**.
   Push delivery (APNs/FCM) is designed but **infra-blocked** — needs a paid Apple Developer account
   and a Firebase project. See ADR
   [`0014-operator-approvals.md`](docs/decisions/0014-operator-approvals.md).
@@ -205,7 +206,7 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
   matched-precision hypothesis on the 8 GB card.
 - Curriculum growth Tier 2 ("its house": Ollama, FastAPI, SQLite, the host) per the 4-tier
   strategy; K-12 pedagogy (mastery gates, spiral review, spaced retention) without K-12 content.
-- IX-D Command Console (still gated on the deferred Android on-device approval validation).
+- IX-D Command Console (**unblocked 2026-08-17** — Android on-device approval validation recorded).
 - Surfacing consolidation approvals in the mobile Approvals tab.
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.

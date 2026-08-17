@@ -4,7 +4,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
 BASE = "hf-bases/huihui-gemma-4-12b-it-abliterated"
-ADAPTER = "adapters/adapter-omega-arc-architecture-20260809-12bq-v1"
+import sys
+ADAPTER = sys.argv[1] if len(sys.argv) > 1 else "adapters/adapter-omega-arc-architecture-20260809-12bq-v1"
 QS = ["What is the machine identity of the runtime?",
       "Who may change the active language model, and how?",
       "Are superseded memories deleted?",

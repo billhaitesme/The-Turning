@@ -2,10 +2,36 @@
 
 ## [Unreleased]
 
+### Added
+
+- **The school day** (`docs/architecture/school-day.md`; XII-B groundwork): an operator-set
+  daily learning window, 09:00–14:00 local, fired by the Windows task `OMEGA-ARC School Day`
+  (`scripts/Register-SchoolDayTask.ps1` → `scripts/school_day.ps1` → `scripts/school_day.py`).
+  Preflights the stack, studies the next unpassed lesson per subject in prerequisite order,
+  runs spaced re-quizzes (1/3/7/14/30-day ladder by pass streak), closes the day with one
+  reflection cycle, and writes a report + operator to-do list to `.runtime-logs/school/`. Gated
+  actions (consolidation, adapter activation, approvals, training) are surfaced, never taken —
+  pinned by `backend/tests/test_school_day.py`.
+- **`scripts/curriculum_add.py`**: subjects as `curriculum/<subject>/subject.json` + lesson
+  markdown; validates every recall key against the paragraph-chunked sources before writing.
+- **Private curriculum overlay:** subjects under `curriculum-private/` /
+  `backend/data/curriculum.private.json` (gitignored) merge at load time; their study cycles go
+  to `study_cycles.private.json` (gitignored) and merge on read; the reflection digest sees them
+  only as opaque labels; consolidation refuses them. The first Tier 2/3 "operator's world"
+  subjects (its tools, the operator's side business) are private and live only on the host.
+- **Android on-device approval validation RECORDED (2026-08-17)** — clears the 0.2.1 release exception.
+  Bridge Zero Android 0.5.0 debug build on a Moto G15 Power (fingerprint sensor) against the 0.5.0
+  backend over `adb reverse`: seeded `backend_health_check` request → Approvals tab → **Approve →
+  BiometricPrompt fired → fingerprint → backend `approved`**; second request → **Deny → backend
+  `rejected`**; queue cleared both times; a third request aged out at the 300 s TTL as designed.
+  Android operator-approvals are now verified on-device (iOS was 2026-08-07). IX-D is unblocked.
+- Trainer: `--init-adapter` warm-start and `--lr` for polish legs (`training/train_adapter.py`);
+  the 12bq voice-family adapter reached v2f (identity string verbatim, 4/5 probe).
+
 Next: XII-B (The Considered Self — scheduled reflection, supersession patterns), the
 voice-consolidation experiment (QLoRA on the default voice's matched HF weights — the
 train-on-4bit ↔ serve-on-4bit hypothesis), Tier-2 curriculum growth ("its house"), and Epoch IX-D
-(Command Console; still gated on the deferred Android on-device approval validation).
+(Command Console; **now unblocked** — the Android on-device approval validation was recorded 2026-08-17).
 
 ## [0.5.0] - 2026-08-09 — Epoch XII-A (The Mirror) — Epoch XII begins
 
@@ -231,7 +257,7 @@ tagged `epoch-ix-c`. Backend suite: **345 passing**, hermetic.
 > release owner's decision with the Android approve/deny biometric round-trip **not yet run on
 > hardware**. iOS approve→Face ID was validated on a physical iPhone (2026-08-07). The Android
 > device pass is owed as a follow-up; until it is recorded, treat Android operator-approvals as
-> unverified on-device.
+> unverified on-device. *(Cleared 2026-08-17 — see [Unreleased].)*
 
 ### Added
 

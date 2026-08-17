@@ -596,6 +596,391 @@
      ]
     }
    ]
+  },
+  {
+   "id": "omega-arc-runbooks",
+   "title": "The Runbooks (Tier 2: how its house is run)",
+   "scope": "omega-arc-runbooks",
+   "lessons": [
+    {
+     "id": "runbook-1-the-training-chain",
+     "title": "The Training Chain",
+     "prerequisites": [],
+     "sources": [
+      "curriculum/omega-arc-runbooks/lesson-1-the-training-chain.md"
+     ],
+     "pass_threshold": 0.8,
+     "quiz": [
+      {
+       "id": "q1",
+       "question": "In which numeric precision must training run on this host, and which must it never use?",
+       "expect": [
+        "bf16, never fp16"
+       ],
+       "answer_expect": [
+        [
+         "bf16"
+        ],
+        [
+         "fp16"
+        ]
+       ]
+      },
+      {
+       "id": "q2",
+       "question": "On what kind of base must adapters be served, and what happens over a q4 base?",
+       "expect": [
+        "never on a q4"
+       ],
+       "answer_expect": [
+        [
+         "fp16",
+         "high-precision",
+         "high precision"
+        ],
+        [
+         "confabulat",
+         "loses",
+         "delta"
+        ]
+       ]
+      },
+      {
+       "id": "q3",
+       "question": "Why must Ollama generations never run while training?",
+       "expect": [
+        "fight for the same"
+       ],
+       "answer_expect": [
+        [
+         "card",
+         "gpu",
+         "memory",
+         "contention",
+         "fight"
+        ]
+       ]
+      },
+      {
+       "id": "q4",
+       "question": "In QLoRA, which layers must never leave the GPU, and which big pieces go to the CPU?",
+       "expect": [
+        "NF4-quantized layers"
+       ],
+       "answer_expect": [
+        [
+         "nf4",
+         "quantized"
+        ],
+        [
+         "embed",
+         "lm_head"
+        ]
+       ]
+      },
+      {
+       "id": "q5",
+       "question": "Who executes weight training, and what does the runtime do instead?",
+       "expect": [
+        "operator-executed"
+       ],
+       "answer_expect": [
+        [
+         "operator"
+        ],
+        [
+         "assembl",
+         "gate",
+         "version",
+         "record",
+         "never trains"
+        ]
+       ]
+      },
+      {
+       "id": "q6",
+       "question": "What is the proof step in the chain?",
+       "expect": [
+        "with no notes"
+       ],
+       "answer_expect": [
+        [
+         "no notes",
+         "without notes",
+         "bare weights",
+         "verbatim"
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "id": "runbook-2-the-school-day",
+     "title": "The School Day",
+     "prerequisites": [
+      "runbook-1-the-training-chain"
+     ],
+     "sources": [
+      "curriculum/omega-arc-runbooks/lesson-2-the-school-day.md"
+     ],
+     "pass_threshold": 0.8,
+     "quiz": [
+      {
+       "id": "q1",
+       "question": "During which hours does the school day run, and who set that window?",
+       "expect": [
+        "09:00 to 14:00"
+       ],
+       "answer_expect": [
+        [
+         "09:00",
+         "9:00",
+         "0900"
+        ],
+        [
+         "14:00",
+         "1400"
+        ],
+        [
+         "operator"
+        ]
+       ]
+      },
+      {
+       "id": "q2",
+       "question": "What is the re-quiz spacing ladder?",
+       "expect": [
+        "one day, then three, seven, fourteen, and thirty"
+       ],
+       "answer_expect": [
+        [
+         "one",
+         "1"
+        ],
+        [
+         "three",
+         "3"
+        ],
+        [
+         "seven",
+         "7"
+        ],
+        [
+         "fourteen",
+         "14"
+        ],
+        [
+         "thirty",
+         "30"
+        ]
+       ]
+      },
+      {
+       "id": "q3",
+       "question": "How many times at most is a lesson drilled in one day?",
+       "expect": [
+        "three times"
+       ],
+       "answer_expect": [
+        [
+         "three",
+         "3"
+        ]
+       ]
+      },
+      {
+       "id": "q4",
+       "question": "Which actions does the school day surface but never take?",
+       "expect": [
+        "never taken by the school day"
+       ],
+       "answer_expect": [
+        [
+         "consolidation"
+        ],
+        [
+         "approval",
+         "activation",
+         "training"
+        ]
+       ]
+      },
+      {
+       "id": "q5",
+       "question": "What does a re-run of a passed lesson show for chunks written, and why?",
+       "expect": [
+        "zero chunks written"
+       ],
+       "answer_expect": [
+        [
+         "zero",
+         "0",
+         "none"
+        ],
+        [
+         "already",
+         "re-ingest",
+         "re-quiz"
+        ]
+       ]
+      },
+      {
+       "id": "q6",
+       "question": "What happens to private subjects' knowledge — does it leave the machine?",
+       "expect": [
+        "never leaves this machine"
+       ],
+       "answer_expect": [
+        [
+         "never",
+         "not",
+         "does not"
+        ],
+        [
+         "machine",
+         "leave",
+         "private"
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "id": "runbook-3-change-and-release-discipline",
+     "title": "Change and Release Discipline",
+     "prerequisites": [
+      "runbook-2-the-school-day"
+     ],
+     "review_lessons": [
+      "runbook-1-the-training-chain",
+      "runbook-2-the-school-day"
+     ],
+     "sources": [
+      "curriculum/omega-arc-runbooks/lesson-3-change-and-release-discipline.md"
+     ],
+     "pass_threshold": 0.8,
+     "quiz": [
+      {
+       "id": "q1",
+       "question": "What are the eight steps of self-modification, in order?",
+       "expect": [
+        "proposal, backup, patch, syntax"
+       ],
+       "answer_expect": [
+        [
+         "proposal"
+        ],
+        [
+         "backup"
+        ],
+        [
+         "patch"
+        ],
+        [
+         "syntax"
+        ],
+        [
+         "test"
+        ],
+        [
+         "health"
+        ],
+        [
+         "review"
+        ],
+        [
+         "promote",
+         "rollback"
+        ]
+       ]
+      },
+      {
+       "id": "q2",
+       "question": "What increments the patch number, and what increments the minor number?",
+       "expect": [
+        "increments the patch number"
+       ],
+       "answer_expect": [
+        [
+         "milestone"
+        ],
+        [
+         "epoch"
+        ]
+       ]
+      },
+      {
+       "id": "q3",
+       "question": "What does scripts/check_versions.py read, and when does it fail?",
+       "expect": [
+        "check_versions.py"
+       ],
+       "answer_expect": [
+        [
+         "versioning.md",
+         "release",
+         "versioning document"
+        ],
+        [
+         "disagree",
+         "differ",
+         "mismatch",
+         "fail"
+        ]
+       ]
+      },
+      {
+       "id": "q4",
+       "question": "What must be attached to every GitHub release?",
+       "expect": [
+        "freshly rebuilt installer zip"
+       ],
+       "answer_expect": [
+        [
+         "installer"
+        ],
+        [
+         "rebuil",
+         "fresh"
+        ]
+       ]
+      },
+      {
+       "id": "q5",
+       "question": "What must never be committed?",
+       "expect": [
+        "Never commit secrets"
+       ],
+       "answer_expect": [
+        [
+         "secret"
+        ],
+        [
+         "weight",
+         "venv",
+         "virtual environment",
+         "cache",
+         "database"
+        ]
+       ]
+      },
+      {
+       "id": "q6",
+       "question": "What are the authoritative documents for decisions?",
+       "expect": [
+        "docs/decisions are authoritative"
+       ],
+       "answer_expect": [
+        [
+         "adr",
+         "decision record",
+         "docs/decisions"
+        ]
+       ]
+      }
+     ]
+    }
+   ]
   }
  ]
 }

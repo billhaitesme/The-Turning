@@ -22,11 +22,19 @@ parser.add_argument("--data", required=True, help="distillation JSONL (messages 
 parser.add_argument("--output", required=True, help="adapter output directory")
 parser.add_argument("--base", default="Qwen/Qwen2.5-3B-Instruct", help="HF base model")
 parser.add_argument("--epochs", type=float, default=4, help="tiny datasets need a few passes")
+parser.add_argument("--lr", type=float, default=2e-4,
+                    help="lower for polish legs on warm-started adapters — a full-rate restart "
+                         "spike can scramble individual memorized strings")
 parser.add_argument("--resume", default=None, help="checkpoint dir to resume from")
 parser.add_argument("--save-steps", type=int, default=25, help="frequent saves: crashes lose little")
 parser.add_argument("--qlora", action="store_true",
                     help="NF4-quantize the frozen base (QLoRA) — for bases too big for bf16 on this card")
 parser.add_argument("--lora-r", type=int, default=8, help="LoRA rank (alpha rides at 2x)")
+parser.add_argument("--init-adapter", default=None,
+                    help="warm-start: load LoRA weights from a prior checkpoint dir. Use instead of "
+                         "--resume on offloaded (qlora --cpu-layers) models — the trainer's full "
+                         "resume path dies in PEFT dispatch ('offload the whole model to the disk'). "
+                         "Optimizer/schedule restart fresh; fine for memorization objectives.")
 parser.add_argument("--cpu-layers", type=int, default=0,
                     help="qlora only: park the LAST N decoder layers on CPU (unquantized) to leave "
                          "VRAM headroom for the desktop/browser — the host crashed twice from "
@@ -113,6 +121,13 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.print_trainable_parameters()
 
+if args.init_adapter:
+    import safetensors.torch
+    from peft.utils import set_peft_model_state_dict
+    sd = safetensors.torch.load_file(str(Path(args.init_adapter) / "adapter_model.safetensors"))
+    set_peft_model_state_dict(model, sd)
+    print("warm-started LoRA weights from", args.init_adapter)
+
 dataset = load_dataset("json", data_files=args.data, split="train")
 print("training pairs:", len(dataset))
 
@@ -124,7 +139,7 @@ train_args = SFTConfig(
     per_device_train_batch_size=1,
     gradient_accumulation_steps=2,
     num_train_epochs=args.epochs,
-    learning_rate=2e-4,
+    learning_rate=args.lr,
     logging_steps=1,
     save_steps=args.save_steps,
     save_total_limit=2,

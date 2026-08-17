@@ -2904,6 +2904,702 @@
       },
       "pass_threshold": 0.8,
       "status": "passed"
+    },
+    {
+      "id": "012bb18f-a552-406f-8fd1-4d01ac15db1c",
+      "lesson_id": "house-1-ollama-the-model-house",
+      "subject_id": "omega-arc-house",
+      "scope": "omega-arc-house",
+      "conversation_id": "b043f1cf-fd22-47e3-a8e8-1c09b5864ad7",
+      "started_at": "2026-08-17T10:26:33.560216Z",
+      "finished_at": "2026-08-17T10:27:50.111119Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-house/lesson-1-ollama-the-model-house.md",
+          "chunks": 4
+        }
+      ],
+      "chunks_written": 4,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q6",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 6,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 0.8333,
+        "hits": 5,
+        "questions": 6,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "Ollama serves models at the address http://127.0.0.1:11434."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "The embeddinggemma model produces the memory embeddings."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "The runtime disables the hidden thinking phase deterministically by sending every chat call with \"think\" set to false."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "When a model is larger than the video card, the remainder spills to the CPU and runs slower."
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "answer_preview": "The study seat."
+          },
+          {
+            "id": "q6",
+            "hit": true,
+            "answer_preview": "Served models are stored as GGUF files."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 0.8333,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "68505a6f-632e-4f50-974d-d1a5662ec04d",
+      "lesson_id": "house-2-the-nervous-system",
+      "subject_id": "omega-arc-house",
+      "scope": "omega-arc-house",
+      "conversation_id": "70548c90-7557-4b60-b82d-a7da02d80bdd",
+      "started_at": "2026-08-17T14:00:08.825088Z",
+      "finished_at": "2026-08-17T14:02:00.715245Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-house/lesson-2-the-nervous-system.md",
+          "chunks": 4
+        }
+      ],
+      "chunks_written": 4,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 5,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 2
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 0.8,
+        "hits": 4,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "The Core Runtime is built on the FastAPI framework and listens on port 8000 by default."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "The Command Deck."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "No, they do not hold state of their own; they are windows into the one runtime."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "A mobile client whose supported version is too old must show **Update Required** and disable runtime operations."
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "answer_preview": "The runtime alone owns memory, evidence, plans, and decisions."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 0.8,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "3f7d543d-80ca-4149-bed2-9cb39c68f8ed",
+      "lesson_id": "lesson-3-the-operator-surfaces",
+      "subject_id": "omega-arc-architecture",
+      "scope": "omega-arc-architecture",
+      "conversation_id": "70dda1f4-b290-4360-b967-3b4936c9879e",
+      "started_at": "2026-08-17T14:04:57.266483Z",
+      "finished_at": "2026-08-17T14:08:53.864446Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-architecture/lesson-3-the-operator-surfaces.md",
+          "chunks": 0,
+          "skipped": "already ingested"
+        }
+      ],
+      "chunks_written": 0,
+      "recall_pre": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 17,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "rank": 1
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 17,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "rank": 2
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "rank": 3
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": 1.0
+        }
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 17,
+        "questions": 17,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "Conversation happens on the Command Deck."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "On a mobile console, an approval decision requires biometric confirmation (Face ID on iOS and BiometricPrompt on Android)."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "An outdated console shows \"Update Required\" and disables runtime operations."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "No, no action bypasses the gate."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "The Windows installer bundles an embedded Python runtime, the Core Runtime, both web interfaces, and Ollama (which is installed if missing)."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q1",
+            "hit": true,
+            "answer_preview": "The machine identity of the runtime is 0M3-G4-ARC."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q2",
+            "hit": true,
+            "answer_preview": "The active language model can only be changed by **explicit operator action**."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q3",
+            "hit": true,
+            "answer_preview": "The state and persistence in OMEGA-ARC are managed by the **deterministic runtime** (which tracks the current state) and the **memory system** (which utilizes a"
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q4",
+            "hit": true,
+            "answer_preview": "The desktop Bridge Zero is Mission Control, a read-only operations console with no chat by design."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q5",
+            "hit": true,
+            "answer_preview": "Epoch ten."
+          },
+          {
+            "id": "lesson-1-identity-and-principles:q6",
+            "hit": true,
+            "answer_preview": "The system runs entirely locally on Ollama, and nothing the operator says leaves the machine."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q1",
+            "hit": true,
+            "answer_preview": "The local embeddinggemma model produces the embeddings for recall."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q2",
+            "hit": true,
+            "answer_preview": "A room is a scope label on a memory where recall can search within a specific area."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q3",
+            "hit": true,
+            "answer_preview": "The global wing consists of unscoped memories, which stay recallable from inside every room."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q4",
+            "hit": true,
+            "answer_preview": "Near-tie memories are ordered by the newer fact winning (the temporal tie-break)."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q5",
+            "hit": true,
+            "answer_preview": "An undeclared collision becomes a pending candidate that waits for operator review."
+          },
+          {
+            "id": "lesson-2-the-memory-system:q6",
+            "hit": true,
+            "answer_preview": "No, superseded memories are never deleted and can always be restored."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 1.0,
+          "review": 1.0
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
+    },
+    {
+      "id": "de45a618-7aa8-40e2-9fe3-e3b702801c43",
+      "lesson_id": "house-3-the-memory-vault",
+      "subject_id": "omega-arc-house",
+      "scope": "omega-arc-house",
+      "conversation_id": "97220570-41e0-4a75-a374-b24bd370a289",
+      "started_at": "2026-08-17T14:09:24.470549Z",
+      "finished_at": "2026-08-17T14:10:35.399564Z",
+      "sources": [
+        {
+          "source": "curriculum/omega-arc-house/lesson-3-the-memory-vault.md",
+          "chunks": 2
+        }
+      ],
+      "chunks_written": 2,
+      "recall_pre": {
+        "k": 5,
+        "score": 0.0,
+        "hits": 0,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q2",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q3",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q4",
+            "hit": false,
+            "rank": null
+          },
+          {
+            "id": "q5",
+            "hit": false,
+            "rank": null
+          }
+        ]
+      },
+      "recall_post": {
+        "k": 5,
+        "score": 1.0,
+        "hits": 5,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "rank": 1
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "rank": 1
+          }
+        ],
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "comprehension": {
+        "score": 1.0,
+        "hits": 5,
+        "questions": 5,
+        "per_question": [
+          {
+            "id": "q1",
+            "hit": true,
+            "answer_preview": "Long-term memory lives in a single SQLite database file named **omega_arc.db**."
+          },
+          {
+            "id": "q2",
+            "hit": true,
+            "answer_preview": "Memories are never deleted; instead, when a fact is replaced, the old memory receives a reversible superseded flag."
+          },
+          {
+            "id": "q3",
+            "hit": true,
+            "answer_preview": "Every memory correction is recorded in the memory_events audit log."
+          },
+          {
+            "id": "q4",
+            "hit": true,
+            "answer_preview": "The **self-reflection** room."
+          },
+          {
+            "id": "q5",
+            "hit": true,
+            "answer_preview": "Recall search includes the current room plus the global wing."
+          }
+        ],
+        "model": "huihui_ai/gemma-4-abliterated:12b",
+        "sections": {
+          "own": 1.0,
+          "review": null
+        }
+      },
+      "pass_threshold": 0.8,
+      "status": "passed"
     }
   ]
 }

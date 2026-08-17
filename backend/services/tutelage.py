@@ -29,16 +29,75 @@ DEFAULT_ADAPTERS_PATH = (
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+# Private overlay: operator's-world subjects that must never leave this machine (Tier 3 and
+# anything the operator marks private). A store's private twin is always its sibling
+# `<name>.private.json` (gitignored) — derived from whatever path is read, so callers that
+# point at temp files stay hermetic and public files never absorb private records.
+def private_sibling(path: Path) -> Path:
+    p = Path(path)
+    return p.with_name(f"{p.stem}.private{p.suffix}")
+
+
+DEFAULT_PRIVATE_CURRICULUM_PATH = private_sibling(DEFAULT_CURRICULUM_PATH)
+DEFAULT_PRIVATE_STUDY_CYCLES_PATH = private_sibling(DEFAULT_STUDY_CYCLES_PATH)
+
+
+def _read_json(path: Path, empty: Dict[str, Any]) -> Dict[str, Any]:
+    if not Path(path).exists():
+        return dict(empty)
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
 def load_curriculum(path: Path = DEFAULT_CURRICULUM_PATH) -> Dict[str, Any]:
-    if not Path(path).exists():
-        return {"version": 1, "subjects": []}
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    curriculum = _read_json(path, {"version": 1, "subjects": []})
+    if private_sibling(path).exists():
+        private = _read_json(private_sibling(path), {"version": 1, "subjects": []})
+        public_ids = {s.get("id") for s in curriculum.get("subjects", [])}
+        for subject in private.get("subjects", []):
+            if subject.get("id") in public_ids:
+                continue  # a public subject wins its id; private never shadows public
+            merged = dict(subject)
+            merged["private"] = True
+            curriculum.setdefault("subjects", []).append(merged)
+    return curriculum
 
 
-def load_study_cycles(path: Path = DEFAULT_STUDY_CYCLES_PATH) -> Dict[str, Any]:
-    if not Path(path).exists():
-        return {"version": 1, "cycles": []}
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+def is_private_subject(subject: Optional[Dict[str, Any]]) -> bool:
+    return bool(subject and subject.get("private"))
+
+
+def study_cycles_path_for(subject: Optional[Dict[str, Any]]) -> Path:
+    """Where a subject's cycle records are written: private subjects → the private store."""
+    return private_sibling(DEFAULT_STUDY_CYCLES_PATH) if is_private_subject(subject) else DEFAULT_STUDY_CYCLES_PATH
+
+
+def load_study_cycles(path: Path = DEFAULT_STUDY_CYCLES_PATH, *, merge_private: bool = True) -> Dict[str, Any]:
+    """Read cycle records. Reading a store also merges its private sibling, if any (sorted by
+    finish time), so retention, prerequisites, and reviews see one history. Pass
+    merge_private=False to read a single store raw — that is what writers must do."""
+    store = _read_json(path, {"version": 1, "cycles": []})
+    if merge_private and private_sibling(path).exists():
+        private = _read_json(private_sibling(path), {"version": 1, "cycles": []})
+        if private.get("cycles"):
+            merged = list(store.get("cycles", [])) + [dict(c, private=True) for c in private["cycles"]]
+            merged.sort(key=lambda c: c.get("finished_at") or "")
+            store = dict(store, cycles=merged)
+    return store
+
+
+def redact_private_cycles(store: Dict[str, Any]) -> Dict[str, Any]:
+    """A view of the cycle store safe for records that live in the public repo (the reflection
+    digest): private lesson/subject ids become stable opaque labels. Scores stay — the runtime
+    still reflects on having studied; what it studied stays on this machine."""
+    import hashlib
+    out = []
+    for cycle in store.get("cycles", []):
+        if cycle.get("private"):
+            token = hashlib.sha1(str(cycle.get("lesson_id")).encode("utf-8")).hexdigest()[:8]
+            cycle = dict(cycle, lesson_id=f"private-lesson-{token}", subject_id="private-subject",
+                         scope="private", sources=[])
+        out.append(cycle)
+    return dict(store, cycles=out)
 
 
 def save_study_cycles(store: Dict[str, Any], path: Path = DEFAULT_STUDY_CYCLES_PATH) -> None:
