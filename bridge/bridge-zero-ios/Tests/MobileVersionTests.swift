@@ -9,8 +9,15 @@ final class MobileVersionTests: XCTestCase {
     }
 
     func testNewerRequiredVersionIsBlocked() {
+        // Must stay strictly newer than MobileVersion.current, whatever that is bumped to.
         XCTAssertFalse(MobileVersion.isCompatible(.init(
-            runtimeVersion: "0.3.0", requiredMobileVersion: "0.3.0", apiVersion: "1"
+            runtimeVersion: "99.0.0", requiredMobileVersion: "99.0.0", apiVersion: "1"
+        )))
+    }
+
+    func testCurrentVersionSatisfiesItself() {
+        XCTAssertTrue(MobileVersion.isCompatible(.init(
+            runtimeVersion: MobileVersion.current, requiredMobileVersion: MobileVersion.current, apiVersion: "1"
         )))
     }
 
