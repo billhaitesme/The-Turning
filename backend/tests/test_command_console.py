@@ -60,6 +60,31 @@ def test_host_status_direct_executes_with_real_vitals_and_is_logged(client):
                for h in _history(client))
 
 
+def test_comfyui_status_is_low_direct_and_readonly():
+    from services.tool_registry import get_tool
+    command = command_registry.get_command("run_comfyui_status")
+    assert command["gate"] == "direct" and command["risk"] == "low"
+    descriptor = (get_tool(command["tool_name"]) or {}).get("descriptor") or {}
+    assert descriptor.get("side_effects") == []
+
+
+def test_comfyui_status_direct_executes_and_reports_reachability(client):
+    # ComfyUI is usually off; the command must still succeed and report reachable=false rather
+    # than erroring — an unreachable ComfyUI is a normal reported state, not a failure.
+    r = client.post("/api/mobile/v1/commands/run_comfyui_status", headers=AUTH)
+    assert r.status_code == 200, r.text
+    entry = r.json()["command"]
+    assert entry["status"] == "executed" and entry["gate"] == "direct"
+    output = entry["outcome"]["output"]
+    assert output["reachable"] in (True, False)
+    if output["reachable"]:
+        assert output["queue_total"] >= 0
+    else:
+        assert "detail" in output  # says why, never silent
+    assert any(h["command_id"] == entry["command_id"] and h["status"] == "executed"
+               for h in _history(client))
+
+
 def test_mobile_renders_the_registry_it_does_not_define(client):
     payload = client.get("/api/mobile/v1/commands", headers=AUTH).json()
     names = {c["name"] for c in payload["commands"]}

@@ -13,6 +13,13 @@
   in the tool registry; rendered automatically by all three consoles (no UI change — the registry is
   the authority). Tests in `backend/tests/test_command_console.py` (host-status classification +
   direct execution with real vitals). Backend suite: **424 passing**.
+- **IX-D slice 4 — `run_comfyui_status`** (low/direct), the read-only first step toward automating
+  ComfyUI. New bounded tool `comfyui_status` (`backend/services/adapters/comfyui_status.py`) reads
+  the local ComfyUI's reachability and render-queue depth (GET /queue + /system_stats, default
+  `127.0.0.1:8188`). ComfyUI is usually off, so an unreachable ComfyUI is a **normal reported state**
+  (`reachable: false` with a reason), never an error. Read-only → direct. The side-effecting *submit*
+  command (queue a job, approval-gated) comes next, once a workflow template is chosen. Backend
+  suite: **426 passing**.
 
 ## [0.5.1] - 2026-08-17 — Epoch IX-D (Command Console)
 

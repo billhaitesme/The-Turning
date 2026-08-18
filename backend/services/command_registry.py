@@ -60,6 +60,16 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "run_comfyui_status",
+        "title": "ComfyUI status",
+        "description": "Check whether the local ComfyUI is running and how deep its render queue is. "
+                       "Read-only, so it executes immediately; reports 'not reachable' when ComfyUI is off.",
+        "risk": "low",
+        "gate": "direct",
+        "tool_name": "comfyui_status",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",
         "description": "Silently change which model answers, or rewrite responses. Forbidden by Model Lock "
