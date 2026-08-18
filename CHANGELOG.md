@@ -2,36 +2,35 @@
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-18 — Epoch IX-D slice 4 (the console gains useful hands)
+
+The command registry broadens from the three proof commands into genuinely useful ones. Released
+from `feature/epoch-ix-d-slice-4`, tagged `epoch-ix-d-slice-4` + `v0.5.2` (patch on the 0.5.x line).
+Backend suite: **433 tests** (1 pre-existing test-ordering flake, passes in isolation).
+
 ### Added
 
-- **IX-D slice 4 — the first registry broadening: `run_host_status`** (low/direct). A new read-only
-  bounded tool `host_status` (`backend/services/adapters/host_status.py`) reports the host machine's
-  CPU, memory, disk, and uptime via psutil. Because it only reads, its command is **direct** — it
-  executes immediately with no approval. This introduces a general capability: the command console
-  will **direct-execute a bounded tool, but only one that declares no side effects**
-  (`command_console._execute_direct` refuses a side-effecting tool as a direct command). Registered
-  in the tool registry; rendered automatically by all three consoles (no UI change — the registry is
-  the authority). Tests in `backend/tests/test_command_console.py` (host-status classification +
-  direct execution with real vitals). Backend suite: **424 passing**.
-- **IX-D slice 4 — `run_comfyui_status`** (low/direct), the read-only first step toward automating
-  ComfyUI. New bounded tool `comfyui_status` (`backend/services/adapters/comfyui_status.py`) reads
-  the local ComfyUI's reachability and render-queue depth (GET /queue + /system_stats, default
-  `127.0.0.1:8188`). ComfyUI is usually off, so an unreachable ComfyUI is a **normal reported state**
-  (`reachable: false` with a reason), never an error. Read-only → direct. The side-effecting *submit*
-  command (queue a job, approval-gated) comes next, once a workflow template is chosen. Backend
-  suite: **426 passing**.
-- **IX-D slice 4 — `run_comfyui_render`** (medium/**approval**), the first command that *acts* on the
-  outside world. New bounded tool `comfyui_submit` (`backend/services/adapters/comfyui_submit.py`)
-  fills a template workflow with the operator's prompt/seed/size and POSTs it to ComfyUI's `/prompt`
-  queue, returning the queued prompt id (it submits, it does not wait). Queuing a render changes
-  state, so its `side_effects` list is non-empty and the command is approval-gated — it runs only
-  after a biometric-confirmed approval, never direct. Ships a **public** template
-  (`comfyui_templates/sdxl_lightning_txt2img.json`, general-purpose SDXL-lightning checkpoint for a
-  fast proof render); the operator's private pipelines will be wrapped by a separate private command.
-  This also **generalized the gated executor** (`command_console._run_gated_adapter`) to run any
-  approval-gated bounded tool through its registered adapter, not just `backend_health_check`.
-  `backend/tests/test_command_console.py`: gated-path end-to-end on the submit tool, side-effect
-  classification, argument validation, template building. Backend suite: **430 passing**.
+- **`run_host_status`** (low/direct) — first registry broadening: reads the host's CPU/memory/disk/
+  uptime. Read-only, so it direct-executes (the side-effect guard confirms `side_effects == []`).
+- **`run_comfyui_status`** (low/direct) — read-only reachability + render-queue depth of the local
+  ComfyUI; reports "not reachable" cleanly when it's off.
+- **`run_comfyui_render`** (medium/approval) — the first command that *acts on the world*: queues a
+  text-to-image render on ComfyUI from a public SDXL-lightning template, gated behind a biometric
+  approval. **Device-validated end to end** (phone fingerprint → real image rendered to disk).
+- **`free_comfyui_vram`** (low/approval) — unloads ComfyUI models and frees GPU memory (reversible;
+  side-effecting, so approval-gated). Reports VRAM reclaimed.
+- **Generalized gated executor** — the approval-gated path now runs *any* registered bounded tool's
+  adapter (not just `backend_health_check`), with the biometric approval as the gate.
+- **Desktop command parameter form** — the Commands panel renders an input form (prompt / cfg /
+  denoise / steps / seed) from each command's registry spec; blank fields fall back to the template's
+  baked values. (Mobile prompt-form is still open — the no-parameter commands work on mobile today.)
+- **Curriculum:** new public Tier-2 subject `omega-arc-command-console` (3 lessons) — the runtime is
+  taught its own newest capability. School teaches it in the daily loop.
+
+### Notes
+
+- Android/iOS apps are unchanged from 0.5.1 (they render the registry dynamically, so the new
+  no-parameter commands appear without an app update; the mobile render prompt-form is a later slice).
 
 ## [0.5.1] - 2026-08-17 — Epoch IX-D (Command Console)
 
