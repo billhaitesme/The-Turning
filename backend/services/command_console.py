@@ -284,8 +284,31 @@ def _execute_gated(entry: Dict[str, Any], approval_store: Dict[str, Any]) -> Dic
                                   "checked_url": output.get("checked_url"),
                                   "latency_ms": output.get("latency_ms")})
         else:
-            entry.update(status="failed", finished_at=utc_now_iso(),
-                         outcome={"error": f"no executor for tool {request['tool_name']}"})
+            # Any other approval-gated bounded tool runs through its registered adapter. The
+            # biometric approval already consumed IS the gate here (unlike the direct path, there is
+            # no side-effect guard — an approval-gated tool is expected to have side effects).
+            entry.update(**_run_gated_adapter(request))
     except Exception as exc:  # noqa: BLE001 — the log must record failure, not swallow it
         entry.update(status="failed", finished_at=utc_now_iso(), outcome={"error": str(exc)})
     return _upsert(entry)
+
+
+def _run_gated_adapter(request: Dict[str, Any]) -> Dict[str, Any]:
+    from services.tool_registry import get_tool
+
+    tool_name = str(request["tool_name"])
+    tool = get_tool(tool_name)
+    adapter = (tool or {}).get("adapter")
+    if adapter is None or not hasattr(adapter, "execute"):
+        return {"status": "failed", "finished_at": utc_now_iso(),
+                "outcome": {"error": f"no executor for tool {tool_name}"}}
+    try:
+        output = adapter.execute(request.get("arguments") or {})
+    except ValueError as exc:
+        return {"status": "failed", "finished_at": utc_now_iso(),
+                "outcome": {"error": f"{tool_name}: {exc}"}}
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "failed", "finished_at": utc_now_iso(),
+                "outcome": {"error": f"{tool_name} failed: {exc}"}}
+    return {"status": "executed", "finished_at": utc_now_iso(),
+            "outcome": {"tool_name": tool_name, "output": output}}

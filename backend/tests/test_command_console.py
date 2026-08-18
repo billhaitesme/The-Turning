@@ -154,6 +154,68 @@ def test_gated_command_needs_biometric_approval_end_to_end(client, monkeypatch):
     assert a["consumed_at"]
 
 
+def test_comfyui_render_is_gated_because_it_has_side_effects():
+    # The submit tool changes state (queues GPU work), so it must NOT be direct — the registry
+    # classifies it approval-gated, and its tool declares a non-empty side_effects list.
+    from services.tool_registry import get_tool
+    command = command_registry.get_command("run_comfyui_render")
+    assert command["gate"] == "approval" and command["risk"] == "medium"
+    descriptor = (get_tool(command["tool_name"]) or {}).get("descriptor") or {}
+    assert descriptor.get("side_effects")  # non-empty
+
+
+def test_comfyui_render_gated_path_runs_the_adapter_on_biometric_approval(client, monkeypatch):
+    # No network in tests: the submit adapter's execute returns a canned queued result. This proves
+    # the generalized gated executor runs an arbitrary bounded tool's adapter (not just health check)
+    # and records its output — only after a biometric-confirmed approval.
+    from services.adapters.comfyui_submit import ComfyUISubmitAdapter
+    monkeypatch.setattr(ComfyUISubmitAdapter, "execute",
+                        lambda self, args: {"submitted": True, "prompt_id": "pid-123", "queue_number": 1,
+                                            "workflow": "sdxl_lightning_txt2img", "checkpoint": "dreamshaperXL.safetensors",
+                                            "seed": 42, "prompt": args.get("prompt")})
+    r = client.post("/api/mobile/v1/commands/run_comfyui_render", headers=AUTH)
+    assert r.status_code == 200, r.text
+    entry = r.json()["command"]
+    assert entry["status"] == "awaiting_approval" and entry["request_id"]
+    request_id = entry["request_id"]
+
+    # a desktop (non-biometric) approval must not release it
+    client.post(f"/system/tool-requests/{request_id}/approve", json={"approved_by": "desktop"})
+    command_console.on_request_approved(request_id)
+    assert next(h for h in _history(client) if h["request_id"] == request_id)["status"] == "awaiting_approval"
+
+    # the mobile biometric approval releases it -> the adapter runs -> the queued id is recorded
+    r = client.post(f"/api/mobile/v1/approvals/{request_id}/approve", headers=AUTH, json={"confirmed": True})
+    assert r.status_code == 200, r.text
+    cmd = r.json()["command"]
+    assert cmd["status"] == "executed", cmd
+    assert cmd["outcome"]["output"]["submitted"] is True
+    assert cmd["outcome"]["output"]["prompt_id"] == "pid-123"
+
+
+def test_comfyui_submit_validates_its_arguments():
+    from services.adapters.comfyui_submit import ComfyUISubmitAdapter
+    adapter = ComfyUISubmitAdapter()
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        adapter.validate_arguments({})  # missing prompt
+    with _pytest.raises(ValueError):
+        adapter.validate_arguments({"prompt": "x", "workflow": "does-not-exist"})
+    ok = adapter.validate_arguments({"prompt": "  a cat  ", "seed": 7, "steps": 6})
+    assert ok["prompt"] == "a cat" and ok["seed"] == 7 and ok["workflow"] == "sdxl_lightning_txt2img"
+
+
+def test_comfyui_submit_builds_workflow_from_template():
+    # The template patches the real node graph, not string placeholders — prove the prompt lands.
+    from services.adapters.comfyui_submit import ComfyUISubmitAdapter
+    adapter = ComfyUISubmitAdapter()
+    built = adapter._build_workflow(adapter.validate_arguments({"prompt": "a red bicycle", "seed": 5}))
+    wf = built["workflow"]
+    assert wf["6"]["inputs"]["text"] == "a red bicycle"
+    assert wf["3"]["inputs"]["seed"] == 5
+    assert built["checkpoint"].endswith(".safetensors")
+
+
 def test_mobile_approve_without_confirmed_flag_is_rejected(client):
     r = client.post("/api/mobile/v1/commands/run_backend_health_check", headers=AUTH)
     request_id = r.json()["command"]["request_id"]

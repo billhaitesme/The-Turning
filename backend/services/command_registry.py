@@ -70,6 +70,19 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "run_comfyui_render",
+        "title": "ComfyUI render",
+        "description": "Queue a text-to-image render on the local ComfyUI. Side-effecting (it commits "
+                       "GPU work and writes an image), so it is approval-gated: it runs only after a "
+                       "biometric-confirmed operator approval. Uses a default prompt until the consoles "
+                       "add a prompt field; an API caller may pass its own prompt/seed/size.",
+        "risk": "medium",
+        "gate": "approval",
+        "tool_name": "comfyui_submit",
+        "arguments": {"prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"},
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",
         "description": "Silently change which model answers, or rewrite responses. Forbidden by Model Lock "

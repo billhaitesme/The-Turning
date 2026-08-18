@@ -20,6 +20,18 @@
   (`reachable: false` with a reason), never an error. Read-only → direct. The side-effecting *submit*
   command (queue a job, approval-gated) comes next, once a workflow template is chosen. Backend
   suite: **426 passing**.
+- **IX-D slice 4 — `run_comfyui_render`** (medium/**approval**), the first command that *acts* on the
+  outside world. New bounded tool `comfyui_submit` (`backend/services/adapters/comfyui_submit.py`)
+  fills a template workflow with the operator's prompt/seed/size and POSTs it to ComfyUI's `/prompt`
+  queue, returning the queued prompt id (it submits, it does not wait). Queuing a render changes
+  state, so its `side_effects` list is non-empty and the command is approval-gated — it runs only
+  after a biometric-confirmed approval, never direct. Ships a **public** template
+  (`comfyui_templates/sdxl_lightning_txt2img.json`, general-purpose SDXL-lightning checkpoint for a
+  fast proof render); the operator's private pipelines will be wrapped by a separate private command.
+  This also **generalized the gated executor** (`command_console._run_gated_adapter`) to run any
+  approval-gated bounded tool through its registered adapter, not just `backend_health_check`.
+  `backend/tests/test_command_console.py`: gated-path end-to-end on the submit tool, side-effect
+  classification, argument validation, template building. Backend suite: **430 passing**.
 
 ## [0.5.1] - 2026-08-17 — Epoch IX-D (Command Console)
 
