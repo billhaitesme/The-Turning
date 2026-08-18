@@ -110,7 +110,10 @@ def test_evidence_diagnostic_tracks_facts(monkeypatch, tmp_path):
     client = build_client(monkeypatch, tmp_path)
     import routes.mobile as mobile
 
+    # Hermetic: pin BOTH inputs empty so this holds regardless of suite ordering (the evidence
+    # lamp now also activates on recorded tool results, which a prior test may have left behind).
     monkeypatch.setattr(mobile, "load_evidence_store", lambda *a, **k: {"version": 1, "facts": {}})
+    monkeypatch.setattr(mobile, "load_tool_result_store", lambda *a, **k: {"version": 1, "results": []})
     empty = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
     assert empty["evidence"]["state"] == "inactive"
 
