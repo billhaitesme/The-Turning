@@ -53,8 +53,9 @@ class HostStatusAdapter:
             payload["error"] = "psutil unavailable; host vitals cannot be read."
             return payload
 
-        # CPU
-        payload["cpu_percent"] = round(float(psutil.cpu_percent(interval=None)), 1)
+        # CPU — a one-shot read needs a real sampling interval; interval=None returns 0.0 on the
+        # first call of a fresh process (no prior baseline). 0.15 s blocks briefly for an honest value.
+        payload["cpu_percent"] = round(float(psutil.cpu_percent(interval=0.15)), 1)
         payload["cpu_count"] = psutil.cpu_count(logical=True)
 
         # Memory
