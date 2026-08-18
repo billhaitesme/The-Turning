@@ -140,5 +140,24 @@ consumed, `backend_health_check` result `completed/success`. A stale `MobileVers
 that had broken iOS CI since the 0.5.0 bump was fixed in passing. **IX-D is now validated on both
 mobile platforms.**
 
-Still open: a desktop Bridge Zero Commands panel (the `/system/commands` endpoints exist; the UI does
-not), and any command beyond the three above.
+**Slice 3 (2026-08-17):** desktop Bridge Zero gains a **Commands** panel
+(`bridge/bridge-zero/panels/CommandsPanel.jsx`) over the existing `/system/commands` endpoints —
+registry cards (RUN / REQUEST / greyed FORBIDDEN) + history, notice line after initiate. Validated in
+the browser: desktop RUN `new_conversation` → EXECUTED; desktop REQUEST `run_backend_health_check` →
+AWAITING_APPROVAL → **approved on the phone with a biometric** → EXECUTED, backend showing
+`channel: desktop` + `confirmation: biometric` (the cross-surface "desktop cannot self-approve" path,
+proven). Released as **0.5.1** (`epoch-ix-d`, `v0.5.1`).
+
+**Slice 4 (2026-08-17, post-release) — broadening the registry, one risk-classed command at a time.**
+First addition: **`run_host_status`** (low/direct). A new read-only bounded tool `host_status`
+(`backend/services/adapters/host_status.py`, psutil vitals — CPU/memory/disk/uptime) with an empty
+`side_effects` list. Because it only reads, the command is *direct*: it executes immediately, no
+approval. This adds a general rule to the console: **a direct command may map to a bounded tool, but
+`_execute_direct` will run it only when that tool declares no side effects** — a side-effecting tool
+as a direct command is refused, not silently run. So the taxonomy now reads: direct = a built-in
+action *or* a read-only tool; approval-gated = any tool that changes state; forbidden = Model-Lock
+violations. Next slice-4 candidates (each needs its risk class, and destructive ones an explicit undo
+before they qualify): ComfyUI queue submit (approval-gated), then the school requesting a consolidation
+approval from the phone.
+
+Still open beyond slice 4: continue broadening the registry as above.

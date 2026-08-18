@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
+from services.adapters.host_status import HOST_STATUS_DESCRIPTOR, HostStatusAdapter
 from services.adapters.tutelage_consolidation import TUTELAGE_CONSOLIDATION_DESCRIPTOR
 from services.tool_contracts import ToolAdapter, validate_tool_definition
 
@@ -55,6 +56,9 @@ def get_tool_adapter(tool_name: str) -> Optional[ToolAdapter]:
 def register_default_tools() -> None:
     if "backend_health_check" not in TOOL_REGISTRY:
         register_tool(BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter())
+    if "host_status" not in TOOL_REGISTRY:
+        # Read-only, no side effects — the command console may direct-execute it (IX-D slice 4).
+        register_tool(HOST_STATUS_DESCRIPTOR, HostStatusAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).

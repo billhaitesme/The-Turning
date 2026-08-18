@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- **IX-D slice 4 — the first registry broadening: `run_host_status`** (low/direct). A new read-only
+  bounded tool `host_status` (`backend/services/adapters/host_status.py`) reports the host machine's
+  CPU, memory, disk, and uptime via psutil. Because it only reads, its command is **direct** — it
+  executes immediately with no approval. This introduces a general capability: the command console
+  will **direct-execute a bounded tool, but only one that declares no side effects**
+  (`command_console._execute_direct` refuses a side-effecting tool as a direct command). Registered
+  in the tool registry; rendered automatically by all three consoles (no UI change — the registry is
+  the authority). Tests in `backend/tests/test_command_console.py` (host-status classification +
+  direct execution with real vitals). Backend suite: **424 passing**.
+
 ## [0.5.1] - 2026-08-17 — Epoch IX-D (Command Console)
 
 The operator consoles gain **hands**: Epoch IX-D, the Command Console, ships on all three surfaces —

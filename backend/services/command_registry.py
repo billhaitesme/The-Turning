@@ -9,8 +9,14 @@ gate:
   forbidden  — never executes; the attempt itself is refused and recorded (Model Lock /
                output fidelity: ADR-IX-001, ADR-IX-002).
 
-Slice 1 ships exactly three commands — one of each gate — per the epoch design's first concrete
-step. Broaden only after the gated path is proven on hardware.
+Slice 1 shipped exactly three commands — one of each gate — per the epoch design's first concrete
+step. Slice 4 broadens the registry one risk-classed command at a time, the gated path having been
+proven on hardware: `run_host_status` (low/direct) is the first addition — a read-only host-vitals
+read that direct-executes because there is nothing to gate on a read.
+
+A direct command may map to a bounded tool (`tool_name`); the console will direct-run it ONLY when
+that tool declares no side effects (see command_console._execute_direct). Approval-gated commands
+always map to a bounded tool.
 """
 from __future__ import annotations
 
@@ -40,6 +46,17 @@ COMMANDS: List[Dict[str, Any]] = [
         "tool_name": "backend_health_check",
         # the tool's one required argument: the runtime's own port (OMEGA_BACKEND_PORT, default 8001)
         "arguments": {"port": int(os.getenv("OMEGA_BACKEND_PORT", "8001") or 8001)},
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
+        "name": "run_host_status",
+        "title": "Host status",
+        "description": "Read the host machine's vitals — CPU, memory, disk, uptime. Read-only, so it "
+                       "executes immediately (nothing to gate on a read).",
+        "risk": "low",
+        "gate": "direct",
+        # Maps to a read-only bounded tool; the console direct-executes it (side_effects == []).
+        "tool_name": "host_status",
         "surfaces": ["mobile", "desktop"],
     },
     {

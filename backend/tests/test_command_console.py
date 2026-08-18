@@ -30,10 +30,34 @@ def _history(client):
     return client.get("/api/mobile/v1/commands/history", headers=AUTH).json()["history"]
 
 
-def test_registry_has_exactly_one_command_per_gate_in_slice_one():
-    gates = sorted(c["gate"] for c in command_registry.list_commands())
-    assert gates == ["approval", "direct", "forbidden"]
+def test_registry_covers_every_gate_and_polices_itself():
+    gates = {c["gate"] for c in command_registry.list_commands()}
+    assert gates == {"direct", "approval", "forbidden"}
     command_registry.validate_registry()  # the registry polices its own rules
+
+
+def test_host_status_is_low_direct_and_maps_to_a_readonly_tool():
+    # Slice 4's first broadening: a direct command may map to a bounded tool, but only a read-only
+    # one may direct-execute — the console enforces the side-effect guard.
+    from services.tool_registry import get_tool
+    command = command_registry.get_command("run_host_status")
+    assert command["gate"] == "direct" and command["risk"] == "low"
+    descriptor = (get_tool(command["tool_name"]) or {}).get("descriptor") or {}
+    assert descriptor.get("side_effects") == []
+
+
+def test_host_status_direct_executes_with_real_vitals_and_is_logged(client):
+    r = client.post("/api/mobile/v1/commands/run_host_status", headers=AUTH)
+    assert r.status_code == 200, r.text
+    entry = r.json()["command"]
+    assert entry["status"] == "executed" and entry["gate"] == "direct"
+    output = entry["outcome"]["output"]
+    # A real read: either psutil vitals or an explicit unavailable marker — never silent emptiness.
+    assert output["psutil_available"] in (True, False)
+    if output["psutil_available"]:
+        assert output["ram_total_bytes"] > 0 and "cpu_percent" in output
+    assert any(h["command_id"] == entry["command_id"] and h["status"] == "executed"
+               for h in _history(client))
 
 
 def test_mobile_renders_the_registry_it_does_not_define(client):

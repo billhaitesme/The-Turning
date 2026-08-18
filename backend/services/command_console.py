@@ -191,7 +191,37 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         title = str(arguments.get("title") or "Command Console")
         conversation_id = _create_conversation(title=title)
         return {"conversation_id": conversation_id, "title": title}
+    if command.get("tool_name"):
+        return _execute_direct_tool(command, {**(command.get("arguments") or {}), **(arguments or {})})
     raise CommandError(500, f"No direct handler for {command['name']}")
+
+
+def _execute_direct_tool(command: Dict[str, Any], arguments: Dict[str, Any]) -> Dict[str, Any]:
+    """Run a bounded tool with no approval — permitted ONLY for tools that declare no side effects.
+
+    This is the one place a tool executes without an IX-C approval, and the read-only guard is what
+    makes that safe: a `run_host_status`-style command reads and returns, it never changes state. A
+    direct command that pointed at a side-effecting tool is refused here (500), not silently run.
+    """
+    from services.tool_registry import get_tool
+
+    tool_name = str(command["tool_name"])
+    entry = get_tool(tool_name)
+    if entry is None:
+        raise CommandError(500, f"Direct command '{command['name']}' maps to unknown tool '{tool_name}'.")
+    descriptor = entry.get("descriptor") or {}
+    if descriptor.get("side_effects"):
+        raise CommandError(500, f"Tool '{tool_name}' has side effects; it cannot be a direct command.")
+    adapter = entry.get("adapter")
+    if adapter is None or not hasattr(adapter, "execute"):
+        raise CommandError(500, f"Tool '{tool_name}' has no adapter to execute.")
+    try:
+        output = adapter.execute(arguments)
+    except ValueError as exc:
+        raise CommandError(422, f"{tool_name}: {exc}") from exc
+    except Exception as exc:  # noqa: BLE001 — surface, don't swallow
+        raise CommandError(500, f"{tool_name} failed: {exc}") from exc
+    return {"tool_name": tool_name, "output": output}
 
 
 # ----------------------------------------------------------------------------- approval callbacks
