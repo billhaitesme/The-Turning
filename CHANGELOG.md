@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-17 — Epoch IX-D (Command Console)
+
+The operator consoles gain **hands**: Epoch IX-D, the Command Console, ships on all three surfaces —
+Android, iOS, and desktop Bridge Zero. Released from `feature/epoch-ix-d-command-console`, tagged
+`epoch-ix-d` and `v0.5.1`. IX-D is a back-filled Epoch IX slice landing on the current 0.5.x
+(Epoch XII) line, so it takes a **patch** bump rather than a minor. Backend suite: **422 passing**.
+
 ### Added
 
 - **Epoch IX-D — Command Console, slice 1** (ADR 0015 → **Accepted**;
