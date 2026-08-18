@@ -224,7 +224,9 @@ tokens in a usable time; the model selection does not affect the streaming trans
   Moto G15 Power REQUEST → Approve → fingerprint → EXECUTED with a real tool result). Unreleased on
   `feature/epoch-ix-d-command-console`. **Slice 2 (iOS Commands tab) built via CI, sideloaded, and
   device-validated the same evening** — REQUEST → Face ID → EXECUTED with `confirmation: biometric`.
-  Both mobile platforms validated. Slice 3 open: desktop panel, broader registry.
+  Both mobile platforms validated. **Slice 3 (desktop Bridge Zero Commands panel) built and validated
+  live the same evening** — desktop REQUEST → phone Approve + biometric → executed, `channel: desktop`.
+  All three consoles carry Commands. Slice 4 open: broaden the registry. The epoch is ready to release.
 
 IX-C, Epoch X (A/B/C), Epoch XI (A/B/C), and XII-A are released; see the sections above. The 0.2.1
 Android on-device approval exception that gated IX-D was cleared 2026-08-17.

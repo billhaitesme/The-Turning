@@ -30,6 +30,12 @@
   single-use approval consumed, real `backend_health_check` result. Backend reached over the iPhone
   USB-tether link (`172.20.10.6:8001`). **IX-D validated on both mobile platforms.** Not in this
   slice: a desktop Bridge Zero Commands panel.
+- **IX-D slice 3 — desktop Bridge Zero Commands panel** (`bridge/bridge-zero/panels/CommandsPanel.jsx`
+  + `app/useBridgeData.js` command state/initiate over the existing `/system/commands` endpoints).
+  Registry cards (RUN / REQUEST / greyed FORBIDDEN), notice line, command history. Validated live: RUN
+  `new_conversation` executed; REQUEST health check → awaiting_approval → **approved on the phone** →
+  executed, backend `channel: desktop` + `confirmation: biometric`. **All three consoles now carry
+  Commands; IX-D is validated on Android, iOS, and desktop.**
 - **The school day** (`docs/architecture/school-day.md`; XII-B groundwork): an operator-set
   daily learning window, 09:00–14:00 local, fired by the Windows task `OMEGA-ARC School Day`
   (`scripts/Register-SchoolDayTask.ps1` → `scripts/school_day.ps1` → `scripts/school_day.py`).
@@ -70,6 +76,12 @@
 - iOS: `MobileVersionTests.testNewerRequiredVersionIsBlocked` no longer pins 0.3.0 (it silently
   broke `ios-build.yml` when the app went to 0.5.0, which also blocked `.ipa` packaging); it now
   uses 99.0.0 and a self-consistency test was added.
+- **Diagnostics — Evidence lamp**: the mobile (and thus desktop) Evidence subsystem read `inactive`
+  after real tool runs because it keyed only on the durable *global* evidence store — session-scoped
+  evidence and recorded tool results live outside it. It is now `healthy` when durable facts OR
+  recorded tool results exist, matching the desktop console's evidence view
+  (`backend/routes/mobile.py`, `test_mobile_api.py`). Planning stays `inactive` by design until a
+  goal or plan actually exists.
 
 Next: IX-D slice 3 (desktop Bridge Zero Commands panel over the existing `/system/commands`
 endpoints; broaden the registry one risk-classed command at a time), XII-B (The

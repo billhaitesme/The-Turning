@@ -1,8 +1,9 @@
 # Epoch IX-D — Command Console
 
-**Status:** Slices 1 (backend + Android) and 2 (iOS) **built and device-validated 2026-08-17**. ADR
+**Status:** Slices 1 (backend + Android), 2 (iOS), and 3 (desktop Bridge Zero) **built and validated
+2026-08-17** — all three operator consoles carry Commands. ADR
 [`0015-command-console.md`](../decisions/0015-command-console.md) is Accepted and carries the recorded
-policy shift. Slice 3 (desktop Bridge Zero panel, broader registry) is open. The design below is
+policy shift. Broadening the registry (slice 4) is open; the epoch is ready to cut as a release. The design below is
 as proposed; **[As built](#as-built-slice-1)** at the end records what actually shipped.
 
 Promotes the operator consoles from *observe + approve* to *initiate* — a command surface where the
@@ -134,7 +135,13 @@ hit the PC with no Wi-Fi). Validated: REQUEST → Approve → Face ID → EXECUT
 real tool result. Six tabs on iOS = Runtime · Console · Commands · Approvals · More (Diagnostics,
 Settings) — deliberate: the two operator-action tabs stay on the bar.
 
-**Open (slice 3+):** desktop Bridge Zero Commands panel over the existing
-`/system/commands` endpoints; broadening the registry (candidates, in order: read-only host status;
+**Slice 3 — desktop Bridge Zero (2026-08-17, same day):** `bridge/bridge-zero/panels/CommandsPanel.jsx`
++ `app/useBridgeData.js` command state/initiate over the existing `/system/commands` endpoints (RUN /
+REQUEST / greyed FORBIDDEN cards + history). Validated in-browser end to end, including the
+cross-surface path: desktop REQUEST → **phone Approve + biometric** → EXECUTED, backend
+`channel: desktop` + `confirmation: biometric`. Desktop can initiate but cannot self-approve — exactly
+the ADR rule, enforced in the executor.
+
+**Open (slice 4+):** broadening the registry (candidates, in order: read-only host status;
 ComfyUI queue submit under approval; the school asking for consolidation approval from the phone) —
 each new command needs a risk class, and destructive ones need an explicit undo before they qualify.

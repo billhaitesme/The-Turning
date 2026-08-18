@@ -1,6 +1,6 @@
 # 0015 — Command Console (Epoch IX-D)
 
-**Status:** Accepted (2026-08-17) — slices 1 (Android) and 2 (iOS) built and validated on-device; see
+**Status:** Accepted (2026-08-17) — slices 1 (Android), 2 (iOS), and 3 (desktop) built and validated; see
 [Recorded policy shift](#recorded-policy-shift-2026-08-17) and [Implementation](#implementation-slice-1-2026-08-17).
 **Date:** 2026-08-07 (proposed) · 2026-08-17 (accepted)
 **Depends on:** IX-C approval signals being authoritative and **device-validated** (ADR

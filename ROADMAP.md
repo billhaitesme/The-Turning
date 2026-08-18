@@ -99,10 +99,15 @@ records what shipped.
 - **Slice 2 (done, device-validated same day):** iOS Commands tab — CI-built, sideloaded, REQUEST →
   Face ID → EXECUTED on the iPhone with `confirmation: biometric` on the backend. **Both mobile
   platforms validated.**
-- **Slice 3 (open):** desktop Bridge Zero Commands panel over the existing endpoints, then broaden
-  the registry one risk-classed command at a time (read-only host status → ComfyUI queue submit under
-  approval → the school requesting consolidation approval from the phone). Release identity for the
-  epoch: ready to cut once Bill wants it — both mobile gates are cleared.
+- **Slice 3 (done, validated live 2026-08-17):** desktop Bridge Zero **Commands** panel over the
+  existing `/system/commands` endpoints — RUN / REQUEST / greyed FORBIDDEN cards + command history.
+  Validated in-browser: RUN `new_conversation` → executed; REQUEST health check → awaiting_approval →
+  **approved on the phone** → executed, backend recording `channel: desktop` + `confirmation:
+  biometric` (the cross-surface path — desktop initiates, phone confirms, desktop cannot self-approve).
+- **Slice 4 (open):** broaden the registry one risk-classed command at a time (read-only host status →
+  ComfyUI queue submit under approval → the school requesting consolidation approval from the phone).
+  **All three consoles (Android, iOS, desktop) now carry Commands — the epoch is ready to cut as a
+  release whenever wanted.**
 
 ## Epoch X — Memory (delivered through X-C / 0.3.2)
 
@@ -220,8 +225,8 @@ The model never grades itself. Design: [`docs/architecture/epoch-xi-tutelage.md`
   matched-precision hypothesis on the 8 GB card.
 - Curriculum growth Tier 2 ("its house": Ollama, FastAPI, SQLite, the host) per the 4-tier
   strategy; K-12 pedagogy (mastery gates, spiral review, spaced retention) without K-12 content.
-- IX-D Command Console **slice 3** (slices 1+2 built + device-validated on Android and iOS
-  2026-08-17): desktop Commands panel, broaden the registry.
+- IX-D Command Console **slice 4** (slices 1–3 built + validated 2026-08-17: Android, iOS, and desktop
+  all carry Commands): broaden the registry one risk-classed command at a time.
 - Surfacing consolidation approvals in the mobile Approvals tab (now a natural IX-D command).
 
 Historical milestones remain recorded in [VERSION_HISTORY.md](VERSION_HISTORY.md) and `docs/architecture/roadmap.md`.
