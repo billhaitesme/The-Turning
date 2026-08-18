@@ -1,3 +1,4 @@
+import { useState } from "react";
 import PanelShell from "../components/PanelShell";
 import ConsoleButton from "../instruments/ConsoleButton";
 import StatusLamp from "../instruments/StatusLamp";
@@ -71,10 +72,12 @@ export default function CommandsPanel({ accent, data, onInitiate, onDismissNotic
               </div>
               {command.description ? <div className="cmd-desc">{command.description}</div> : null}
               <div className={`cmd-gate ${gateClass}`}>{GATE_LABEL[gate] || GATE_LABEL.forbidden}</div>
-              <ConsoleButton
-                label={isForbidden ? "FORBIDDEN" : gate === "approval" ? "REQUEST" : "RUN"}
-                disabled={isForbidden || !canInitiate}
-                onClick={() => onInitiate(command.name)}
+              <CommandControls
+                command={command}
+                isForbidden={isForbidden}
+                gate={gate}
+                canInitiate={canInitiate}
+                onInitiate={onInitiate}
               />
             </div>
           );
@@ -97,5 +100,68 @@ export default function CommandsPanel({ accent, data, onInitiate, onDismissNotic
         ))}
       </div>
     </PanelShell>
+  );
+}
+
+// Renders a command's parameter form (prompt / cfg / denoise / …) from its registry spec, then
+// initiates with the collected values. Commands without a spec keep the plain RUN/REQUEST button.
+function CommandControls({ command, isForbidden, gate, canInitiate, onInitiate }) {
+  const params = Array.isArray(command.parameters) ? command.parameters : [];
+  const initial = {};
+  for (const p of params) initial[p.name] = p.default !== undefined ? String(p.default) : "";
+  const [values, setValues] = useState(initial);
+  const label = isForbidden ? "FORBIDDEN" : gate === "approval" ? "REQUEST" : "RUN";
+
+  const set = (name, v) => setValues((prev) => ({ ...prev, [name]: v }));
+
+  const submit = () => {
+    if (params.length === 0) {
+      onInitiate(command.name);
+      return;
+    }
+    const args = {};
+    for (const p of params) {
+      const raw = values[p.name];
+      if (raw === "" || raw === undefined || raw === null) continue; // omit blanks (defaults/random apply)
+      if (p.type === "number") args[p.name] = Number(raw);
+      else if (p.type === "integer") args[p.name] = parseInt(raw, 10);
+      else args[p.name] = raw;
+    }
+    onInitiate(command.name, args);
+  };
+
+  const promptMissing = params.some((p) => p.required && p.type === "text" && !String(values[p.name] || "").trim());
+
+  return (
+    <>
+      {params.map((p) => (
+        <label key={p.name} className="cmd-field">
+          <span className="cmd-field-label">{p.label || p.name}</span>
+          {p.type === "text" ? (
+            <textarea
+              className="cmd-field-input cmd-field-textarea"
+              rows={p.name === "prompt" ? 2 : 1}
+              value={values[p.name] ?? ""}
+              onChange={(e) => set(p.name, e.target.value)}
+            />
+          ) : (
+            <input
+              className="cmd-field-input"
+              type="number"
+              min={p.min}
+              max={p.max}
+              step={p.step ?? (p.type === "integer" ? 1 : "any")}
+              value={values[p.name] ?? ""}
+              onChange={(e) => set(p.name, e.target.value)}
+            />
+          )}
+        </label>
+      ))}
+      <ConsoleButton
+        label={label}
+        disabled={isForbidden || !canInitiate || promptMissing}
+        onClick={submit}
+      />
+    </>
   );
 }

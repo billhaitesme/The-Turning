@@ -80,6 +80,17 @@ COMMANDS: List[Dict[str, Any]] = [
         "gate": "approval",
         "tool_name": "comfyui_submit",
         "arguments": {"prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"},
+        # The consoles render an input form from this spec and pass the values as arguments on
+        # initiate (registry is the authority — the consoles render it, they never define it).
+        "parameters": [
+            {"name": "prompt", "label": "Prompt", "type": "text", "required": True,
+             "default": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"},
+            {"name": "negative_prompt", "label": "Negative prompt", "type": "text", "required": False, "default": ""},
+            {"name": "cfg", "label": "CFG", "type": "number", "min": 0, "max": 30, "step": 0.5, "default": 2.0},
+            {"name": "denoise", "label": "Denoise", "type": "number", "min": 0, "max": 1, "step": 0.05, "default": 1.0},
+            {"name": "steps", "label": "Steps", "type": "integer", "min": 1, "max": 60, "step": 1, "default": 6},
+            {"name": "seed", "label": "Seed (blank = random)", "type": "integer", "min": 0, "max": 4294967295, "required": False},
+        ],
         "surfaces": ["mobile", "desktop"],
     },
     {

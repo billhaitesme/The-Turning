@@ -585,18 +585,19 @@ export function useBridgeData() {
     }
   };
 
-  const initiateCommand = async (name) => {
+  const initiateCommand = async (name, args) => {
     // IX-D: operator initiates a command from the desktop. Direct commands execute now; approval-
     // gated ones create an IX-C approval that must be confirmed on a mobile biometric — this
     // surface cannot approve it (ADR 0015). Forbidden commands are refused by the runtime with a
     // 403 whose detail is shown verbatim (the refusal is recorded server-side either way).
+    // `args` carries values collected from a command's parameter form (prompt, cfg, denoise, ...).
     if (!name) return;
     const stamp = nowIso();
     try {
       const response = await fetch(`${API_BASE}/system/commands/${encodeURIComponent(name)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: "command-console" }),
+        body: JSON.stringify({ session_id: "command-console", arguments: args || undefined }),
       });
       let payload = null;
       try { payload = await response.json(); } catch { payload = null; }

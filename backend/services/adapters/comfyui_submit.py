@@ -59,7 +59,7 @@ class ComfyUISubmitAdapter:
     def validate_arguments(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(arguments, dict):
             raise ValueError("comfyui_submit arguments must be an object.")
-        allowed = {"prompt", "negative_prompt", "seed", "steps", "width", "height", "workflow"}
+        allowed = {"prompt", "negative_prompt", "seed", "steps", "cfg", "denoise", "width", "height", "workflow"}
         extra = set(arguments) - allowed
         if extra:
             raise ValueError(f"comfyui_submit does not accept: {', '.join(sorted(extra))}.")
@@ -74,15 +74,22 @@ class ComfyUISubmitAdapter:
         validated["negative_prompt"] = negative.strip() if isinstance(negative, str) else ""
         seed = arguments.get("seed")
         if seed is not None:
-            if not isinstance(seed, int) or not (0 <= seed <= MAX_SEED):
+            if not isinstance(seed, int) or isinstance(seed, bool) or not (0 <= seed <= MAX_SEED):
                 raise ValueError("'seed' must be an integer between 0 and 2^32-1.")
             validated["seed"] = seed
         for key, lo, hi in (("steps", 1, 60), ("width", 256, 2048), ("height", 256, 2048)):
             value = arguments.get(key)
             if value is not None:
-                if not isinstance(value, int) or not (lo <= value <= hi):
+                if not isinstance(value, int) or isinstance(value, bool) or not (lo <= value <= hi):
                     raise ValueError(f"'{key}' must be an integer between {lo} and {hi}.")
                 validated[key] = value
+        # cfg and denoise are floats (int accepted). cfg is the prompt-adherence scale; denoise 0..1.
+        for key, lo, hi in (("cfg", 0.0, 30.0), ("denoise", 0.0, 1.0)):
+            value = arguments.get(key)
+            if value is not None:
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not (lo <= float(value) <= hi):
+                    raise ValueError(f"'{key}' must be a number between {lo} and {hi}.")
+                validated[key] = float(value)
         return validated
 
     def dry_run(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -106,6 +113,10 @@ class ComfyUISubmitAdapter:
         sampler["seed"] = validated.get("seed", random.randint(0, MAX_SEED))
         if "steps" in validated:
             sampler["steps"] = validated["steps"]
+        if "cfg" in validated:
+            sampler["cfg"] = validated["cfg"]
+        if "denoise" in validated:
+            sampler["denoise"] = validated["denoise"]
         latent = node(spec["latent_node"])["inputs"]
         if "width" in validated:
             latent["width"] = validated["width"]
@@ -162,6 +173,8 @@ COMFYUI_SUBMIT_DESCRIPTOR = validate_tool_definition(
                 "negative_prompt": {"type": "string"},
                 "seed": {"type": "integer", "minimum": 0, "maximum": MAX_SEED},
                 "steps": {"type": "integer", "minimum": 1, "maximum": 60},
+                "cfg": {"type": "number", "minimum": 0.0, "maximum": 30.0},
+                "denoise": {"type": "number", "minimum": 0.0, "maximum": 1.0},
                 "width": {"type": "integer", "minimum": 256, "maximum": 2048},
                 "height": {"type": "integer", "minimum": 256, "maximum": 2048},
                 "workflow": {"type": "string"},

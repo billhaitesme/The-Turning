@@ -206,14 +206,34 @@ def test_comfyui_submit_validates_its_arguments():
 
 
 def test_comfyui_submit_builds_workflow_from_template():
-    # The template patches the real node graph, not string placeholders — prove the prompt lands.
+    # The template patches the real node graph, not string placeholders — prove prompt/cfg/denoise land.
     from services.adapters.comfyui_submit import ComfyUISubmitAdapter
     adapter = ComfyUISubmitAdapter()
-    built = adapter._build_workflow(adapter.validate_arguments({"prompt": "a red bicycle", "seed": 5}))
+    built = adapter._build_workflow(adapter.validate_arguments(
+        {"prompt": "a red bicycle", "seed": 5, "cfg": 3.5, "denoise": 0.8, "steps": 8}))
     wf = built["workflow"]
     assert wf["6"]["inputs"]["text"] == "a red bicycle"
-    assert wf["3"]["inputs"]["seed"] == 5
+    sampler = wf["3"]["inputs"]
+    assert sampler["seed"] == 5 and sampler["cfg"] == 3.5 and sampler["denoise"] == 0.8 and sampler["steps"] == 8
     assert built["checkpoint"].endswith(".safetensors")
+
+
+def test_comfyui_submit_rejects_out_of_range_cfg_and_denoise():
+    from services.adapters.comfyui_submit import ComfyUISubmitAdapter
+    adapter = ComfyUISubmitAdapter()
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        adapter.validate_arguments({"prompt": "x", "denoise": 1.5})   # >1
+    with _pytest.raises(ValueError):
+        adapter.validate_arguments({"prompt": "x", "cfg": 99})        # >30
+
+
+def test_render_command_publishes_a_parameter_form():
+    # The console renders inputs from this spec; the registry defines it. Prompt/cfg/denoise present.
+    command = command_registry.get_command("run_comfyui_render")
+    params = {p["name"]: p for p in command.get("parameters", [])}
+    assert "prompt" in params and params["prompt"]["type"] == "text" and params["prompt"]["required"]
+    assert params["cfg"]["type"] == "number" and params["denoise"]["type"] == "number"
 
 
 def test_mobile_approve_without_confirmed_flag_is_rejected(client):
