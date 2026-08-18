@@ -94,6 +94,17 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "free_comfyui_vram",
+        "title": "Free ComfyUI VRAM",
+        "description": "Unload the local ComfyUI's models and free GPU memory. Reversible (models reload "
+                       "on the next render) and low-severity, but it unloads models and can disturb an "
+                       "in-flight render, so it is approval-gated like any action — confirm on the phone.",
+        "risk": "low",
+        "gate": "approval",
+        "tool_name": "comfyui_free_vram",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",
         "description": "Silently change which model answers, or rewrite responses. Forbidden by Model Lock "

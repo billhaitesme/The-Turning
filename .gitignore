@@ -67,3 +67,6 @@ backend/data/curriculum.private.json
 backend/data/study_cycles.private.json
 backend/data/*.bak-*
 training/*.err
+
+# RebelsKum ComfyUI pipeline — private templates (checkpoints/LoRAs/face model names)
+backend/services/adapters/comfyui_private/

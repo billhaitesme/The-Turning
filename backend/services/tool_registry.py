@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
 from services.adapters.comfyui_status import COMFYUI_STATUS_DESCRIPTOR, ComfyUIStatusAdapter
 from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter
+from services.adapters.comfyui_free_vram import COMFYUI_FREE_VRAM_DESCRIPTOR, ComfyUIFreeVramAdapter
 from services.adapters.host_status import HOST_STATUS_DESCRIPTOR, HostStatusAdapter
 from services.adapters.tutelage_consolidation import TUTELAGE_CONSOLIDATION_DESCRIPTOR
 from services.tool_contracts import ToolAdapter, validate_tool_definition
@@ -67,6 +68,9 @@ def register_default_tools() -> None:
     if "comfyui_submit" not in TOOL_REGISTRY:
         # Side-effecting (queues a render) — approval-gated, runs through the gated executor.
         register_tool(COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter())
+    if "comfyui_free_vram" not in TOOL_REGISTRY:
+        # Side-effecting (unloads models) — approval-gated; low severity, but still an act.
+        register_tool(COMFYUI_FREE_VRAM_DESCRIPTOR, ComfyUIFreeVramAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).

@@ -193,6 +193,18 @@ def test_comfyui_render_gated_path_runs_the_adapter_on_biometric_approval(client
     assert cmd["outcome"]["output"]["prompt_id"] == "pid-123"
 
 
+def test_free_comfyui_vram_is_gated_low_risk_action(client):
+    # Freeing VRAM unloads models (a real, reversible side effect), so it is approval-gated even
+    # though it is low severity — it may not direct-run. It is surfaced to the mobile console.
+    from services.tool_registry import get_tool
+    command = command_registry.get_command("free_comfyui_vram")
+    assert command["gate"] == "approval" and command["risk"] == "low"
+    descriptor = (get_tool(command["tool_name"]) or {}).get("descriptor") or {}
+    assert descriptor.get("side_effects")  # non-empty -> cannot be direct
+    listed = client.get("/api/mobile/v1/commands", headers=AUTH).json()["commands"]
+    assert any(c["name"] == "free_comfyui_vram" for c in listed)
+
+
 def test_comfyui_submit_validates_its_arguments():
     from services.adapters.comfyui_submit import ComfyUISubmitAdapter
     adapter = ComfyUISubmitAdapter()
