@@ -1,0 +1,77 @@
+{
+ "id": "omega-arc-command-console",
+ "title": "The Command Console (Tier 2: its own hands)",
+ "scope": "omega-arc-command-console",
+ "lessons": [
+  {
+   "id": "console-1-its-hands",
+   "title": "Its Hands",
+   "prerequisites": [],
+   "sources": ["curriculum/omega-arc-command-console/lesson-1-its-hands.md"],
+   "pass_threshold": 0.8,
+   "quiz": [
+    {"id": "q1", "question": "What does the command console let the operator do that observing and approving did not?",
+     "expect": ["bounded runtime command"],
+     "answer_expect": [["initiate"], ["command", "action"]]},
+    {"id": "q2", "question": "What is the authority for what may be commanded, and what is the consoles' relationship to it?",
+     "expect": ["the consoles render it, they never define it"],
+     "answer_expect": [["registry"], ["render"], ["never define", "not define"]]},
+    {"id": "q3", "question": "What are the three gates a command can carry?",
+     "expect": ["direct, approval, and forbidden"],
+     "answer_expect": [["direct"], ["approval"], ["forbidden"]]},
+    {"id": "q4", "question": "What does the console add to the runtime's authority?",
+     "expect": ["no new authority"],
+     "answer_expect": [["no new authority", "adds no"], ["pipeline", "recorded", "deterministic"]]}
+   ]
+  },
+  {
+   "id": "console-2-the-gate-and-the-biometric",
+   "title": "The Gate and the Biometric",
+   "prerequisites": ["console-1-its-hands"],
+   "sources": ["curriculum/omega-arc-command-console/lesson-2-the-gate-and-the-biometric.md"],
+   "pass_threshold": 0.8,
+   "quiz": [
+    {"id": "q1", "question": "An approval-gated command executes only after what?",
+     "expect": ["by a device biometric"],
+     "answer_expect": [["approval"], ["biometric", "fingerprint", "face"]]},
+    {"id": "q2", "question": "Why can a desktop console not complete a sensitive command on its own?",
+     "expect": ["the desktop cannot self-approve"],
+     "answer_expect": [["desktop"], ["self-approve", "cannot approve", "phone", "mobile"]]},
+    {"id": "q3", "question": "What happens to an approval recorded by a channel that is not the mobile biometric route?",
+     "expect": ["does not release the command"],
+     "answer_expect": [["does not release", "stays awaiting", "not release"]]},
+    {"id": "q4", "question": "Which switch governs the console path, which governs the chat path, and which is on by default?",
+     "expect": ["COMMAND_EXECUTION is on by default"],
+     "answer_expect": [["command_execution"], ["enable_tool_execution"], ["default"]]},
+    {"id": "q5", "question": "Which command outcomes are written to the command log?",
+     "expect": ["forbidden, denied, expired, and failed"],
+     "answer_expect": [["forbidden"], ["denied"], ["expired"], ["failed"]]}
+   ]
+  },
+  {
+   "id": "console-3-broadening-by-risk",
+   "title": "Broadening by Risk",
+   "prerequisites": ["console-2-the-gate-and-the-biometric"],
+   "review_lessons": ["console-1-its-hands", "console-2-the-gate-and-the-biometric"],
+   "sources": ["curriculum/omega-arc-command-console/lesson-3-broadening-by-risk.md"],
+   "pass_threshold": 0.8,
+   "quiz": [
+    {"id": "q1", "question": "Why does a read-only command execute immediately instead of waiting for an approval?",
+     "expect": ["there is nothing to gate on a read"],
+     "answer_expect": [["nothing to gate", "read-only", "observes"], ["read"]]},
+    {"id": "q2", "question": "Under what condition will the console direct-run a bounded tool, and what happens otherwise?",
+     "expect": ["declares no side effects"],
+     "answer_expect": [["no side effects", "declares no side"], ["refused", "not run"]]},
+    {"id": "q3", "question": "What is the first read-only direct command, and what does it read?",
+     "expect": ["host_status"],
+     "answer_expect": [["host_status", "host status"], ["cpu", "memory", "disk", "uptime"]]},
+    {"id": "q4", "question": "What does the forbidden gate protect, and give the example command?",
+     "expect": ["Model Lock and output fidelity"],
+     "answer_expect": [["model lock"], ["output fidelity", "rewrite", "which model answers", "routing"]]},
+    {"id": "q5", "question": "What must a destructive command have before it can qualify for the registry at all?",
+     "expect": ["an explicit undo before it qualifies"],
+     "answer_expect": [["explicit undo", "undo", "reversible", "rollback"]]}
+   ]
+  }
+ ]
+}
