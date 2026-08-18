@@ -302,8 +302,12 @@ def build_mobile_diagnostics() -> dict[str, Any]:
 
     return {
         "identity": _diagnostic("healthy", "Core identity engine available"),
+        # Evidence is active when the runtime holds durable facts OR has actually produced
+        # evidence via tool execution (recorded results). Keying only on the durable global
+        # store read "inactive" even after real tool runs, because session-scoped evidence and
+        # tool results live outside it — this matches the desktop console's evidence view.
         "evidence": _diagnostic(
-            "healthy" if _has_records(evidence, "facts") else "inactive",
+            "healthy" if _has_records(evidence, "facts") or _has_records(results, "results") else "inactive",
             "Evidence store loaded",
         ),
         "planning": _diagnostic(

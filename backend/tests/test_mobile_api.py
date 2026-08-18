@@ -122,6 +122,15 @@ def test_evidence_diagnostic_tracks_facts(monkeypatch, tmp_path):
     loaded = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
     assert loaded["evidence"]["state"] == "healthy"
 
+    # Evidence is also active when the runtime has produced results via tool execution,
+    # even with no durable global facts (session-scoped evidence lives outside that store).
+    monkeypatch.setattr(mobile, "load_evidence_store", lambda *a, **k: {"version": 1, "facts": {}})
+    monkeypatch.setattr(
+        mobile, "load_tool_result_store", lambda *a, **k: {"version": 1, "results": [{"result_id": "r1"}]}
+    )
+    via_results = client.get("/api/mobile/v1/diagnostics", headers=auth()).json()
+    assert via_results["evidence"]["state"] == "healthy"
+
 
 def test_deliberation_diagnostic_tracks_approvals(monkeypatch, tmp_path):
     client = build_client(monkeypatch, tmp_path)

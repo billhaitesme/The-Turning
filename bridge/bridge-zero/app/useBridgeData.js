@@ -187,6 +187,17 @@ export function useBridgeData() {
     activity_at: null,
   });
 
+  // IX-D (ADR 0015): the runtime's command registry + command log. Desktop may INITIATE; any
+  // approval-gated command still completes only on a mobile biometric (desktop cannot self-approve).
+  const [commands, setCommands] = useState({
+    state: "INITIALIZING",
+    registry: [],
+    history: [],
+    executionEnabled: true,
+    notice: null,
+    activity_at: null,
+  });
+
   const [connection, setConnection] = useState({
     state: "INITIALIZING",
     lastSuccessfulPollAt: null,
@@ -222,6 +233,7 @@ export function useBridgeData() {
       planning: "",
       deliberation: "",
       tools: "",
+      commands: "",
     };
 
     const activateBus = (subsystem) => {
@@ -295,6 +307,8 @@ export function useBridgeData() {
         fetch(`${API_BASE}/system/reasoning`),
         fetch(`${API_BASE}/system/tool-requests`),
         fetch(`${API_BASE}/system/tool-results`),
+        fetch(`${API_BASE}/system/commands`),
+        fetch(`${API_BASE}/system/commands/history?limit=12`),
       ]);
 
       const toJson = async (settled) => {
@@ -307,7 +321,8 @@ export function useBridgeData() {
         }
       };
 
-      const [statusRes, toolsRes, plansRes, decisionsRes, reasoningRes, requestRes, resultRes] = await Promise.all(calls.map(toJson));
+      const [statusRes, toolsRes, plansRes, decisionsRes, reasoningRes, requestRes, resultRes, commandsRes, commandHistoryRes] =
+        await Promise.all(calls.map(toJson));
       const coreSuccess = toolsRes.ok && plansRes.ok && decisionsRes.ok && reasoningRes.ok;
 
       if (!coreSuccess) {
@@ -461,6 +476,22 @@ export function useBridgeData() {
         activity_at: deliberationChanged ? now : prev.activity_at,
       }));
 
+      // IX-D command console (registry rendered, never defined here)
+      const commandsPayload = commandsRes.payload || {};
+      const commandHistoryPayload = commandHistoryRes.payload || {};
+      const commandData = {
+        registry: Array.isArray(commandsPayload.commands) ? commandsPayload.commands : [],
+        history: Array.isArray(commandHistoryPayload.history) ? commandHistoryPayload.history : [],
+        executionEnabled: commandsPayload.execution_enabled !== false,
+      };
+      const commandsChanged = markActivityIfChanged("commands", commandData);
+      setCommands((prev) => ({
+        ...prev,
+        ...commandData,
+        state: inferSubsystemState(connected, stale, !commandsRes.ok || !commandHistoryRes.ok),
+        activity_at: commandsChanged ? now : prev.activity_at,
+      }));
+
       const toolData = {
         tools: toolsPayload.tools || [],
         currentActivity: "polling registry",
@@ -554,6 +585,51 @@ export function useBridgeData() {
     }
   };
 
+  const initiateCommand = async (name) => {
+    // IX-D: operator initiates a command from the desktop. Direct commands execute now; approval-
+    // gated ones create an IX-C approval that must be confirmed on a mobile biometric — this
+    // surface cannot approve it (ADR 0015). Forbidden commands are refused by the runtime with a
+    // 403 whose detail is shown verbatim (the refusal is recorded server-side either way).
+    if (!name) return;
+    const stamp = nowIso();
+    try {
+      const response = await fetch(`${API_BASE}/system/commands/${encodeURIComponent(name)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: "command-console" }),
+      });
+      let payload = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      let notice;
+      if (!response.ok) {
+        notice = `REFUSED — ${payload?.detail || `HTTP ${response.status}`}`;
+      } else {
+        const entry = payload?.command || {};
+        const title = entry.name || name;
+        if (entry.status === "executed") notice = `EXECUTED — ${title}`;
+        else if (entry.status === "awaiting_approval")
+          notice = `APPROVAL CREATED — ${title}. Confirm it on your phone (Face ID / fingerprint); this desktop cannot self-approve.`;
+        else notice = `${title}: ${entry.status || "unknown"}`;
+      }
+      // Refresh the log right away rather than waiting for the next poll.
+      let history = null;
+      try {
+        const historyRes = await fetch(`${API_BASE}/system/commands/history?limit=12`);
+        if (historyRes.ok) history = (await historyRes.json()).history || null;
+      } catch { history = null; }
+      setCommands((prev) => ({
+        ...prev,
+        notice,
+        history: Array.isArray(history) ? history : prev.history,
+        activity_at: stamp,
+      }));
+    } catch (error) {
+      setCommands((prev) => ({ ...prev, notice: "REFUSED — runtime unreachable", activity_at: stamp }));
+    }
+  };
+
+  const clearCommandNotice = () => setCommands((prev) => ({ ...prev, notice: null }));
+
   return {
     conversation,
     identity,
@@ -564,6 +640,9 @@ export function useBridgeData() {
     tools,
     modelControl,
     selectModel,
+    commands,
+    initiateCommand,
+    clearCommandNotice,
     busActive,
     connection,
     activityMap,

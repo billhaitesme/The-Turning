@@ -1,6 +1,7 @@
 import VersionPlate from "../components/VersionPlate";
 import SignalBus from "../instruments/SignalBus";
 import ChroniclePanel from "../panels/ChroniclePanel";
+import CommandsPanel from "../panels/CommandsPanel";
 import ConversationPanel from "../panels/ConversationPanel";
 import DeliberationPanel from "../panels/DeliberationPanel";
 import EvidencePanel from "../panels/EvidencePanel";
@@ -53,6 +54,12 @@ export default function BridgeZeroApp() {
 
         <section className="bridge-column-right">
           <ModelControlPanel accent="#7aa8c8" data={bridge.modelControl} onSelect={bridge.selectModel} />
+          <CommandsPanel
+            accent="#c88a3a"
+            data={bridge.commands}
+            onInitiate={bridge.initiateCommand}
+            onDismissNotice={bridge.clearCommandNotice}
+          />
           <VersionPlate metadata={metadata} />
           <ChroniclePanel
             accent="#7c8d9a"
