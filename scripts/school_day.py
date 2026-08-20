@@ -257,13 +257,22 @@ def main() -> int:
     parser.add_argument("--max-cycles", type=int, default=None, help="cap study cycles (smoke tests)")
     parser.add_argument("--no-reflection", action="store_true", help="skip the end-of-day reflection cycle")
     parser.add_argument("--study-model", default=None, help="override the study seat model for today")
+    parser.add_argument("--catchup-hours", type=float, default=3.0,
+                        help="if the fixed --until window has already passed (a catch-up run after a "
+                             "missed 09:00 — machine was off/asleep), study this many hours from now "
+                             "instead of skipping the day. Bounded so a late wake does not grind for "
+                             "the full window. Default 3.")
     args = parser.parse_args()
 
     now = datetime.now().astimezone()
     hh, mm = (int(x) for x in args.until.split(":"))
     deadline = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
-    if deadline <= now:
-        deadline = deadline + timedelta(days=1) if (deadline + timedelta(days=1) - now) < timedelta(hours=6) else deadline
+    catchup = deadline <= now
+    if catchup:
+        # The fixed window already closed today — this is a catch-up run (Task Scheduler's
+        # StartWhenAvailable firing after the machine woke past 09:00). Study a BOUNDED window from
+        # now so a late wake still learns without a full-length grind during active-use hours.
+        deadline = now + timedelta(hours=max(0.25, args.catchup_hours))
     LOG_ROOT.mkdir(parents=True, exist_ok=True)
     day = now.strftime("%Y-%m-%d")
     log_path = LOG_ROOT / f"{day}.log"
@@ -278,7 +287,8 @@ def main() -> int:
             fh.write(line + "\n")
 
     log(f"school day {day}: window until {deadline.strftime('%H:%M')} "
-        f"({'DRY RUN' if args.dry_run else 'live'})")
+        f"({'DRY RUN' if args.dry_run else 'live'}"
+        f"{f'; CATCH-UP — missed the 09:00 window, bounded to {args.catchup_hours}h' if catchup else ''})")
 
     if not args.dry_run and not preflight(args.start_stack, log):
         _write_report(day, now, deadline, {"new": [], "due": []}, [], None, ["preflight failed"], lines)
