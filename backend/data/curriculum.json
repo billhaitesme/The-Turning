@@ -998,13 +998,16 @@
      "quiz": [
       {
        "id": "q1",
-       "question": "What does the command console let the operator do that observing and approving did not?",
+       "question": "Beyond observing and approving, what new thing does the command console let the operator do?",
        "expect": [
         "bounded runtime command"
        ],
        "answer_expect": [
         [
-         "initiate"
+         "initiate",
+         "start",
+         "begin",
+         "issue"
         ],
         [
          "command",
@@ -1058,12 +1061,8 @@
        "answer_expect": [
         [
          "no new authority",
-         "adds no"
-        ],
-        [
-         "pipeline",
-         "recorded",
-         "deterministic"
+         "adds no",
+         "no bypass"
         ]
        ]
       }
@@ -1240,19 +1239,21 @@
       },
       {
        "id": "q4",
-       "question": "What does the forbidden gate protect, and give the example command?",
+       "question": "What does the forbidden gate protect, and which registry command is forbidden?",
        "expect": [
         "Model Lock and output fidelity"
        ],
        "answer_expect": [
         [
-         "model lock"
+         "model lock",
+         "output fidelity"
         ],
         [
-         "output fidelity",
-         "rewrite",
+         "change_conversational_routing",
+         "conversational routing",
+         "routing",
          "which model answers",
-         "routing"
+         "rewrite"
         ]
        ]
       },

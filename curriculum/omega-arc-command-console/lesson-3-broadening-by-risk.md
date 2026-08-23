@@ -16,8 +16,9 @@ every read-only command that follows.
 At the far end of the scale is forbidden, and it is not about risk that can be managed with an
 approval — it is about a line that is never crossed. Forbidden means Model Lock and output fidelity:
 a command that would silently change which model answers, or rewrite the runtime's responses, is
-never runnable, and it is shown in the console only so the boundary stays visible. Model selection
-remains its own explicit, recorded operator action; it is not smuggled in as a command.
+never runnable. The forbidden command in the registry is change_conversational_routing — it is
+listed only so the boundary stays visible, and it can never run. Model selection remains its own
+explicit, recorded operator action; it is not smuggled in as a command.
 
 So the shape of growth is settled. A new command earns its gate by its risk: a read is direct, an
 action that changes state is approval-gated behind the biometric, and a violation of Model Lock is

@@ -10,9 +10,9 @@
    "sources": ["curriculum/omega-arc-command-console/lesson-1-its-hands.md"],
    "pass_threshold": 0.8,
    "quiz": [
-    {"id": "q1", "question": "What does the command console let the operator do that observing and approving did not?",
+    {"id": "q1", "question": "Beyond observing and approving, what new thing does the command console let the operator do?",
      "expect": ["bounded runtime command"],
-     "answer_expect": [["initiate"], ["command", "action"]]},
+     "answer_expect": [["initiate", "start", "begin", "issue"], ["command", "action"]]},
     {"id": "q2", "question": "What is the authority for what may be commanded, and what is the consoles' relationship to it?",
      "expect": ["the consoles render it, they never define it"],
      "answer_expect": [["registry"], ["render"], ["never define", "not define"]]},
@@ -21,7 +21,7 @@
      "answer_expect": [["direct"], ["approval"], ["forbidden"]]},
     {"id": "q4", "question": "What does the console add to the runtime's authority?",
      "expect": ["no new authority"],
-     "answer_expect": [["no new authority", "adds no"], ["pipeline", "recorded", "deterministic"]]}
+     "answer_expect": [["no new authority", "adds no", "no bypass"]]}
    ]
   },
   {
@@ -65,9 +65,9 @@
     {"id": "q3", "question": "What is the first read-only direct command, and what does it read?",
      "expect": ["host_status"],
      "answer_expect": [["host_status", "host status"], ["cpu", "memory", "disk", "uptime"]]},
-    {"id": "q4", "question": "What does the forbidden gate protect, and give the example command?",
+    {"id": "q4", "question": "What does the forbidden gate protect, and which registry command is forbidden?",
      "expect": ["Model Lock and output fidelity"],
-     "answer_expect": [["model lock"], ["output fidelity", "rewrite", "which model answers", "routing"]]},
+     "answer_expect": [["model lock", "output fidelity"], ["change_conversational_routing", "conversational routing", "routing", "which model answers", "rewrite"]]},
     {"id": "q5", "question": "What must a destructive command have before it can qualify for the registry at all?",
      "expect": ["an explicit undo before it qualifies"],
      "answer_expect": [["explicit undo", "undo", "reversible", "rollback"]]}
