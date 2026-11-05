@@ -698,6 +698,9 @@ def restore_memory(memory_id: str) -> bool:
 # operator-authored expectations (the model never grades itself). The comprehension (LLM) half is a
 # later slice. Every cycle is an auditable record in study_cycles.json.
 OLLAMA_STUDY_MODEL = os.getenv("OLLAMA_STUDY_MODEL", "")  # empty -> the active chat model
+# Quiz answers are graded against fixed keys; sampling noise at the default temperature made
+# pass/fail vary between attempts on identical notes (observed fail/fail/pass same-day).
+OLLAMA_STUDY_TEMPERATURE = float(os.getenv("OLLAMA_STUDY_TEMPERATURE", "0"))
 
 
 def _strip_think(text: str) -> str:
@@ -723,7 +726,8 @@ def study_answer(model: str, question: str, notes: List[str]) -> str:
         with httpx.Client(timeout=300.0) as client:
             response = client.post(
                 f"{OLLAMA_BASE_URL}/chat",
-                json={"model": model, "messages": messages, "stream": False, "think": OLLAMA_THINK},
+                json={"model": model, "messages": messages, "stream": False, "think": OLLAMA_THINK,
+                      "options": {"temperature": OLLAMA_STUDY_TEMPERATURE}},
             )
             response.raise_for_status()
             content = str(response.json().get("message", {}).get("content", ""))

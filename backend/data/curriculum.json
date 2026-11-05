@@ -32,7 +32,8 @@
        "answer_expect": [
         [
          "model lock",
-         "explicit operator"
+         "explicit operator",
+         "explicit action"
         ],
         [
          "operator action",
@@ -42,9 +43,15 @@
       },
       {
        "id": "q3",
-       "question": "What owns state and persistence in OMEGA-ARC?",
+       "question": "Which owns state and persistence in OMEGA-ARC — the deterministic runtime or the language model?",
        "expect": [
         "deterministic runtime"
+       ],
+       "answer_expect": [
+        [
+         "deterministic runtime",
+         "the runtime"
+        ]
        ]
       },
       {
