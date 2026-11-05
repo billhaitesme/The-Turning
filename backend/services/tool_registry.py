@@ -10,6 +10,7 @@ from services.adapters.comfyui_status import COMFYUI_STATUS_DESCRIPTOR, ComfyUIS
 from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter
 from services.adapters.comfyui_free_vram import COMFYUI_FREE_VRAM_DESCRIPTOR, ComfyUIFreeVramAdapter
 from services.adapters.host_status import HOST_STATUS_DESCRIPTOR, HostStatusAdapter
+from services.adapters.spec_tool import TOOLWRIGHT_INDUCTION_DESCRIPTOR
 from services.adapters.tutelage_consolidation import TUTELAGE_CONSOLIDATION_DESCRIPTOR
 from services.adapters.web_fetch import WEB_FETCH_DESCRIPTOR, WebFetchAdapter
 from services.adapters.web_search import WEB_SEARCH_DESCRIPTOR, WebSearchAdapter
@@ -93,6 +94,13 @@ def register_default_tools() -> None:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).
         register_tool(TUTELAGE_CONSOLIDATION_DESCRIPTOR, None)
+    if "toolwright_induction" not in TOOL_REGISTRY:
+        # XIII-D: the induction gate — no adapter; its approval is consumed by the Toolwright's
+        # completion step after the operator's biometric (ADR 0024's pattern, for tools).
+        register_tool(TOOLWRIGHT_INDUCTION_DESCRIPTOR, None)
+    # Tools the operator previously inducted come back to life at startup.
+    from services.toolwright import register_inducted_tools
+    register_inducted_tools()
 
 
 register_default_tools()

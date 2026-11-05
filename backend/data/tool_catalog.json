@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "note": "The Toolwright's stocked catalog (XIII-D): curated, keyless, GET-only HTTP-read tool specs. Retrieval looks here FIRST; the open web is the fallback (v1.5). Every entry still goes through quarantine, verification, and biometric induction - stocking is not trusting.",
+  "entries": [
+    {
+      "name": "weather_now",
+      "title": "Weather now",
+      "description": "Current weather (temperature, wind, conditions) for a latitude/longitude, from the keyless Open-Meteo API.",
+      "command_category": "acquired",
+      "tags": ["weather", "temperature", "wind", "forecast", "conditions", "outside", "rain"],
+      "method": "GET",
+      "url_template": "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true",
+      "params": [
+        {"name": "latitude", "type": "number", "label": "Latitude", "required": true},
+        {"name": "longitude", "type": "number", "label": "Longitude", "required": true}
+      ],
+      "output_path": "current_weather",
+      "max_output_chars": 2000,
+      "fixture": {"args": {"latitude": 40.22, "longitude": -74.76}},
+      "source": "catalog:open-meteo.com"
+    },
+    {
+      "name": "define_word",
+      "title": "Define a word",
+      "description": "English dictionary definition, phonetics, and usage for a word, from the keyless Free Dictionary API.",
+      "command_category": "acquired",
+      "tags": ["dictionary", "define", "definition", "word", "meaning", "spelling", "vocabulary"],
+      "method": "GET",
+      "url_template": "https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+      "params": [
+        {"name": "word", "type": "text", "label": "Word", "required": true}
+      ],
+      "output_path": "0.meanings",
+      "max_output_chars": 4000,
+      "fixture": {"args": {"word": "lighthouse"}},
+      "source": "catalog:dictionaryapi.dev"
+    },
+    {
+      "name": "world_time",
+      "title": "World time",
+      "description": "Current date, time, UTC offset, and day-of-year for an IANA timezone, from the keyless WorldTimeAPI.",
+      "command_category": "acquired",
+      "tags": ["time", "timezone", "clock", "date", "utc", "hour", "zone"],
+      "method": "GET",
+      "url_template": "https://worldtimeapi.org/api/timezone/{timezone}",
+      "params": [
+        {"name": "timezone", "type": "text", "label": "IANA timezone (e.g. America/Chicago)", "required": true}
+      ],
+      "output_path": "",
+      "max_output_chars": 2000,
+      "fixture": {"args": {"timezone": "America/Chicago"}},
+      "source": "catalog:worldtimeapi.org"
+    }
+  ]
+}

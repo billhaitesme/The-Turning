@@ -24,6 +24,10 @@ export default function CommandDeck({ playCue = () => {} }) {
   const [error, setError] = useState("");
   const [breaker, setBreaker] = useState({ on: false, changed_at: null });
   const [fetchLog, setFetchLog] = useState([]);
+  const [capRequests, setCapRequests] = useState([]);
+  const [capNeed, setCapNeed] = useState("");
+  const [capWhy, setCapWhy] = useState("");
+  const [capNote, setCapNote] = useState("");
   const aliveRef = useRef(true);
 
   async function refreshHistory() {
@@ -37,14 +41,55 @@ export default function CommandDeck({ playCue = () => {} }) {
 
   async function refreshSenses() {
     try {
-      const [b, f] = await Promise.all([
+      const [b, f, t] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
       if (f) setFetchLog(f.entries || []);
+      if (t) setCapRequests(t.requests || []);
     } catch { /* same */ }
+  }
+
+  async function fileCapability() {
+    if (!capNeed.trim()) return;
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/system/toolwright/requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ need: capNeed.trim(), why: capWhy.trim() }),
+      });
+      if (res.ok) {
+        setCapNeed("");
+        setCapWhy("");
+        setCapNote("Filed — press PREPARE to find, quarantine, and verify a candidate.");
+        refreshSenses();
+      }
+    } catch { /* next poll surfaces it */ }
+  }
+
+  async function capAction(id, action) {
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/system/toolwright/requests/${id}/${action}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setCapNote(String(data?.detail || `HTTP ${res.status}`));
+        playCue("alarm-amber");
+      } else {
+        setCapNote(String(data?.note || `${action} done`));
+        playCue(data?.request?.status === "inducted" ? "completion" : "verified");
+        if (data?.request?.status === "inducted") {
+          // the registry just grew a command — re-render it
+          fetch(`${API_BASE}/system/commands`).then((r) => (r.ok ? r.json() : null))
+            .then((d) => { if (d && aliveRef.current) setRegistry(d); });
+        }
+      }
+      refreshSenses();
+    } catch { /* next poll */ }
   }
 
   async function flipBreaker() {
@@ -243,6 +288,45 @@ export default function CommandDeck({ playCue = () => {} }) {
           </div>
         </div>
       ) : null}
+
+      <div className="command-deck-section">
+        <small className="command-deck-label">THE TOOLWRIGHT // CAPABILITY REQUESTS (XIII-D)</small>
+        <div className="cap-file-row">
+          <input value={capNeed} placeholder="WHAT CAPABILITY IS NEEDED…"
+                 onChange={(e) => setCapNeed(e.target.value)} />
+          <input value={capWhy} placeholder="WHY…" onChange={(e) => setCapWhy(e.target.value)} />
+          <button type="button" onClick={fileCapability}>FILE</button>
+        </div>
+        {capNote ? <div className="cap-note">{capNote}</div> : null}
+        <div className="cap-list">
+          {capRequests.slice(0, 6).map((req) => (
+            <div key={req.request_id} className={`cap-row status-${req.status}`}>
+              <div className="cap-copy">
+                <strong>{req.need}</strong>
+                <span>
+                  {String(req.status).toUpperCase().replace("_", " ")}
+                  {req.candidate?.name ? ` // ${req.candidate.name}` : ""}
+                  {req.requested_by ? ` // by ${req.requested_by}` : ""}
+                </span>
+              </div>
+              <div className="cap-actions">
+                {req.status === "proposed" || req.status === "failed" ? (
+                  <button type="button" onClick={() => capAction(req.request_id, "prepare")}>PREPARE</button>
+                ) : null}
+                {req.status === "verified" || req.status === "awaiting_induction" ? (
+                  <button type="button" onClick={() => capAction(req.request_id, "induct")}>
+                    {req.status === "verified" ? "INDUCT" : "COMPLETE"}
+                  </button>
+                ) : null}
+                {req.status !== "inducted" && req.status !== "denied" ? (
+                  <button type="button" className="cap-deny" onClick={() => capAction(req.request_id, "deny")}>DENY</button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+          {!capRequests.length ? <div className="empty">NO CAPABILITY REQUESTS.</div> : null}
+        </div>
+      </div>
 
       <div className="command-deck-section">
         <small className="command-deck-label">RECENT COMMANDS</small>

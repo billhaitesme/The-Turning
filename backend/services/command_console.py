@@ -227,6 +227,18 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         title = str(arguments.get("title") or "Command Console")
         conversation_id = _create_conversation(title=title)
         return {"conversation_id": conversation_id, "title": title}
+    if command["name"] == "request_capability":
+        # XIII-D: filing the gap is a direct act — the pipeline (find/quarantine/verify/induct)
+        # stays operator-driven and biometric-gated. Filing is not having.
+        from services.toolwright import file_request
+        try:
+            filed = file_request(str(arguments.get("need") or ""), str(arguments.get("why") or ""),
+                                 requested_by=entry["requested_by"], session_id=entry["session_id"])
+        except ValueError as exc:
+            raise CommandError(422, str(exc)) from exc
+        return {"capability_request_id": filed["request_id"], "status": filed["status"],
+                "note": "Filed. The Toolwright pipeline (find → quarantine → verify → biometric "
+                        "induction) decides whether this becomes a tool; filing is not having."}
     if command.get("tool_name"):
         return _execute_direct_tool(command, {**(command.get("arguments") or {}), **(arguments or {})})
     raise CommandError(500, f"No direct handler for {command['name']}")

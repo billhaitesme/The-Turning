@@ -187,3 +187,14 @@ no-silent-processes posture holds); moving private rooms through any non-local s
   voice) and one hard task answered through the recorded deep-reasoning escalation.
 - **XIII-D** targets one real tool acquired end-to-end — gap filed on the phone, quarantined,
   verified, inducted by fingerprint, then used in chat the same day.
+  **Built 2026-11-05:** v1 candidates are declarative HTTP-read SPECS, never code — the
+  runtime's generic `SpecToolAdapter` interprets them (GET/https/public-host only, declared
+  params, output extraction, hard caps), so induction admits a description while the moving
+  hands stay the runtime's (code-package tools = v2, gated on a real sandbox). Pipeline in
+  `services/toolwright.py`: file (seat via `request_capability`, or operator) → catalog find
+  (stocked keyless specs in `data/tool_catalog.json`; open-web find = v1.5) → quarantine dir →
+  deterministic verify against the QUARANTINED artifact + one breaker-gated, logged fixture
+  call → `toolwright_induction` (registered mutation gate, no adapter) consumed only by a
+  BIOMETRIC-confirmed single-use approval → the spec registers as a bounded tool AND a command,
+  revived at every startup; denial deletes the quarantine. Surfaces: `/system/toolwright[...]`
+  + the web console's Toolwright bay. 7 pipeline tests.

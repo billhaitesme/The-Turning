@@ -2895,3 +2895,66 @@ button:hover {
 .gated-row.direct-row input { border-color: rgba(110, 200, 170, 0.4); color: #d9f5e6; }
 .gated-row.direct-row button { background: rgba(22, 44, 34, 0.95); border-color: rgba(126, 240, 168, 0.5); color: #a9f0c6; }
 .row-cat { font-style: normal; font-size: 0.5rem; letter-spacing: 0.16em; color: rgba(140, 200, 230, 0.55); margin-left: 6px; }
+
+/* -------------------------------------------------- the toolwright */
+.cap-file-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.cap-file-row input {
+  flex: 1;
+  min-width: 140px;
+  background: rgba(10, 14, 20, 0.95);
+  border: 1px solid rgba(110, 180, 220, 0.35);
+  color: #d4ecf8;
+  font-size: 0.62rem;
+  padding: 5px 8px;
+  border-radius: 3px;
+}
+.cap-file-row button {
+  background: rgba(20, 34, 46, 0.95);
+  border: 1px solid rgba(140, 220, 255, 0.5);
+  color: #aee2f7;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.cap-note {
+  margin-top: 5px;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  color: rgba(170, 220, 240, 0.8);
+  border-left: 2px solid rgba(140, 220, 255, 0.5);
+  padding: 2px 6px;
+}
+.cap-list { display: flex; flex-direction: column; gap: 4px; margin-top: 7px; }
+.cap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(150, 180, 200, 0.3);
+  border-left-width: 3px;
+  border-radius: 4px;
+  background: rgba(12, 16, 22, 0.88);
+}
+.cap-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cap-copy strong { font-size: 0.66rem; color: #d4ecf8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cap-copy span { font-size: 0.54rem; letter-spacing: 0.1em; color: rgba(150, 190, 210, 0.6); }
+.cap-actions { display: flex; gap: 4px; }
+.cap-actions button {
+  background: rgba(20, 34, 46, 0.95);
+  border: 1px solid rgba(140, 220, 255, 0.45);
+  color: #aee2f7;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.cap-actions .cap-deny { border-color: rgba(255, 141, 126, 0.45); color: #f0a79c; }
+.cap-row.status-proposed { border-left-color: rgba(150, 180, 200, 0.6); }
+.cap-row.status-found, .cap-row.status-quarantined { border-left-color: #f0c87e; }
+.cap-row.status-verified { border-left-color: #7edcf0; }
+.cap-row.status-awaiting_induction { border-left-color: #c9a6ff; }
+.cap-row.status-inducted { border-left-color: #7ef0a8; }
+.cap-row.status-denied, .cap-row.status-failed { border-left-color: #ff8d7e; opacity: 0.75; }

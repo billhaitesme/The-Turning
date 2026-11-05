@@ -175,6 +175,21 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "request_capability",
+        "title": "Request a capability",
+        "description": "File a Toolwright capability request (XIII-D): what is needed and why. "
+                       "Filing is not having — the pipeline finds a candidate, quarantines and "
+                       "verifies it, and only the operator's biometric inducts it.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "toolwright",
+        "parameters": [
+            {"name": "need", "label": "What capability is needed", "type": "text", "required": True},
+            {"name": "why", "label": "Why / what it unblocks", "type": "text", "required": False},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",
         "description": "Silently change which model answers, or rewrite responses. Forbidden by Model Lock "
@@ -187,14 +202,27 @@ COMMANDS: List[Dict[str, Any]] = [
 ]
 
 
+def _inducted() -> List[Dict[str, Any]]:
+    # XIII-D: tools the operator inducted through the Toolwright render as commands like any
+    # other. Late import — the Toolwright depends on this module for collision checks.
+    try:
+        from services.toolwright import inducted_commands
+        return inducted_commands()
+    except Exception:  # noqa: BLE001 — a broken store never takes the registry down
+        return []
+
+
 def list_commands() -> List[Dict[str, Any]]:
-    return deepcopy(COMMANDS)
+    return deepcopy(COMMANDS) + _inducted()
 
 
 def get_command(name: str) -> Optional[Dict[str, Any]]:
     for command in COMMANDS:
         if command["name"] == name:
             return deepcopy(command)
+    for command in _inducted():
+        if command["name"] == name:
+            return command
     return None
 
 

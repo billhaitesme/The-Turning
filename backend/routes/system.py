@@ -16,7 +16,7 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
-from services import agent_loop, command_console, command_registry, network_breaker
+from services import agent_loop, command_console, command_registry, network_breaker, toolwright
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -69,6 +69,71 @@ def set_network_breaker(req: BreakerRequest) -> Dict[str, Any]:
 def get_fetch_log(limit: int = 50) -> Dict[str, Any]:
     return {"entries": network_breaker.list_fetch_log(limit=limit),
             "breaker_on": network_breaker.breaker_is_on()}
+
+
+# ----------------------------------------------------------------------- XIII-D: the Toolwright
+class CapabilityRequestBody(BaseModel):
+    need: str = Field(..., min_length=1, max_length=300)
+    why: str = Field(default="", max_length=500)
+
+
+@router.get("/toolwright")
+def get_toolwright() -> Dict[str, Any]:
+    return {"requests": toolwright.list_requests()}
+
+
+@router.post("/toolwright/requests")
+def file_capability_request(body: CapabilityRequestBody) -> Dict[str, Any]:
+    entry = toolwright.file_request(body.need, body.why,
+                                    requested_by="operator:desktop", session_id="toolwright-desktop")
+    return {"request": entry}
+
+
+@router.post("/toolwright/requests/{request_id}/prepare")
+def prepare_capability_request(request_id: str) -> Dict[str, Any]:
+    """Find → quarantine → verify, one operator press. Verification's fixture call needs the
+    network breaker ON (it is a logged egress like any other)."""
+    try:
+        toolwright.find_candidate(request_id)
+        toolwright.quarantine_candidate(request_id)
+        entry = toolwright.verify_candidate(request_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"request": entry}
+
+
+@router.post("/toolwright/requests/{request_id}/induct")
+def induct_capability_request(request_id: str) -> Dict[str, Any]:
+    """First press raises the biometric approval; after the operator confirms on a mobile
+    console, the next press completes the induction. Every press is answered honestly."""
+    try:
+        entry = toolwright.get_request(request_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail=f"Unknown capability request {request_id}.")
+        if entry["status"] == "verified":
+            entry = toolwright.request_induction(request_id, requested_by="operator:desktop")
+            return {"request": entry,
+                    "note": "Approval raised — confirm with the biometric on a mobile console, "
+                            "then press induct again to complete."}
+        entry = toolwright.complete_induction(request_id)
+        return {"request": entry, "note": f"Inducted: '{entry['candidate']['name']}' is live."}
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/toolwright/requests/{request_id}/deny")
+def deny_capability_request(request_id: str) -> Dict[str, Any]:
+    try:
+        entry = toolwright.deny_request(request_id, denied_by="operator:desktop")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"request": entry}
 
 
 # ----------------------------------------------------------------------- XIII-A: desktop commands
