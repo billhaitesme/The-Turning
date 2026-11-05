@@ -103,6 +103,307 @@
       "created_at": "2026-08-17T23:51:03.482023+00:00",
       "status": "completed",
       "updated_at": "2026-08-17T23:51:18.969602+00:00"
+    },
+    {
+      "request_id": "toolreq-b7c07b076b1d460abed1948d89c15177",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-b7c07b076b1d460abed1948d89c15177",
+      "created_at": "2026-08-18T03:43:23.925623+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-1acdc66882f64019b905fdeca830888c",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-1acdc66882f64019b905fdeca830888c",
+      "created_at": "2026-08-18T03:48:56.657805+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-bad54ec235be40d580d89fa35829060d",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a mossy stone dragon curled around a lantern, cinematic",
+        "cfg": 4.5,
+        "denoise": 0.75,
+        "steps": 8
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-bad54ec235be40d580d89fa35829060d",
+      "created_at": "2026-08-18T04:17:23.868050+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-1440ef8d66f04da49de5cfa7f32bd891",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-1440ef8d66f04da49de5cfa7f32bd891",
+      "created_at": "2026-08-18T04:36:52.162074+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-4a8804310b644f23a5847185a1d5c729",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-4a8804310b644f23a5847185a1d5c729",
+      "created_at": "2026-08-18T04:36:57.672016+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-4e29c73327224b2985912f663a2932bc",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-4e29c73327224b2985912f663a2932bc",
+      "created_at": "2026-08-18T04:42:04.630837+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-e1ab09100aa24cfe943b97feb0aebace",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"
+      },
+      "requested_by": "operator:mobile",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-e1ab09100aa24cfe943b97feb0aebace",
+      "created_at": "2026-08-18T04:42:06.282172+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-69a39226d26c400f8df5e4c12e718f74",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "one petite, skinny, subtley toned girl, (princess leia hair and bangs:1.2), small perky tits, puffy nipples, dripping sweat, presenting ass, opening asshole and spreading pussy, BDSM, (Star Wars Boba Fett armor and cape:1.3), ice planet of Hoth. \n",
+        "negative_prompt": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, flickering, jittering, identity drift, motion blur, watermark, text, logo, inconsistent character, frame hopping, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features. distorted face, deformed face, asymmetrical face, melting face, morphing face, changing identity, different person, wrong person, face swap, altered appearance, unrealistic skin, plastic skin, waxy skin, over-smoothed skin, airbrushed, CGI, cartoon, anime, illustration, painting, render, 3D, unnatural colors, oversaturated, color grading, film grain, noise, artifacts, compression artifacts, blurry, out of focus, low quality, worst quality, bad anatomy, extra limbs, missing limbs, duplicated features, cloning, twinning, kaleidoscope, abstract, surreal, morphing, warping, liquify, glitch, VHS, chromatic aberration, fisheye, wide angle distortion, body horror, uncanny valley, hermaphrodite, transvestite, extra nipples, extrae body parts, extra people, naval peircing, belly button piercing, extra nipples. ",
+        "cfg": 6.8,
+        "denoise": 100,
+        "steps": 3
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-69a39226d26c400f8df5e4c12e718f74",
+      "created_at": "2026-08-18T04:42:32.614006+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-85393716c76e46d4842ed7aeed36ad11",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "one petite, skinny, subtle toned girl, (princess leia hair and bangs:1.2), small perky tits, puffy nipples, dripping sweat, presenting ass, opening asshole and spreading pussy, BDSM, (Star Wars Boba Fett armor and cape:1.3), ice planet of Hoth. \n",
+        "negative_prompt": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, flickering, jittering, identity drift, motion blur, watermark, text, logo, inconsistent character, frame hopping, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features. distorted face, deformed face, asymmetrical face, melting face, morphing face, changing identity, different person, wrong person, face swap, altered appearance, unrealistic skin, plastic skin, waxy skin, over-smoothed skin, airbrushed, CGI, cartoon, anime, illustration, painting, render, 3D, unnatural colors, oversaturated, color grading, film grain, noise, artifacts, compression artifacts, blurry, out of focus, low quality, worst quality, bad anatomy, extra limbs, missing limbs, duplicated features, cloning, twinning, kaleidoscope, abstract, surreal, morphing, warping, liquify, glitch, VHS, chromatic aberration, fisheye, wide angle distortion, body horror, uncanny valley, hermaphrodite, transvestite, extra nipples, extrae body parts, extra people, naval peircing, belly button piercing, extra nipples. ",
+        "cfg": 6.8,
+        "denoise": 100,
+        "steps": 3
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-85393716c76e46d4842ed7aeed36ad11",
+      "created_at": "2026-08-18T04:51:01.860427+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-ca467092943640ac8d0c7df9aeef1837",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "one petite, skinny, subtle toned girl, (princess leia hair and bangs:1.2), small perky tits, puffy nipples, dripping sweat, presenting ass, opening asshole and spreading pussy, BDSM, (Star Wars Boba Fett armor and cape:1.3), ice planet of Hoth. \n",
+        "negative_prompt": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, flickering, jittering, identity drift, motion blur, watermark, text, logo, inconsistent character, frame hopping, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features. distorted face, deformed face, asymmetrical face, melting face, morphing face, changing identity, different person, wrong person, face swap, altered appearance, unrealistic skin, plastic skin, waxy skin, over-smoothed skin, airbrushed, CGI, cartoon, anime, illustration, painting, render, 3D, unnatural colors, oversaturated, color grading, film grain, noise, artifacts, compression artifacts, blurry, out of focus, low quality, worst quality, bad anatomy, extra limbs, missing limbs, duplicated features, cloning, twinning, kaleidoscope, abstract, surreal, morphing, warping, liquify, glitch, VHS, chromatic aberration, fisheye, wide angle distortion, body horror, uncanny valley, hermaphrodite, transvestite, extra nipples, extrae body parts, extra people, naval peircing, belly button piercing, extra nipples. ",
+        "cfg": 6.8,
+        "denoise": 100,
+        "steps": 3
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-ca467092943640ac8d0c7df9aeef1837",
+      "created_at": "2026-08-18T04:52:32.363843+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-737896292d8145b79f0e5ecc821a3ac2",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field, ",
+        "negative_prompt": "child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, identity drift, logo, inconsistent character, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features, worst quality, low quality, jpeg artifacts, child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, (deformed hands:1.4), (extra fingers:1.4), cartoon, anime, 3d render, illustration, bright studio lighting, overexposed, (elf ears:1.4), (pointed ears:1.4), (large ears:1.3), (oversized ears:1.3), alien, (covered face:1.4), (extra anatomy:1.4), (extra genitals:1.4), (extra orifices:1.4), (unnatural pose:1.2), (clothing mixing with skin:1.2), (mirrored Hands:1.3), uncanny valley, body horror, embedding:badhandv4, embedding:FastNegativeV2",
+        "cfg": 2,
+        "denoise": 1,
+        "steps": 6
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-737896292d8145b79f0e5ecc821a3ac2",
+      "created_at": "2026-08-18T04:53:48.691295+00:00",
+      "status": "expired"
+    },
+    {
+      "request_id": "toolreq-35cf3b1ce78c4880bef82b2aeadfc184",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field, ",
+        "negative_prompt": "child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, identity drift, logo, inconsistent character, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features, worst quality, low quality, jpeg artifacts, child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, (deformed hands:1.4), (extra fingers:1.4), cartoon, anime, 3d render, illustration, bright studio lighting, overexposed, (elf ears:1.4), (pointed ears:1.4), (large ears:1.3), (oversized ears:1.3), alien, (covered face:1.4), (extra anatomy:1.4), (extra genitals:1.4), (extra orifices:1.4), (unnatural pose:1.2), (clothing mixing with skin:1.2), (mirrored Hands:1.3), uncanny valley, body horror, embedding:badhandv4, embedding:FastNegativeV2",
+        "cfg": 6.8,
+        "denoise": 100,
+        "steps": 30
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-35cf3b1ce78c4880bef82b2aeadfc184",
+      "created_at": "2026-08-18T04:58:52.169101+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-354360c70d944833a410b18d214543f7",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field, ",
+        "negative_prompt": "child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, identity drift, logo, inconsistent character, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features, worst quality, low quality, jpeg artifacts, child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, (deformed hands:1.4), (extra fingers:1.4), cartoon, anime, 3d render, illustration, bright studio lighting, overexposed, (elf ears:1.4), (pointed ears:1.4), (large ears:1.3), (oversized ears:1.3), alien, (covered face:1.4), (extra anatomy:1.4), (extra genitals:1.4), (extra orifices:1.4), (unnatural pose:1.2), (clothing mixing with skin:1.2), (mirrored Hands:1.3), uncanny valley, body horror, embedding:badhandv4, embedding:FastNegativeV2",
+        "cfg": 6.8,
+        "denoise": 100,
+        "steps": 30
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-354360c70d944833a410b18d214543f7",
+      "created_at": "2026-08-18T04:59:59.744401+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-b4bb3ac854064dd2949d4e16354ce180",
+      "tool_name": "comfyui_submit",
+      "arguments": {
+        "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field, ",
+        "negative_prompt": "child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, identity drift, logo, inconsistent character, morphing face, unstable eyes, shifting pupils, warped lips, asymmetrical features, melting face, face distortion, changing eye color, inconsistent facial features, worst quality, low quality, jpeg artifacts, child, childish, teenager, worst quality, low quality, jpeg artifacts, (deformed hands:1.3), (extra fingers:1.3), cartoon, anime, 3d render, illustration, (curvy:1.2), (voluptuous:1.2), (busty:1.2), (large breasts:1.2), wide hips, thick thighs, (deformed hands:1.4), (extra fingers:1.4), cartoon, anime, 3d render, illustration, bright studio lighting, overexposed, (elf ears:1.4), (pointed ears:1.4), (large ears:1.3), (oversized ears:1.3), alien, (covered face:1.4), (extra anatomy:1.4), (extra genitals:1.4), (extra orifices:1.4), (unnatural pose:1.2), (clothing mixing with skin:1.2), (mirrored Hands:1.3), uncanny valley, body horror, embedding:badhandv4, embedding:FastNegativeV2",
+        "cfg": 2,
+        "denoise": 1,
+        "steps": 6
+      },
+      "requested_by": "operator:desktop",
+      "session_id": "command-console",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-b4bb3ac854064dd2949d4e16354ce180",
+      "created_at": "2026-08-18T05:00:31.611302+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-3ae6645897274da8b7cd7de47d026726",
+      "tool_name": "tutelage_consolidation",
+      "arguments": {
+        "subject_id": "omega-arc-house"
+      },
+      "requested_by": "operator",
+      "session_id": "operator-console-20261104-consolidation",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-3ae6645897274da8b7cd7de47d026726",
+      "created_at": "2026-11-05T02:50:04.403869+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-ebfae32ecd0145a0953accdf2b553746",
+      "tool_name": "tutelage_consolidation",
+      "arguments": {
+        "subject_id": "omega-arc-runbooks"
+      },
+      "requested_by": "operator",
+      "session_id": "operator-console-20261104-consolidation",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-ebfae32ecd0145a0953accdf2b553746",
+      "created_at": "2026-11-05T02:54:46.969747+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-08d2f1208a324c05b55f1d854eac9c2b",
+      "tool_name": "tutelage_consolidation",
+      "arguments": {
+        "subject_id": "omega-arc-command-console"
+      },
+      "requested_by": "operator",
+      "session_id": "operator-console-20261104-consolidation",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-08d2f1208a324c05b55f1d854eac9c2b",
+      "created_at": "2026-11-05T02:56:47.171665+00:00",
+      "status": "approved"
+    },
+    {
+      "request_id": "toolreq-a7f5093cdb874a48a72e1f69a954b962",
+      "tool_name": "tutelage_consolidation",
+      "arguments": {
+        "subject_id": "operator-working-rules"
+      },
+      "requested_by": "operator",
+      "session_id": "operator-console-20261104-consolidation",
+      "goal_id": null,
+      "plan_id": null,
+      "decision_id": null,
+      "approval_id": "approval-toolreq-a7f5093cdb874a48a72e1f69a954b962",
+      "created_at": "2026-11-05T02:58:22.615841+00:00",
+      "status": "approved"
     }
   ]
 }
