@@ -28,6 +28,10 @@ export default function CommandDeck({ playCue = () => {} }) {
   const [capNeed, setCapNeed] = useState("");
   const [capWhy, setCapWhy] = useState("");
   const [capNote, setCapNote] = useState("");
+  const [faces, setFaces] = useState({ people: [], engine_ready: false });
+  const [faceName, setFaceName] = useState("");
+  const [faceNote, setFaceNote] = useState("");
+  const faceFileRef = useRef(null);
   const aliveRef = useRef(true);
 
   async function refreshHistory() {
@@ -41,15 +45,17 @@ export default function CommandDeck({ playCue = () => {} }) {
 
   async function refreshSenses() {
     try {
-      const [b, f, t] = await Promise.all([
+      const [b, f, t, fc] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/system/faces`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
       if (f) setFetchLog(f.entries || []);
       if (t) setCapRequests(t.requests || []);
+      if (fc) setFaces(fc);
     } catch { /* same */ }
   }
 
@@ -288,6 +294,62 @@ export default function CommandDeck({ playCue = () => {} }) {
           </div>
         </div>
       ) : null}
+
+      <div className="command-deck-section">
+        <small className="command-deck-label">
+          THE GALLERY // ENROLLED FACES {faces.engine_ready ? "" : "(ENGINE AWAITING MODELS)"}
+        </small>
+        <div className="cap-file-row">
+          <input value={faceName} placeholder="NAME…" onChange={(e) => setFaceName(e.target.value)} />
+          <button type="button" disabled={!faceName.trim()}
+                  onClick={() => faceFileRef.current?.click()}>ENROLL FROM PHOTO</button>
+          <input ref={faceFileRef} type="file" accept="image/*" style={{ display: "none" }}
+                 onChange={(e) => {
+                   const file = e.target.files?.[0];
+                   e.target.value = "";
+                   if (!file) return;
+                   const reader = new FileReader();
+                   reader.onload = async () => {
+                     playCue("navigation");
+                     try {
+                       const res = await fetch(`${API_BASE}/system/faces/enroll`, {
+                         method: "POST",
+                         headers: { "Content-Type": "application/json" },
+                         body: JSON.stringify({ name: faceName.trim(), image: reader.result }),
+                       });
+                       const data = await res.json();
+                       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+                       setFaceNote(`Enrolled ${data.person.name} (${data.person.samples} sample(s)).`);
+                       setFaceName("");
+                       playCue("verified");
+                       refreshSenses();
+                     } catch (err) {
+                       setFaceNote(String(err.message || err));
+                       playCue("alarm-amber");
+                     }
+                   };
+                   reader.readAsDataURL(file);
+                 }} />
+        </div>
+        {faceNote ? <div className="cap-note">{faceNote}</div> : null}
+        <div className="cap-list">
+          {faces.people.map((p) => (
+            <div key={p.person_id} className="cap-row status-inducted">
+              <div className="cap-copy">
+                <strong>{p.name}</strong>
+                <span>{p.samples} SAMPLE(S) // {p.person_id}</span>
+              </div>
+              <div className="cap-actions">
+                <button type="button" className="cap-deny" onClick={async () => {
+                  await fetch(`${API_BASE}/system/faces/${p.person_id}`, { method: "DELETE" });
+                  refreshSenses();
+                }}>REMOVE</button>
+              </div>
+            </div>
+          ))}
+          {!faces.people.length ? <div className="empty">NO ONE ENROLLED — STRANGERS STAY UNKNOWN.</div> : null}
+        </div>
+      </div>
 
       <div className="command-deck-section">
         <small className="command-deck-label">THE TOOLWRIGHT // CAPABILITY REQUESTS (XIII-D)</small>

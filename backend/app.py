@@ -1969,7 +1969,9 @@ def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
             "content": (f"The operator attached {len(image_ids)} image(s) this turn with "
                         f"image_id(s): {', '.join(image_ids)}. Use look_at_image(image_id=...) "
                         "to actually see an image before answering anything about it — never "
-                        "guess at an image's contents."),
+                        "guess at an image's contents. If WHO is in the image matters, use "
+                        "recognize_faces(image_id=...): identities come only from the enrolled "
+                        "gallery, and unknown faces stay unknown."),
         })
     requested_model = select_chat_model()
     started = time.perf_counter()

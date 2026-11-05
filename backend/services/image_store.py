@@ -86,9 +86,14 @@ def save_image(data_url_or_b64: str, *, conversation_id: str) -> Dict[str, Any]:
 
 
 def get_image_b64(image_id: str) -> Optional[str]:
+    blob = get_image_bytes(image_id)
+    return base64.b64encode(blob).decode("ascii") if blob is not None else None
+
+
+def get_image_bytes(image_id: str) -> Optional[bytes]:
     for entry in _load_index().get("images", []):
         if entry.get("image_id") == image_id:
             path = _images_dir() / f"{image_id}.{entry.get('ext', 'png')}"
             if path.exists():
-                return base64.b64encode(path.read_bytes()).decode("ascii")
+                return path.read_bytes()
     return None

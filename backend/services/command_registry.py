@@ -94,6 +94,22 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "recognize_faces",
+        "title": "Recognize faces",
+        "description": "Match every face in one attached image (by image_id) against the "
+                       "operator-enrolled gallery. Local inference, read-only; unknown faces "
+                       "stay unknown — enrollment is the operator's console action, never the "
+                       "seat's.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "senses",
+        "tool_name": "recognize_faces",
+        "parameters": [
+            {"name": "image_id", "label": "Image id", "type": "text", "required": True},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "deep_think",
         "title": "Deep think",
         "description": "Escalate one composed task up the Mind Ladder (XIII-C): rung 'local' = "

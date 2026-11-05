@@ -71,6 +71,51 @@ def get_fetch_log(limit: int = 50) -> Dict[str, Any]:
             "breaker_on": network_breaker.breaker_is_on()}
 
 
+# ----------------------------------------------------------------------- faces: the gallery
+# Enrollment is an operator console action (biometric data, local only, never committed, never
+# on any non-local seat). The seat reads identities through recognize_faces; it cannot enroll.
+class EnrollFaceBody(BaseModel):
+    name: str = Field(..., min_length=1, max_length=60)
+    image: str = Field(..., min_length=16)  # data URL or bare base64 of one clear photo
+
+
+@router.get("/faces")
+def get_faces() -> Dict[str, Any]:
+    from services import face_engine
+    return {"people": face_engine.list_people(),
+            "match_threshold": face_engine.MATCH_THRESHOLD,
+            "engine_ready": (face_engine.MODEL_DIR / face_engine.DET_MODEL).exists()
+                            and (face_engine.MODEL_DIR / face_engine.REC_MODEL).exists()}
+
+
+@router.post("/faces/enroll")
+def enroll_face(body: EnrollFaceBody) -> Dict[str, Any]:
+    import base64 as _b64
+    import re as _re
+
+    from services import face_engine
+    raw = _re.sub(r"^data:image/\w+;base64,", "", body.image, flags=_re.IGNORECASE)
+    try:
+        blob = _b64.b64decode(raw, validate=True)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=422, detail="Enrollment image is not valid base64.") from exc
+    try:
+        entry = face_engine.enroll(body.name, blob)
+    except face_engine.FaceEngineUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"person": entry}
+
+
+@router.delete("/faces/{person_id}")
+def delete_face(person_id: str) -> Dict[str, Any]:
+    from services import face_engine
+    if not face_engine.remove_person(person_id):
+        raise HTTPException(status_code=404, detail=f"No enrolled person {person_id}.")
+    return {"removed": person_id}
+
+
 # ----------------------------------------------------------------------- XIII-D: the Toolwright
 class CapabilityRequestBody(BaseModel):
     need: str = Field(..., min_length=1, max_length=300)

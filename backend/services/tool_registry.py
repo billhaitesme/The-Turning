@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from services.adapters.approval_status import APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter
 from services.adapters.deep_think import DEEP_THINK_DESCRIPTOR, DeepThinkAdapter
 from services.adapters.look_at_image import LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter
+from services.adapters.recognize_faces import RECOGNIZE_FACES_DESCRIPTOR, RecognizeFacesAdapter
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
 from services.adapters.comfyui_status import COMFYUI_STATUS_DESCRIPTOR, ComfyUIStatusAdapter
 from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter
@@ -85,6 +86,10 @@ def register_default_tools() -> None:
         # The eyes: vision is a sense, not a seat swap — the agent seat consults the local
         # vision seat through this bounded tool; no network, no breaker.
         register_tool(LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter())
+    if "recognize_faces" not in TOOL_REGISTRY:
+        # Identification: faces match ONLY against the operator-enrolled local gallery;
+        # unknown stays unknown. Built on the PC first so Ø2-02 onboards a known quantity.
+        register_tool(RECOGNIZE_FACES_DESCRIPTOR, RecognizeFacesAdapter())
     if "deep_think" not in TOOL_REGISTRY:
         # XIII-C Mind Ladder rungs 2-3: deep local gear + frontier planner (breaker-gated).
         # Privacy is structural: only the composed task/context strings can be sent.

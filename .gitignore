@@ -73,3 +73,6 @@ backend/services/adapters/comfyui_private/
 
 # Voice engine model files (fetched at build time, never committed)
 backend/models/
+
+# Enrolled face gallery - biometric data, local only, never committed
+backend/data/faces/
