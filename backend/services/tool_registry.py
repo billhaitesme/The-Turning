@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from services.adapters.approval_status import APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter
 from services.adapters.deep_think import DEEP_THINK_DESCRIPTOR, DeepThinkAdapter
+from services.adapters.look_at_image import LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
 from services.adapters.comfyui_status import COMFYUI_STATUS_DESCRIPTOR, ComfyUIStatusAdapter
 from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter
@@ -80,6 +81,10 @@ def register_default_tools() -> None:
         # Read-only pipeline truth (XIII-A follow-up): lets the chat seat verify whether an
         # operator approval actually landed instead of guessing; direct-executable.
         register_tool(APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter())
+    if "look_at_image" not in TOOL_REGISTRY:
+        # The eyes: vision is a sense, not a seat swap — the agent seat consults the local
+        # vision seat through this bounded tool; no network, no breaker.
+        register_tool(LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter())
     if "deep_think" not in TOOL_REGISTRY:
         # XIII-C Mind Ladder rungs 2-3: deep local gear + frontier planner (breaker-gated).
         # Privacy is structural: only the composed task/context strings can be sent.

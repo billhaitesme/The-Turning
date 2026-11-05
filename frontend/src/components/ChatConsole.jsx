@@ -25,7 +25,87 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
   const [loopTrace, setLoopTrace] = useState([]);
   const [directModel, setDirectModel] = useState("");
   const [recents, setRecents] = useState([]);
+  const [pendingImages, setPendingImages] = useState([]);
+  const [voiceOut, setVoiceOut] = useState(false);
+  const [recording, setRecording] = useState(false);
   const adoptedRef = useRef(false);
+  const voiceOutRef = useRef(false);
+  const recorderRef = useRef(null);
+
+  function toggleVoiceOut() {
+    setVoiceOut((prev) => {
+      voiceOutRef.current = !prev;
+      return !prev;
+    });
+  }
+
+  async function speakReply(text) {
+    if (!voiceOutRef.current || !text) return;
+    try {
+      const res = await fetch(`${API_BASE}/voice/speak`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.slice(0, 1200) }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.play().catch(() => {});
+    } catch { /* the mouth failing is never fatal */ }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        if (blob.size < 1000) return; // a tap, not speech
+        setStatus("TRANSCRIBING…");
+        try {
+          const res = await fetch(`${API_BASE}/voice/transcribe`, { method: "POST", body: blob });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+          if (data.text) {
+            setMessage(data.text);
+            setStatus("HEARD — TRANSMIT TO SEND");
+          } else {
+            setStatus("HEARD NOTHING");
+          }
+        } catch (err) {
+          setStatus(`WARNING: ${err.message}`);
+        }
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+      setStatus("LISTENING…");
+    } catch (err) {
+      setStatus(`WARNING: microphone — ${err.message}`);
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current && recorderRef.current.state === "recording") {
+      recorderRef.current.stop();
+    }
+  }
+
+  function attachImages(fileList) {
+    const files = Array.from(fileList || []).slice(0, 4 - pendingImages.length);
+    files.forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPendingImages((prev) => prev.length < 4 ? [...prev, { dataUrl: reader.result, name: file.name }] : prev);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
   async function loadRecents() {
     try {
@@ -152,7 +232,10 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
     }
 
     const userMsg = message;
-    setMessages((prev) => [...prev, { role: "USER", content: userMsg }]);
+    const imagesToSend = pendingImages.map((p) => p.dataUrl);
+    setMessages((prev) => [...prev, { role: "USER", content: userMsg,
+                                      images: pendingImages.map((p) => p.dataUrl) }]);
+    setPendingImages([]);
     setMessage("");
     setStatus(conversationMode === "direct" ? "DIRECT MODEL" : "CHANNEL OPEN");
     setIsStreaming(true);
@@ -174,6 +257,7 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
           user_id: "demo",
           message: userMsg,
           mode: conversationMode,
+          images: imagesToSend.length ? imagesToSend : undefined,
         }),
       });
 
@@ -232,6 +316,7 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
             setStatus(conversationMode === "direct" ? "DIRECT COMPLETE" : "STREAM COMPLETE");
             setPhase(conversationMode === "direct" ? "none" : "silence");
             playCue("completion");
+            speakReply(payload.text || assistantText);
           } else if (payload.type === "mode" && payload.name === "direct") {
             setStatus(`DIRECT // ${payload.model || directModel}`);
           } else if (payload.type === "end") {
@@ -334,6 +419,9 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
     sendMessage,
     streamMessage,
     searchMemory,
+    pendingImages, setPendingImages, attachImages,
+    voiceOut, toggleVoiceOut,
+    recording, startRecording, stopRecording,
   };
 }
 
@@ -380,9 +468,11 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
     message, setMessage, messages, conversationId, conversationMode, setConversationMode,
     status, memoryQuery, setMemoryQuery, memoryResults, isStreaming, loopTrace,
     directModel, recents, resumeConversation, createConversation, sendMessage, streamMessage,
-    searchMemory,
+    searchMemory, pendingImages, setPendingImages, attachImages,
+    voiceOut, toggleVoiceOut, recording, startRecording, stopRecording,
   } = chat;
   const chatWindowRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const node = chatWindowRef.current;
@@ -470,6 +560,11 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role === "USER" ? "user" : "assistant"}`}>
             <div className="role">{m.role}</div>
+            {m.images?.length ? (
+              <div className="chat-images">
+                {m.images.map((src, j) => <img key={j} src={src} alt="attached" />)}
+              </div>
+            ) : null}
             {m.hops?.length ? (
               <div className="chat-hops">
                 {m.hops.map((hop, j) => (
@@ -481,17 +576,57 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
           </div>
         ))}
       </div>
+      {pendingImages.length ? (
+        <div className="pending-images">
+          {pendingImages.map((img, i) => (
+            <div key={i} className="pending-thumb">
+              <img src={img.dataUrl} alt={img.name} />
+              <button type="button" title="Remove"
+                      onClick={() => setPendingImages((prev) => prev.filter((_, j) => j !== i))}>✕</button>
+            </div>
+          ))}
+          <small>ATTACHED — THE SEAT SEES THEM VIA look_at_image</small>
+        </div>
+      ) : null}
       <div className="command-line">&gt;</div>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="ENTER TRANSMISSION..."
+        placeholder={recording ? "LISTENING…" : "ENTER TRANSMISSION..."}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: "none" }}
+        onChange={(e) => {
+          attachImages(e.target.files);
+          e.target.value = "";
+        }}
       />
       <div className="console-buttons">
         {!conversationId ? <button onClick={createConversation}>Open Channel</button> : null}
         {conversationId ? <button onClick={createConversation} disabled={isStreaming}>New Channel</button> : null}
         <button onClick={streamMessage} disabled={isStreaming}>Transmit</button>
+        <button type="button" title="Attach image(s) — show it things"
+                onClick={() => fileInputRef.current?.click()} disabled={isStreaming}>📷 Show</button>
+        <button
+          type="button"
+          className={`mic-button ${recording ? "is-recording" : ""}`}
+          title="Hold to talk"
+          onPointerDown={startRecording}
+          onPointerUp={stopRecording}
+          onPointerLeave={() => recording && stopRecording()}
+          disabled={isStreaming}
+        >
+          {recording ? "● REC" : "🎙 Talk"}
+        </button>
+        <button type="button" className={`voice-toggle ${voiceOut ? "is-on" : ""}`}
+                title="Speak replies aloud (Kokoro, local)" onClick={toggleVoiceOut}>
+          {voiceOut ? "🔊 Voice ON" : "🔇 Voice"}
+        </button>
         {!compact ? <button onClick={sendMessage} disabled={isStreaming}>Send (no stream)</button> : null}
       </div>
       {!compact ? (

@@ -97,7 +97,9 @@ from services.cognition_pipeline import process_completed_turn
 from services.declarative_acknowledger import build_declarative_acknowledgement
 from services import agent_loop
 from services import command_console
+from services import image_store
 from routes.system import router as system_router
+from routes.voice import router as voice_router
 from routes.mobile import configure_mobile_runtime, router as mobile_router
 from routes.runtime_operations import router as runtime_operations_router
 
@@ -1950,7 +1952,8 @@ def stream_response_text(*, history: List[Dict[str, str]], user_message: str, us
 
 def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
                           user_profile: Dict[str, Any], memories: List[Dict[str, Any]],
-                          conversation_id: str) -> Generator[Dict[str, Any], None, None]:
+                          conversation_id: str,
+                          image_ids: Optional[List[str]] = None) -> Generator[Dict[str, Any], None, None]:
     """XIII-A (ADR 0026): drive the agent loop over the standard runtime context. The seat is the
     Model-Lock-selected conversational model — the loop adds hands, never a different voice. The
     same message builder as the plain path keeps context parity; web results stay out until the
@@ -1960,6 +1963,14 @@ def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
                                      web_results=[], conversation_id=conversation_id)
     if messages and messages[0].get("role") == "system":
         messages[0]["content"] = f"{messages[0]['content']}\n\n{agent_loop.AGENT_SYSTEM_ADDENDUM}"
+    if image_ids:
+        messages.append({
+            "role": "system",
+            "content": (f"The operator attached {len(image_ids)} image(s) this turn with "
+                        f"image_id(s): {', '.join(image_ids)}. Use look_at_image(image_id=...) "
+                        "to actually see an image before answering anything about it — never "
+                        "guess at an image's contents."),
+        })
     requested_model = select_chat_model()
     started = time.perf_counter()
     for event in agent_loop.iter_agent_loop(messages=messages, model=requested_model,
@@ -2101,6 +2112,9 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = None
     model: Optional[str] = None
     mode: Literal["runtime", "direct"] = "runtime"
+    # Attached images (data URLs or bare base64). The runtime stores them and offers the seat
+    # their image_ids; the seat sees them through look_at_image — never raw bytes in context.
+    images: Optional[List[str]] = None
 
 
 class ChatResponse(BaseModel):
@@ -2549,10 +2563,15 @@ def chat(req: ChatRequest) -> ChatResponse:
             elif agent_loop.agent_loop_enabled():
                 # XIII-A: the chat seat answers through the agent loop — it may call registered
                 # commands mid-reply; the runtime executes them under the consoles' gates.
+                attached_ids = [
+                    image_store.save_image(img, conversation_id=conversation_id)["image_id"]
+                    for img in (req.images or [])[:4]
+                ]
                 loop_final: Dict[str, Any] = {}
                 for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
                                                         user_profile=user_profile, memories=memories,
-                                                        conversation_id=conversation_id):
+                                                        conversation_id=conversation_id,
+                                                        image_ids=attached_ids):
                     if loop_event.get("event") == "final":
                         loop_final = loop_event
                 reply = str(loop_final.get("reply") or "")
@@ -2963,9 +2982,14 @@ def chat_stream(req: ChatRequest):
                 yield f"data: {json.dumps({'type': 'phase', 'name': 'bridge'})}\n\n"
                 yield f"data: {json.dumps({'type': 'phase', 'name': 'mirror'})}\n\n"
                 yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+                attached_ids = [
+                    image_store.save_image(img, conversation_id=conversation_id)["image_id"]
+                    for img in (req.images or [])[:4]
+                ]
                 for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
                                                         user_profile=user_profile, memories=memories,
-                                                        conversation_id=conversation_id):
+                                                        conversation_id=conversation_id,
+                                                        image_ids=attached_ids):
                     kind = loop_event.get("event")
                     if kind == "delta":
                         chunks.append(loop_event.get("text", ""))
@@ -3089,3 +3113,4 @@ configure_mobile_runtime(
 )
 app.include_router(mobile_router)
 app.include_router(runtime_operations_router)
+app.include_router(voice_router)

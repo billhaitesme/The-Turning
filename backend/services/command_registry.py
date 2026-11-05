@@ -78,6 +78,22 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "look_at_image",
+        "title": "Look at an image",
+        "description": "Show one operator-attached image (by image_id) to the local vision seat "
+                       "and return its description. Local inference only; read-only — the eyes "
+                       "are a sense, not a seat swap.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "senses",
+        "tool_name": "look_at_image",
+        "parameters": [
+            {"name": "image_id", "label": "Image id", "type": "text", "required": True},
+            {"name": "question", "label": "What to look for", "type": "text", "required": False},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "deep_think",
         "title": "Deep think",
         "description": "Escalate one composed task up the Mind Ladder (XIII-C): rung 'local' = "

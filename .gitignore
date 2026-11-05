@@ -70,3 +70,6 @@ training/*.err
 
 # RebelsKum ComfyUI pipeline — private templates (checkpoints/LoRAs/face model names)
 backend/services/adapters/comfyui_private/
+
+# Voice engine model files (fetched at build time, never committed)
+backend/models/

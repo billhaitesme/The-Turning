@@ -2958,3 +2958,38 @@ button:hover {
 .cap-row.status-awaiting_induction { border-left-color: #c9a6ff; }
 .cap-row.status-inducted { border-left-color: #7ef0a8; }
 .cap-row.status-denied, .cap-row.status-failed { border-left-color: #ff8d7e; opacity: 0.75; }
+
+/* -------------------------------------------------- voice + vision chat controls */
+.pending-images { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.pending-thumb { position: relative; }
+.pending-thumb img {
+  width: 56px; height: 56px; object-fit: cover; border-radius: 4px;
+  border: 1px solid rgba(140, 220, 255, 0.5);
+}
+.pending-thumb button {
+  position: absolute; top: -6px; right: -6px;
+  width: 16px; height: 16px; line-height: 1; font-size: 0.55rem; padding: 0;
+  border-radius: 50%; border: 1px solid rgba(255, 141, 126, 0.7);
+  background: rgba(20, 10, 10, 0.95); color: #ff9d8e; cursor: pointer;
+}
+.pending-images small { font-size: 0.52rem; letter-spacing: 0.14em; color: rgba(140, 200, 230, 0.6); }
+
+.chat-images { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.chat-images img {
+  max-width: 180px; max-height: 140px; object-fit: contain; border-radius: 4px;
+  border: 1px solid rgba(110, 180, 220, 0.4);
+}
+
+.mic-button.is-recording {
+  border-color: rgba(255, 141, 126, 0.9) !important;
+  color: #ff9d8e !important;
+  box-shadow: 0 0 12px rgba(255, 141, 126, 0.4);
+  animation: rec-pulse 1s ease-in-out infinite;
+}
+@keyframes rec-pulse { 50% { box-shadow: 0 0 4px rgba(255, 141, 126, 0.2); } }
+
+.voice-toggle.is-on {
+  border-color: rgba(126, 240, 168, 0.8) !important;
+  color: #9af0bd !important;
+  box-shadow: 0 0 10px rgba(126, 240, 168, 0.25);
+}
