@@ -78,6 +78,24 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "deep_think",
+        "title": "Deep think",
+        "description": "Escalate one composed task up the Mind Ladder (XIII-C): rung 'local' = "
+                       "the deep gear thinking hard in system RAM (slow — minutes); rung "
+                       "'frontier' = the cloud planner, network-breaker-gated and logged. Only "
+                       "the task text travels — history, memories, and private rooms have no "
+                       "path through this command.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "mind",
+        "tool_name": "deep_think",
+        "parameters": [
+            {"name": "task", "label": "Task to think through", "type": "text", "required": True},
+            {"name": "rung", "label": "Rung (local or frontier)", "type": "text", "required": False, "default": "local"},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "web_search",
         "title": "Web search",
         "description": "Search the open web: titles, URLs, snippets. Read-only and gated by the "

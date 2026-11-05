@@ -52,8 +52,12 @@ class ToolApiTests(unittest.TestCase):
 
     def test_vague_assent_does_not_execute_backend_health_check(self):
         original = app_module.ENABLE_TOOL_EXECUTION
+        original_generate = app_module.generate_response_text
         try:
             app_module.ENABLE_TOOL_EXECUTION = True
+            # "Okay." takes the plain conversational path — stub the model call so the suite
+            # never reaches the real model house (it used to, and flaked under GPU contention).
+            app_module.generate_response_text = lambda **kwargs: "Acknowledged."
             with TestClient(app) as client:
                 first = client.post("/chat", json={"message": "Can you perform the backend health check?"})
                 self.assertEqual(first.status_code, 200)
@@ -66,6 +70,7 @@ class ToolApiTests(unittest.TestCase):
                 self.assertEqual(len(load_tool_result_store().get("results", [])), results_before)
         finally:
             app_module.ENABLE_TOOL_EXECUTION = original
+            app_module.generate_response_text = original_generate
 
     def test_explicit_confirmation_executes_exactly_once(self):
         original = app_module.ENABLE_TOOL_EXECUTION
