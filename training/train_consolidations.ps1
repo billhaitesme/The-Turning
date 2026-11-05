@@ -41,8 +41,14 @@ foreach ($id in $adapters) {
         -ArgumentList @("train_adapter.py", "--data", "distillation\$id.jsonl", "--output", "adapters\$id", "--epochs", "40") `
         -RedirectStandardOutput "$out.train.log" -RedirectStandardError "$out.train.err"
     try { $p.PriorityClass = "BelowNormal" } catch {}
+    # PS 5.1: cache the handle BEFORE WaitForExit or $p.ExitCode reads $null afterward — the
+    # 2026-11-05 05:00 run proved it (adapter 1 trained fully, 400/400, weights saved; the
+    # runner declared "TRAIN FAILED ()" on the null exit code and stopped the chain).
+    $null = $p.Handle
     $p.WaitForExit()
-    if ($p.ExitCode -ne 0) { Log "TRAIN FAILED ($($p.ExitCode)) - see $out.train.err; stopping"; exit 1 }
+    if ($null -eq $p.ExitCode) { Log "WARNING: exit code unreadable for $id; checking weights instead" }
+    if ($null -ne $p.ExitCode -and $p.ExitCode -ne 0) { Log "TRAIN FAILED ($($p.ExitCode)) - see $out.train.err; stopping"; exit 1 }
+    if (-not (Test-Path (Join-Path $out "adapter_model.safetensors"))) { Log "TRAIN FAILED (no weights saved) - see $out.train.err; stopping"; exit 1 }
     Log "$id trained"
 }
 
