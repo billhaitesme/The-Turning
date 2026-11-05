@@ -6,7 +6,8 @@
 **Next epoch:** Epoch XIII — Agency (design **accepted 2026-11-05**:
 [`docs/architecture/epoch-xiii-agency.md`](docs/architecture/epoch-xiii-agency.md), ADR
 [`0026`](docs/decisions/0026-the-agent-loop.md) — the agent loop, the breaker, the Mind Ladder,
-the Toolwright)
+the Toolwright; **XIII-A loop built 2026-11-05** — `ENABLE_AGENT_LOOP`, off by default, seat
+bake-off pending)
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
 

@@ -95,6 +95,7 @@ from services.user_identity import (
 )
 from services.cognition_pipeline import process_completed_turn
 from services.declarative_acknowledger import build_declarative_acknowledgement
+from services import agent_loop
 from services import command_console
 from routes.system import router as system_router
 from routes.mobile import configure_mobile_runtime, router as mobile_router
@@ -1947,6 +1948,34 @@ def stream_response_text(*, history: List[Dict[str, str]], user_message: str, us
     raise ModelUnavailableError(f"Unable to load configured conversational models: {attempts}.") from last_error
 
 
+def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
+                          user_profile: Dict[str, Any], memories: List[Dict[str, Any]],
+                          conversation_id: str) -> Generator[Dict[str, Any], None, None]:
+    """XIII-A (ADR 0026): drive the agent loop over the standard runtime context. The seat is the
+    Model-Lock-selected conversational model — the loop adds hands, never a different voice. The
+    same message builder as the plain path keeps context parity; web results stay out until the
+    XIII-B breaker exists."""
+    messages = build_ollama_messages(history=history, user_message=user_message,
+                                     user_profile=user_profile, memories=memories,
+                                     web_results=[], conversation_id=conversation_id)
+    if messages and messages[0].get("role") == "system":
+        messages[0]["content"] = f"{messages[0]['content']}\n\n{agent_loop.AGENT_SYSTEM_ADDENDUM}"
+    requested_model = select_chat_model()
+    started = time.perf_counter()
+    for event in agent_loop.iter_agent_loop(messages=messages, model=requested_model,
+                                            session_id=conversation_id):
+        if event.get("event") == "final":
+            model_control.record(ConversationTelemetry(
+                requested_model=requested_model,
+                selected_model=requested_model,
+                actual_model=requested_model,
+                response_time=round(time.perf_counter() - started, 6),
+                tokens=event.get("eval_count"),
+                fallback_used=False,
+            ))
+        yield event
+
+
 def persist_learning(*, conversation_id: str, user_id: Optional[str], user_message: str, assistant_message: str) -> Dict[str, Any]:
     engine = TurningEngine()
 
@@ -2453,7 +2482,11 @@ def chat(req: ChatRequest) -> ChatResponse:
         or (ENABLE_DELIBERATION_PIPELINE and not ENABLE_PLAN_EXECUTION and deliberation_intent)
         or (ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION and "vision_model_selected" in declaration_keys)
         or (not ENABLE_PLAN_EXECUTION and execution_request_pattern.search(req.message))
-        or (ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION and tool_request_pattern.search(req.message))
+        # XIII-A: the agent loop is the sanctioned chat tool path (ADR 0026 supersedes the ADR 0015
+        # freeze only through the loop) — while it is on, tool-shaped messages reach the loop
+        # instead of the freeze boilerplate.
+        or (ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION and not agent_loop.agent_loop_enabled()
+            and tool_request_pattern.search(req.message))
     )
     try:
         reasoning_output = None
@@ -2479,6 +2512,16 @@ def chat(req: ChatRequest) -> ChatResponse:
                 # Dedicated runtime requests are answered by their deterministic
                 # subsystem below; no conversational model is called or discarded.
                 reply = ""
+            elif agent_loop.agent_loop_enabled():
+                # XIII-A: the chat seat answers through the agent loop — it may call registered
+                # commands mid-reply; the runtime executes them under the consoles' gates.
+                loop_final: Dict[str, Any] = {}
+                for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
+                                                        user_profile=user_profile, memories=memories,
+                                                        conversation_id=conversation_id):
+                    if loop_event.get("event") == "final":
+                        loop_final = loop_event
+                reply = str(loop_final.get("reply") or "")
             else:
                 reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories, conversation_id=conversation_id)
     except ModelUnavailableError as exc:
@@ -2653,7 +2696,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         if execution_request_pattern.search(req.message):
             reply = "Execution remains disabled in Epoch VII. Approval and decision recording are available, but actions are not executed automatically."
 
-    if ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION:
+    if ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION and not agent_loop.agent_loop_enabled():
         if (
             tool_request_pattern.search(req.message)
             and not is_backend_health_query(req.message)
@@ -2876,6 +2919,34 @@ def chat_stream(req: ChatRequest):
             full_text = deterministic_ack
             yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
             yield f"data: {json.dumps({'type': 'delta', 'text': full_text})}\n\n"
+        elif agent_loop.agent_loop_enabled():
+            # XIII-A: the agent loop streams here — reply deltas plus live tool_call/tool_result
+            # events as the runtime resolves each command under the consoles' gates.
+            try:
+                yield f"data: {json.dumps({'type': 'phase', 'name': 'whisper'})}\n\n"
+                sanitized_memories = [{"kind": m.get("kind"), "summary_text": m.get("summary_text"), "similarity": m.get("similarity"), "created_at": m.get("created_at")} for m in memories]
+                yield f"data: {json.dumps({'type': 'memory', 'items': sanitized_memories})}\n\n"
+                yield f"data: {json.dumps({'type': 'phase', 'name': 'bridge'})}\n\n"
+                yield f"data: {json.dumps({'type': 'phase', 'name': 'mirror'})}\n\n"
+                yield f"data: {json.dumps({'type': 'phase', 'name': 'guide'})}\n\n"
+                for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
+                                                        user_profile=user_profile, memories=memories,
+                                                        conversation_id=conversation_id):
+                    kind = loop_event.get("event")
+                    if kind == "delta":
+                        chunks.append(loop_event.get("text", ""))
+                        yield f"data: {json.dumps({'type': 'delta', 'text': loop_event.get('text', '')})}\n\n"
+                    elif kind == "tool_call":
+                        yield f"data: {json.dumps({'type': 'tool_call', 'name': loop_event.get('name'), 'arguments': loop_event.get('arguments')})}\n\n"
+                    elif kind == "tool_result":
+                        yield f"data: {json.dumps({'type': 'tool_result', 'name': loop_event.get('name'), 'status': loop_event.get('status')})}\n\n"
+                    elif kind == "final":
+                        yield f"data: {json.dumps({'type': 'phase', 'name': 'silence'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'done', 'text': loop_event.get('reply') or ''})}\n\n"
+            except Exception as exc:
+                yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+                yield f"data: {json.dumps({'type': 'end'})}\n\n"
+                return
         else:
             try:
                 for event in stream_response_text(

@@ -166,6 +166,14 @@ no-silent-processes posture holds); moving private rooms through any non-local s
 ## Milestones
 
 - **XIII-A** targets the loop live on all three consoles' chat with the existing six commands.
+  **Built 2026-11-05:** `backend/services/agent_loop.py` (streamed loop, registry-rendered
+  schemas, hop + result-size budgets, tools-unsupported degrade) resolves every call through the
+  command console (`channel: chat`, `requested_by: model:agent-seat`); unknown calls are refused
+  and recorded (`record_refused_chat_call`). Wired into `/chat` and `/chat/stream` (live
+  `tool_call` / `tool_result` events). OFF until the operator sets `ENABLE_AGENT_LOOP=true`.
+  10 tests; curriculum subject `omega-arc-agent-loop` (*Its Own Hands*) added. Remaining for the
+  milestone: the seat bake-off (the incumbent 12B voice cannot call tools) and console rendering
+  of the new stream events.
 - **XIII-B** targets the breaker + both read tools + the fetch log surfaces.
 - **XIII-C** targets the seat bake-off (tool-capable hybrid-reasoning challenger vs the incumbent
   voice) and one hard task answered through the recorded deep-reasoning escalation.

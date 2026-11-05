@@ -123,6 +123,30 @@ def _refresh_expired(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return entries
 
 
+# ----------------------------------------------------------------------------- XIII-A refusals
+def record_refused_chat_call(name: str, *, reason: str, requested_by: str,
+                             session_id: Optional[str] = None) -> Dict[str, Any]:
+    """A model-emitted tool call that does not validate against the registry is refused AND
+    recorded (ADR 0026) — the refusal trail is part of the agency record, like every other
+    command outcome. Nothing executes on this path."""
+    entry = {
+        "command_id": f"cmd-{uuid.uuid4().hex}",
+        "name": str(name)[:120],
+        "risk": "unknown",
+        "gate": "unknown",
+        "requested_by": requested_by,
+        "channel": "chat",
+        "session_id": session_id or "chat",
+        "requested_at": utc_now_iso(),
+        "request_id": None,
+        "approval_id": None,
+        "status": "refused",
+        "outcome": {"reason": reason},
+        "finished_at": utc_now_iso(),
+    }
+    return _upsert(entry)
+
+
 # ----------------------------------------------------------------------------- initiate
 class CommandError(Exception):
     def __init__(self, status: int, detail: str):
