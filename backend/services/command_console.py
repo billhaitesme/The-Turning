@@ -193,10 +193,22 @@ def initiate_command(name: str, *, requested_by: str, channel: str, session_id: 
         entry.update(status="executed", finished_at=utc_now_iso(), outcome=outcome)
         return _upsert(entry)
 
-    # approval-gated: enter the IX-C pipeline; nothing executes yet
+    # approval-gated: enter the IX-C pipeline; nothing executes yet.
+    # Idempotent per session (XIII-A): the chat seat may re-ask while an approval is pending;
+    # an identical command (same name, session, arguments) already awaiting approval is returned
+    # as-is instead of growing the queue with duplicates.
+    merged_arguments = {**(command.get("arguments") or {}), **(arguments or {})}
+    for existing in _refresh_expired(load_command_log().get("commands", [])):
+        if (existing.get("name") == command["name"]
+                and existing.get("session_id") == entry["session_id"]
+                and existing.get("channel") == channel
+                and existing.get("status") == "awaiting_approval"):
+            pending_request = get_tool_request(existing.get("request_id"), load_tool_request_store())
+            if pending_request and (pending_request.get("arguments") or {}) == merged_arguments:
+                return deepcopy(existing)
     request = build_tool_request(
         tool_name=command["tool_name"],
-        arguments={**(command.get("arguments") or {}), **(arguments or {})},
+        arguments=merged_arguments,
         requested_by=f"operator:{channel}",
         session_id=entry["session_id"],
     )

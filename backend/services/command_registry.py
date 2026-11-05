@@ -66,6 +66,18 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "check_approval_status",
+        "title": "Approval status",
+        "description": "Read the IX-C pipeline: which tool requests are pending and whether the "
+                       "operator's biometric approval has landed. Read-only, so it executes "
+                       "immediately — the honest answer to 'did my approval go through?'.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "diagnostics",
+        "tool_name": "approval_status",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "run_comfyui_status",
         "title": "ComfyUI status",
         "description": "Check whether the local ComfyUI is running and how deep its render queue is. "

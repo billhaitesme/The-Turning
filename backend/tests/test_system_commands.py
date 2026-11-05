@@ -49,6 +49,29 @@ def test_desktop_approval_command_waits_for_the_mobile_biometric(client):
     assert entry["request_id"] and entry["approval_id"]  # IX-C pipeline, nothing executed
 
 
+def test_pending_approval_is_idempotent_not_duplicated(client):
+    # Re-asking while an identical command awaits approval returns the SAME pending entry
+    # (XIII-A: the chat seat may repeat itself; the approval queue must not grow).
+    first = client.post("/system/commands/run_backend_health_check", json={}).json()["command"]
+    second = client.post("/system/commands/run_backend_health_check", json={}).json()["command"]
+    assert second["command_id"] == first["command_id"]
+    assert second["request_id"] == first["request_id"]
+
+
+def test_approval_status_reads_the_pipeline_truth(client):
+    # raise a gated request, then the read must report it pending with no biometric landed
+    client.post("/system/commands/run_backend_health_check", json={})
+    r = client.post("/system/commands/check_approval_status", json={})
+    assert r.status_code == 200, r.text
+    entry = r.json()["command"]
+    assert entry["status"] == "executed" and entry["gate"] == "direct"
+    output = entry["outcome"]["output"]
+    assert output["pending_count"] >= 1
+    pending = next(p for p in output["pending"] if p["tool_name"] == "backend_health_check")
+    assert pending["request_status"] == "awaiting_approval"
+    assert pending["biometric_confirmed"] is False
+
+
 def test_desktop_forbidden_command_is_refused(client):
     r = client.post("/system/commands/change_conversational_routing", json={})
     assert r.status_code == 403

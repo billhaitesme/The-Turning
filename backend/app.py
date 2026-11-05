@@ -2507,9 +2507,15 @@ def chat(req: ChatRequest) -> ChatResponse:
     tool_request_pattern = re.compile(r"\b(tool|backend\s+health\s+check|system\s+tools|tool\s+request)\b", re.IGNORECASE)
     deterministic_runtime_request = bool(
         (ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION and planning_intent)
-        or (ENABLE_DELIBERATION_PIPELINE and not ENABLE_PLAN_EXECUTION and deliberation_intent)
+        # XIII-A: with the loop on, approval/execution-shaped messages belong to the loop — the
+        # seat can verify the pipeline truth (check_approval_status) instead of the Epoch-VII
+        # canned replies hijacking them (observed: "did my approval go through?" answered with
+        # "No recommendation is currently available to approve").
+        or (ENABLE_DELIBERATION_PIPELINE and not ENABLE_PLAN_EXECUTION and not agent_loop.agent_loop_enabled()
+            and deliberation_intent)
         or (ENABLE_PLANNING_PIPELINE and not ENABLE_PLAN_EXECUTION and "vision_model_selected" in declaration_keys)
-        or (not ENABLE_PLAN_EXECUTION and execution_request_pattern.search(req.message))
+        or (not ENABLE_PLAN_EXECUTION and not agent_loop.agent_loop_enabled()
+            and execution_request_pattern.search(req.message))
         # XIII-A: the agent loop is the sanctioned chat tool path (ADR 0026 supersedes the ADR 0015
         # freeze only through the loop) — while it is on, tool-shaped messages reach the loop
         # instead of the freeze boilerplate.
@@ -2663,7 +2669,7 @@ def chat(req: ChatRequest) -> ChatResponse:
             )
             latest_deliberation_result = deliberation_output
 
-            if deliberation_intent:
+            if deliberation_intent and not agent_loop.agent_loop_enabled():
                 recommendation = deliberation_output.get("recommendation") or {}
                 candidate_plans = deliberation_output.get("candidate_plans") or []
                 matrix = ((deliberation_output.get("deliberation") or {}).get("decision_matrix") or {}).get("rows") or []
@@ -2720,7 +2726,7 @@ def chat(req: ChatRequest) -> ChatResponse:
             print("Deliberation pipeline warning:", repr(exc))
             deliberation_output = None
 
-    if not ENABLE_PLAN_EXECUTION:
+    if not ENABLE_PLAN_EXECUTION and not agent_loop.agent_loop_enabled():
         if execution_request_pattern.search(req.message):
             reply = "Execution remains disabled in Epoch VII. Approval and decision recording are available, but actions are not executed automatically."
 

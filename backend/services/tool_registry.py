@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+from services.adapters.approval_status import APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
 from services.adapters.comfyui_status import COMFYUI_STATUS_DESCRIPTOR, ComfyUIStatusAdapter
 from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUISubmitAdapter
@@ -71,6 +72,10 @@ def register_default_tools() -> None:
     if "comfyui_free_vram" not in TOOL_REGISTRY:
         # Side-effecting (unloads models) — approval-gated; low severity, but still an act.
         register_tool(COMFYUI_FREE_VRAM_DESCRIPTOR, ComfyUIFreeVramAdapter())
+    if "approval_status" not in TOOL_REGISTRY:
+        # Read-only pipeline truth (XIII-A follow-up): lets the chat seat verify whether an
+        # operator approval actually landed instead of guessing; direct-executable.
+        register_tool(APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).
