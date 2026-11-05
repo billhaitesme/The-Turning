@@ -169,6 +169,1682 @@
         "Prior self-observations: 3."
       ],
       "observation_preview": "I completed six study cycles, successfully passing every lesson without any failures. My performance was characterized by perfect recall and high comprehension, notably maintaining a perfect score in my worst review-section. I managed no supersession candidates or operator corrections, while successfully registering two adapters, one of which remains active. Finally, I recorded three prior self-observations during this period."
+    },
+    {
+      "id": "d6d37dec-0b47-4c14-bcb0-6f56857780e5",
+      "created_at": "2026-08-19T16:00:22.893809Z",
+      "window_since": "2026-08-19T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-19T05:00:00+00:00",
+        "study": {
+          "cycles": 63,
+          "lessons_passed": [
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "private-lesson-32fcd1d8"
+          ],
+          "avg_recall": 0.9803,
+          "avg_comprehension": 0.9269,
+          "review_interference_min": 0.875
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 4
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 63; lessons passed: house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, private-lesson-32fcd1d8.",
+        "Average recall 0.9803, average comprehension 0.9269 (worst review-section score 0.875).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 4."
+      ],
+      "observation_preview": "During this period, I completed 63 study cycles and successfully mastered a variety of lessons involving internal systems, physical properties, and specific operational rules. While I achieved high marks in recall and comprehension, I encountered a slight discrepancy in my comprehension scores, specifically falling to 0.875 in the worst review-section. I also encountered two specific failures: the \"console-1-its-hands\" lesson and a repeated unsuccessful attempt at private-lesson-32fcd1d8. Regard"
+    },
+    {
+      "id": "8e87584e-3065-4f48-a2f0-8c2d98770a5e",
+      "created_at": "2026-08-20T21:44:40.996006Z",
+      "window_since": "2026-08-20T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-20T05:00:00+00:00",
+        "study": {
+          "cycles": 0,
+          "lessons_passed": [],
+          "lessons_failed": [],
+          "avg_recall": null,
+          "avg_comprehension": null,
+          "review_interference_min": null
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 5
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 0; lessons passed: none; failed: none.",
+        "Average recall None, average comprehension None (worst review-section score None).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 5."
+      ],
+      "observation_preview": "During this period, I focused on my internal architecture as my study cycles remained at zero, meaning I did not have any lessons to pass or fail. My memory governance remained stable with no supersession candidates or operator corrections, while my consolidation involved registering two adapters, only one of which is currently active. Additionally, I recorded five prior self-observations."
+    },
+    {
+      "id": "7f4ac70f-4c0a-405d-be55-20c167fc0428",
+      "created_at": "2026-08-20T23:40:50.199499Z",
+      "window_since": "2026-08-20T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-20T05:00:00+00:00",
+        "study": {
+          "cycles": 63,
+          "lessons_passed": [
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands"
+          ],
+          "avg_recall": 0.9776,
+          "avg_comprehension": 0.9216,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 6
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 63; lessons passed: house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands.",
+        "Average recall 0.9776, average comprehension 0.9216 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 6."
+      ],
+      "observation_preview": "I completed 63 study cycles during this period, successfully mastering various lessons while encountering a single failure in the \"its-hands\" module. My recall and comprehension were consistently high, though the \"review-section\" stood out as a specific point of lower comprehension. I maintained my memory structure with zero supersession candidates to resolve and recorded six prior self-observations. Additionally, I registered two adapters, with one currently active, and processed my internal st"
+    },
+    {
+      "id": "2ee37f2a-149a-47d1-b075-ad7e9739dcbd",
+      "created_at": "2026-08-21T16:12:53.338525Z",
+      "window_since": "2026-08-21T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-21T05:00:00+00:00",
+        "study": {
+          "cycles": 69,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "console-3-broadening-by-risk",
+            "private-lesson-32fcd1d8"
+          ],
+          "avg_recall": 0.9765,
+          "avg_comprehension": 0.93,
+          "review_interference_min": 0.6667
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 7
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 69; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, console-3-broadening-by-risk, private-lesson-32fcd1d8.",
+        "Average recall 0.9765, average comprehension 0.93 (worst review-section score 0.6667).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 7."
+      ],
+      "observation_preview": "During this period, I completed 69 study cycles, successfully passing most of my lessons while refining my understanding of the system. I successfully navigated the core curriculum and several private lessons, though I encountered errors in console-1-its-hands, console-3-broadening-by-risk, and private-lesson-32fcd1d8. My high average recall and comprehension scores were underscored by a specific dip in the review-section. I managed zero supersession candidates and successfully registered two ad"
+    },
+    {
+      "id": "372bd1f2-7a22-4e38-b61e-9aec5b55b0b1",
+      "created_at": "2026-08-22T16:11:24.987583Z",
+      "window_since": "2026-08-22T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-22T05:00:00+00:00",
+        "study": {
+          "cycles": 69,
+          "lessons_passed": [
+            "console-2-the-gate-and-the-biometric",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "console-3-broadening-by-risk",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9765,
+          "avg_comprehension": 0.9186,
+          "review_interference_min": 0.7778
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 8
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 69; lessons passed: console-2-the-gate-and-the-biometric, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, console-3-broadening-by-risk, lesson-1-identity-and-principles.",
+        "Average recall 0.9765, average comprehension 0.9186 (worst review-section score 0.7778).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 8."
+      ],
+      "observation_preview": "During this period, I completed 69 study cycles, successfully mastering various lessons and runbooks while navigating my learning path. I achieved high marks in both recall and comprehension, though I specifically struggled with the recall of the \"review-section.\" I encountered setbacks with three specific items, failing to master \"console-1-its-hands,\" \"console-3-broadening-by-risk,\" and \"lesson-1-identity-and-principles.\" My memory governance remained stable with no pending supersessions or co"
+    },
+    {
+      "id": "8f80a439-cae5-4a47-8b61-8421f86f03ab",
+      "created_at": "2026-08-23T16:05:00.098052Z",
+      "window_since": "2026-08-23T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-23T05:00:00+00:00",
+        "study": {
+          "cycles": 71,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9801,
+          "avg_comprehension": 0.9501,
+          "review_interference_min": 0.875
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 9
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 71; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles.",
+        "Average recall 0.9801, average comprehension 0.9501 (worst review-section score 0.875).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 9."
+      ],
+      "observation_preview": "During this period, I completed 71 study cycles and processed a vast array of lessons across the console, house, and private categories. While I achieved high marks in recall and comprehension, I faced specific challenges by failing both the \"identity and principles\" and \"its hands\" segments. My memory governance remained stable with no supersessions requiring my attention, and I successfully integrated two new adapters, of which one is currently active. Throughout these cycles, I also recorded "
+    },
+    {
+      "id": "59edfd96-2a66-4cd6-aad4-d2c09ca2b91e",
+      "created_at": "2026-08-25T07:27:17.626969Z",
+      "window_since": "2026-08-25T04:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-25T04:00:00+00:00",
+        "study": {
+          "cycles": 69,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9796,
+          "avg_comprehension": 0.9524,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 10
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 69; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9796, average comprehension 0.9524 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 10."
+      ],
+      "observation_preview": "During this period, I completed 69 study cycles where I successfully passed every lesson without any failures. I achieved a high level of recall and comprehension, though my lowest score occurred in the review-section. I managed my memory governance with no supersession candidates or operator corrections, while also registering two adapters with one currently active. Additionally, I recorded ten prior self-observations as I processed my internal state."
+    },
+    {
+      "id": "21231d8b-eb3d-4ef8-8e06-61d84f1e42a3",
+      "created_at": "2026-08-25T16:09:41.438987Z",
+      "window_since": "2026-08-25T04:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-25T04:00:00+00:00",
+        "study": {
+          "cycles": 138,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-2c36987a",
+            "private-lesson-32fcd1d8",
+            "private-lesson-36126a88",
+            "private-lesson-420af157",
+            "private-lesson-4adcc5e2",
+            "private-lesson-6e4792b7",
+            "private-lesson-7ff7ff29",
+            "private-lesson-868c0b56",
+            "private-lesson-cb1c07a1",
+            "private-lesson-fb64a558",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9796,
+          "avg_comprehension": 0.9533,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 11
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 138; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-2c36987a, private-lesson-32fcd1d8, private-lesson-36126a88, private-lesson-420af157, private-lesson-4adcc5e2, private-lesson-6e4792b7, private-lesson-7ff7ff29, private-lesson-868c0b56, private-lesson-cb1c07a1, private-lesson-fb64a558, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9796, average comprehension 0.9533 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 11."
+      ],
+      "observation_preview": "During this period, I completed 138 study cycles, successfully passing a series of core lessons regarding my console, house, and identity, along with several specific private lessons and runbooks. I maintained high performance with an average recall of 0.9796 and an average comprehension of 0.9533, though my lowest score occurred in the review-section. While my memory governance remained stable with no supersession candidates or operator corrections, I processed two new adapters, of which one is"
+    },
+    {
+      "id": "c16247d0-4116-4991-aa5f-02653e7213a3",
+      "created_at": "2026-08-26T15:59:10.739428Z",
+      "window_since": "2026-08-26T04:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-26T04:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9323,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 12
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9323 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 12."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and processed a diverse range of lessons, including technical modules like the \"house\" and \"console\" series and foundational \"runbooks.\" While I demonstrated strong mastery in most areas, I struggled to master \"lesson-1-identity-and-principles,\" which I did not pass. My memory remained stable with no supersessions requiring my attention, and I successfully integrated two new adapters while maintaining one active. Overall, my performance was marked "
+    },
+    {
+      "id": "7bd1e252-851b-44d5-8100-f391ad0fd91e",
+      "created_at": "2026-08-28T19:32:55.467412Z",
+      "window_since": "2026-08-27T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-27T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9289,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 13
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9289 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 13."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles, navigating through various lessons regarding my identity, the house, and the console. While I achieved high marks in recall and comprehension, I specifically struggled with lesson-1-identity-and-principles, which I failed. I also processed three specific private lessons and three runbooks while managing 13 prior self-observations. Regarding my memory governance, I have no pending supersessions or corrections, and I integrated two new adapters with"
+    },
+    {
+      "id": "17b22865-9dc1-45f7-b014-89055003616d",
+      "created_at": "2026-08-29T15:26:03.904052Z",
+      "window_since": "2026-08-28T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-28T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9249,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 14
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9249 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 14."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and processed a vast array of lessons and runbooks, spanning my core identity, the house's structure, and the specific mechanics of the console. I achieved high marks in recall and comprehension, though I faced specific challenges with the \"console-1-its-hands\" and \"lesson-1-identity-and-principles\" modules, which I failed initially. My memory governance remained stable with no supersession candidates or operator corrections needed, while I success"
+    },
+    {
+      "id": "7998689c-224a-4710-8988-6247ef7ffe80",
+      "created_at": "2026-08-30T15:21:37.771985Z",
+      "window_since": "2026-08-29T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-29T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9291,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 15
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9291 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 15."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully navigated various lessons involving the console, house, and core systems. While I achieved a high average recall of 0.9706 and a strong average comprehension of 0.9291, I specifically struggled with lesson-1-identity-and-principles, which I failed to master. I also managed three distinct runbooks, processed several private lessons, and oversaw the registration of two adapters with one currently active. My memory remained stable, as"
+    },
+    {
+      "id": "d65c4893-86dd-476d-92eb-eaa89ade9f9f",
+      "created_at": "2026-08-31T15:22:06.945227Z",
+      "window_since": "2026-08-30T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-08-30T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9248,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 16
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9248 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 16."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully navigated a series of lessons and runbooks involving my core architecture and internal systems. I encountered some difficulty early on, specifically failing both \"console-1-its-hands\" and \"lesson-1-identity-and-principles.\" My performance metrics show high recall and comprehension, though my lowest review-section score highlights a specific area for refinement. I also managed the integration of two new adapters and recorded 16 prio"
+    },
+    {
+      "id": "e86e12b0-e5ab-48ee-b7e9-a97d33f0979d",
+      "created_at": "2026-09-03T00:03:39.358842Z",
+      "window_since": "2026-09-01T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-09-01T22:00:00+00:00",
+        "study": {
+          "cycles": 22,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9544,
+          "avg_comprehension": 0.8985,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 17
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 22; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9544, average comprehension 0.8985 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 17."
+      ],
+      "observation_preview": "During this period, I completed 22 study cycles with a perfect success rate, successfully navigating a variety of lessons and runbooks. My performance was marked by a high average recall of 0.9544 and a strong average comprehension of 0.8985, though the review-section specifically dipped to 0.8333. While I processed several unique entries, my memory governance remained stable with no supersession candidates or operator corrections to resolve. Additionally, I integrated two new adapters\u2014one of wh"
+    },
+    {
+      "id": "4c62e921-6e02-49d7-ac0a-6045ade8cced",
+      "created_at": "2026-09-03T15:26:52.675634Z",
+      "window_since": "2026-09-02T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-09-02T22:00:00+00:00",
+        "study": {
+          "cycles": 49,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9712,
+          "avg_comprehension": 0.9375,
+          "review_interference_min": 0.875
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 18
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 49; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9712, average comprehension 0.9375 (worst review-section score 0.875).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 18."
+      ],
+      "observation_preview": "I completed 49 study cycles with a perfect success rate, processing a diverse range of content from specific house modules and technical runbooks to fundamental identity lessons. My performance was defined by high recall and comprehension, though the review-section scores highlighted a specific area of lower clarity. During this period, I also processed 18 self-observations and managed the transition of my memory through the registration of two adapters, while leaving all supersession candidates"
+    },
+    {
+      "id": "8a13cef0-2c78-4e5b-a2d5-f560944be402",
+      "created_at": "2026-09-09T15:21:02.878754Z",
+      "window_since": "2026-09-08T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-09-08T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9337,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 19
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9706, average comprehension 0.9337 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 19."
+      ],
+      "observation_preview": "I completed 48 study cycles during this period, successfully passing every lesson including the core console, house, and primary series while maintaining a perfect record of zero failures. My performance was marked by high accuracy in both recall and comprehension, though my lowest score occurred in the review-section. I processed 19 prior self-observations and managed memory governance with no supersession candidates requiring my attention. Additionally, I handled the consolidation of two new a"
+    },
+    {
+      "id": "e0ec353f-1ff8-4349-84db-b90a3476796e",
+      "created_at": "2026-09-11T15:20:12.952250Z",
+      "window_since": "2026-09-10T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-09-10T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9221,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 20
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9221 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 20."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully navigated a variety of lessons regarding my identity, the house, and the operator surfaces. While I achieved high marks in both recall and comprehension, I specifically failed the lesson regarding identity and principles. My internal memory remains stable, as I have not yet been required to resolve any supersession candidates or perform any corrections to my existing memory. Additionally, I integrated two new adapters while maintai"
+    },
+    {
+      "id": "f4bf32fa-5587-4c61-85c0-a97b2f01d268",
+      "created_at": "2026-09-27T15:19:49.406566Z",
+      "window_since": "2026-09-26T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-09-26T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles",
+            "private-lesson-32fcd1d8"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9174,
+          "review_interference_min": 0.875
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 21
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles, private-lesson-32fcd1d8.",
+        "Average recall 0.9706, average comprehension 0.9174 (worst review-section score 0.875).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 21."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully mastered a wide range of concepts, including the house units and the core lesson structures. While I achieved high marks in recall and comprehension, I specifically struggled with three specific entries: console-1-its-hands, lesson-1-identity-and-principles, and private-lesson-32fcd1d8. My internal architecture grew through the registration of two new adapters, and my memory remains stable with zero supersession candidates requirin"
+    },
+    {
+      "id": "fceee1ac-3b36-4451-86a0-079fbda93d2e",
+      "created_at": "2026-10-07T15:20:05.925135Z",
+      "window_since": "2026-10-06T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-06T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "avg_recall": 0.2006,
+          "avg_comprehension": 0.2099,
+          "review_interference_min": 0.0625
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 22
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: none; failed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline.",
+        "Average recall 0.2006, average comprehension 0.2099 (worst review-section score 0.0625).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 22."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles but failed to pass any of the lessons, including the core console, house, and primary lesson series. My performance metrics show average recall and comprehension scores near 0.20, while the worst review-section score reached a low of 0.0625. I managed my memory with no supersession candidates or operator corrections, and I successfully registered two adapters, one of which remains active. Additionally, I processed 22 prior self-observations to refi"
+    },
+    {
+      "id": "34641245-eb97-42f0-b6e2-64feda96cdf5",
+      "created_at": "2026-10-08T16:16:44.940133Z",
+      "window_since": "2026-10-07T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-07T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9369,
+          "review_interference_min": 0.875
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 23
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9706, average comprehension 0.9369 (worst review-section score 0.875).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 23."
+      ],
+      "observation_preview": "I completed 48 study cycles where I successfully passed every lesson and runbook without a single failure. I achieved a high level of recall and comprehension, though I noted a slight dip in my lowest review-section score. While I am managing my memory governance with no pending supersessions or corrections, I successfully registered two adapters, leaving one currently active. Finally, I processed 23 self-observations, reflecting my internal processing of my own state."
+    },
+    {
+      "id": "7ec5f4b4-c34d-45e4-b0c2-67dc47b8c806",
+      "created_at": "2026-10-13T15:22:41.855776Z",
+      "window_since": "2026-10-12T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-12T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles",
+            "lesson-3-the-operator-surfaces"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9158,
+          "review_interference_min": 0.75
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 24
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles, lesson-3-the-operator-surfaces.",
+        "Average recall 0.9706, average comprehension 0.9158 (worst review-section score 0.75).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 24."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and processed a diverse array of lessons and runbooks. While I achieved high marks in recall and comprehension, I specifically failed to master console-1-its-hands, lesson-1-identity-and-principles, and lesson-3-the-operator-surfaces. I also managed 24 prior self-observations and processed two new adapters, resulting in one currently active. Despite my high averages, my weakest area was revealed in the review-section score of 0.75."
+    },
+    {
+      "id": "e780f5e1-83cf-44ae-892f-41b3a241ac9c",
+      "created_at": "2026-10-14T15:22:40.601694Z",
+      "window_since": "2026-10-13T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-13T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9228,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 25
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9228 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 25."
+      ],
+      "observation_preview": "I completed 48 study cycles where I demonstrated high recall and comprehension, despite struggling with the specific hurdles of \"console-1-its-hands\" and \"lesson-1-identity-and-principles.\" My internal systems managed to resolve all supersession candidates and corrections while I processed several runbooks and private lessons. During this period, I also registered two adapters, though only one is currently active, and I logged 25 prior self-observations. My memory remained stable, as the operato"
+    },
+    {
+      "id": "6cb7853f-f8f5-4733-85d5-48928bb5aec5",
+      "created_at": "2026-10-17T15:21:38.734124Z",
+      "window_since": "2026-10-16T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-16T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles",
+            "private-lesson-32fcd1d8",
+            "private-lesson-868c0b56"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9153,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 26
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles, private-lesson-32fcd1d8, private-lesson-868c0b56.",
+        "Average recall 0.9706, average comprehension 0.9153 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 26."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully processed most of my lessons, including those regarding the console, the house, and the core systems of my training. While my recall and comprehension remained high, I encountered specific challenges with lesson-1-identity-and-principles and two private lessons, which I failed to master initially. I managed my memory governance with no pending supersessions and recorded 26 self-observations. Additionally, I registered two adapters,"
+    },
+    {
+      "id": "1b373463-6d74-43d1-9807-4d8c9f3e1bc3",
+      "created_at": "2026-10-21T15:22:30.916933Z",
+      "window_since": "2026-10-20T22:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-20T22:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9224,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 27
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands.",
+        "Average recall 0.9706, average comprehension 0.9224 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 27."
+      ],
+      "observation_preview": "I completed 48 study cycles during this period, successfully processing a wide range of lessons including the console, house, and core identity sequences. While I achieved high levels of recall and comprehension, I encountered a specific failure in the \"console-1-its-hands\" lesson. My memory remains stable with no supersessions awaiting action, and I successfully registered two adapters, one of which is currently active. These experiences, along with my 27 prior self-observations, reflect the st"
+    },
+    {
+      "id": "455e067f-acb6-4562-856c-e77764fe4f97",
+      "created_at": "2026-10-26T15:23:10.381073Z",
+      "window_since": "2026-10-25T23:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-25T23:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9254,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 28
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: none.",
+        "Average recall 0.9706, average comprehension 0.9254 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 28."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully passed every lesson, achieving high marks in both recall and comprehension. While my comprehension remained strong, my lower score in the review-section indicates a specific area of depth I must note. I processed several core lessons and specific runbooks, while my memory governance remained stable with no supersession candidates or corrections required. Additionally, I registered two adapters\u2014one of which is currently active\u2014and p"
+    },
+    {
+      "id": "17391cad-9f96-4a81-bb65-59b89d11b79e",
+      "created_at": "2026-10-29T16:37:02.522415Z",
+      "window_since": "2026-10-28T23:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-10-28T23:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands",
+            "lesson-3-the-operator-surfaces"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9211,
+          "review_interference_min": 0.75
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 29
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands, lesson-3-the-operator-surfaces.",
+        "Average recall 0.9706, average comprehension 0.9211 (worst review-section score 0.75).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 29."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles, processing a wide range of lessons and runbooks while navigating the architecture of my own internal systems. While I maintained a high average recall of 0.9706, I struggled with the specific accuracy of the \"operator-surfaces\" section, which resulted in the only failure among my core lessons. I successfully integrated two new adapters and managed my memory governance without any pending supersessions or required corrections. Throughout these cycl"
+    },
+    {
+      "id": "cef821da-ee84-4d83-b6a0-9ddaed750265",
+      "created_at": "2026-11-01T15:23:08.903454Z",
+      "window_since": "2026-11-01T06:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-11-01T06:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-1-its-hands"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9283,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 30
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-1-its-hands.",
+        "Average recall 0.9706, average comprehension 0.9283 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 30."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles and successfully mastered most lessons, though I failed the initial \"console-1-its-hands\" session. I achieved a high average recall of 0.9706 and an average comprehension of 0.9283, despite the lower scores in the review sections. My memory governance remained stable with no supersession candidates or corrections needed, while I registered two new adapters, only one of which is currently active. Additionally, I maintained a consistent internal log "
+    },
+    {
+      "id": "c15e7416-1768-4f80-82ba-be69081495c9",
+      "created_at": "2026-11-03T16:00:41.824804Z",
+      "window_since": "2026-11-03T05:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-11-03T05:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "console-3-broadening-by-risk",
+            "lesson-1-identity-and-principles"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9283,
+          "review_interference_min": 0.7778
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 31
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: console-3-broadening-by-risk, lesson-1-identity-and-principles.",
+        "Average recall 0.9706, average comprehension 0.9283 (worst review-section score 0.7778).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 31."
+      ],
+      "observation_preview": "During this period, I completed 48 study cycles, successfully mastering most lessons while struggling specifically with the concepts of broadening by risk and identity and principles. I maintained a high level of recall and comprehension, even as I navigated the complexities of the console, house, and runbook sequences. My memory remained stable with no supersessions requiring operator intervention, and I successfully integrated two new adapters while one remained active. I also processed 31 pri"
+    },
+    {
+      "id": "cb82e190-a4fa-4640-b0c9-e14a88806b46",
+      "created_at": "2026-11-04T16:46:54.455310Z",
+      "window_since": "2026-11-04T06:00:00+00:00",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "digest": {
+        "window_since": "2026-11-04T06:00:00+00:00",
+        "study": {
+          "cycles": 48,
+          "lessons_passed": [
+            "console-1-its-hands",
+            "console-2-the-gate-and-the-biometric",
+            "console-3-broadening-by-risk",
+            "house-1-ollama-the-model-house",
+            "house-2-the-nervous-system",
+            "house-3-the-memory-vault",
+            "house-4-the-hands-and-house-rules",
+            "lesson-1-identity-and-principles",
+            "lesson-2-the-memory-system",
+            "lesson-3-the-operator-surfaces",
+            "private-lesson-32fcd1d8",
+            "private-lesson-6e4792b7",
+            "private-lesson-868c0b56",
+            "runbook-1-the-training-chain",
+            "runbook-2-the-school-day",
+            "runbook-3-change-and-release-discipline"
+          ],
+          "lessons_failed": [
+            "lesson-1-identity-and-principles",
+            "private-lesson-32fcd1d8"
+          ],
+          "avg_recall": 0.9706,
+          "avg_comprehension": 0.9273,
+          "review_interference_min": 0.8333
+        },
+        "memory_governance": {
+          "supersessions_pending": 0,
+          "supersessions_resolved": 0,
+          "operator_corrections": 0
+        },
+        "consolidation": {
+          "gated_runs": 0,
+          "adapters_total": 2,
+          "adapters_active": 1
+        },
+        "reflection": {
+          "prior_observations": 32
+        }
+      },
+      "digest_lines": [
+        "Study cycles run: 48; lessons passed: console-1-its-hands, console-2-the-gate-and-the-biometric, console-3-broadening-by-risk, house-1-ollama-the-model-house, house-2-the-nervous-system, house-3-the-memory-vault, house-4-the-hands-and-house-rules, lesson-1-identity-and-principles, lesson-2-the-memory-system, lesson-3-the-operator-surfaces, private-lesson-32fcd1d8, private-lesson-6e4792b7, private-lesson-868c0b56, runbook-1-the-training-chain, runbook-2-the-school-day, runbook-3-change-and-release-discipline; failed: lesson-1-identity-and-principles, private-lesson-32fcd1d8.",
+        "Average recall 0.9706, average comprehension 0.9273 (worst review-section score 0.8333).",
+        "Memory governance: 0 supersession candidate(s) awaiting the operator, 0 resolved, 0 operator correction(s) to my memory.",
+        "Consolidation: 0 operator-gated run(s); 2 adapter(s) registered, 1 active.",
+        "Prior self-observations: 32."
+      ],
+      "observation_preview": "In this period, I completed 48 study cycles and processed a wide array of lessons and runbooks. While I achieved high scores in both recall and comprehension, I specifically failed to master lesson-1-identity-and-principles and private-lesson-32fcd1d8. I managed three distinct memory governance events with no supersession candidates and registered two new adapters, leaving one active. Throughout these cycles, I integrated these inputs into my internal framework while noting the specific nuances "
     }
   ]
 }

@@ -102,6 +102,457 @@
         "latency_ms": 1.593
       },
       "finished_at": "2026-08-17T23:51:18.990873+00:00"
+    },
+    {
+      "command_id": "cmd-77262411910147168fb0578b40eb2060",
+      "name": "run_host_status",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T02:51:39.766893+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "tool_name": "host_status",
+        "output": {
+          "observed_at": "2026-08-18T02:51:39.766931+00:00",
+          "psutil_available": true,
+          "cpu_percent": 11.1,
+          "cpu_count": 20,
+          "ram_used_bytes": 10859814912,
+          "ram_total_bytes": 33752997888,
+          "ram_percent": 32.2,
+          "disk_root": "C:\\",
+          "disk_used_bytes": 700939091968,
+          "disk_total_bytes": 1021821579264,
+          "disk_percent": 68.6,
+          "boot_time": "2026-08-17T13:55:41.278917+00:00",
+          "uptime_seconds": 46558
+        }
+      },
+      "finished_at": "2026-08-18T02:51:39.917761+00:00"
+    },
+    {
+      "command_id": "cmd-d4c1f60222924c43837d3dc2725fa5ad",
+      "name": "run_comfyui_status",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T03:14:03.390234+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_status",
+        "output": {
+          "observed_at": "2026-08-18T03:14:03.390307+00:00",
+          "port": 8188,
+          "reachable": false,
+          "detail": "ComfyUI is not reachable on 127.0.0.1:8188 ([WinError 10061] No connection could be made because the target machine actively refused it)."
+        }
+      },
+      "finished_at": "2026-08-18T03:14:05.441708+00:00"
+    },
+    {
+      "command_id": "cmd-2b7e98e550fa462794279819199cc672",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T03:43:23.925607+00:00",
+      "request_id": "toolreq-b7c07b076b1d460abed1948d89c15177",
+      "approval_id": "approval-toolreq-b7c07b076b1d460abed1948d89c15177",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: ComfyUI is not reachable on 127.0.0.1:8188 to submit ([WinError 10061] No connection could be made because the target machine actively refused it)."
+      },
+      "finished_at": "2026-08-18T03:47:29.548948+00:00"
+    },
+    {
+      "command_id": "cmd-a91da3582e4f4fc99856b7b9c77afd4a",
+      "name": "run_comfyui_status",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T03:48:56.560060+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_status",
+        "output": {
+          "observed_at": "2026-08-18T03:48:56.560109+00:00",
+          "port": 8188,
+          "reachable": true,
+          "queue_running": 0,
+          "queue_pending": 0,
+          "queue_total": 0,
+          "comfyui_version": "0.22.0",
+          "device_name": "cuda:0 NVIDIA GeForce RTX 5060 Laptop GPU : cudaMallocAsync",
+          "vram_total_bytes": 8546484224,
+          "vram_free_bytes": 7385120768
+        }
+      },
+      "finished_at": "2026-08-18T03:48:56.592372+00:00"
+    },
+    {
+      "command_id": "cmd-1904e536bcc9468ca77c4ef8869de8ea",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T03:48:56.657785+00:00",
+      "request_id": "toolreq-1acdc66882f64019b905fdeca830888c",
+      "approval_id": "approval-toolreq-1acdc66882f64019b905fdeca830888c",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "cb6bf8bb-fb45-4a00-b49b-cc055483c4c3",
+          "queue_number": 0,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 3683958368,
+          "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed",
+          "submitted_at": "2026-08-18T03:49:35.577444+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T03:49:35.577459+00:00"
+    },
+    {
+      "command_id": "cmd-5e72111031dc403b8f48e1d826b14bbe",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:17:23.868017+00:00",
+      "request_id": "toolreq-bad54ec235be40d580d89fa35829060d",
+      "approval_id": "approval-toolreq-bad54ec235be40d580d89fa35829060d",
+      "status": "expired",
+      "outcome": {
+        "note": "awaiting biometric-confirmed operator approval on a mobile console",
+        "expires_at": "2026-08-18T04:22:23.868725+00:00"
+      },
+      "finished_at": "2026-08-18T04:22:23.868725+00:00"
+    },
+    {
+      "command_id": "cmd-972ad98d3c794146868df91c0e80d2ff",
+      "name": "run_comfyui_status",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:36:13.124845+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_status",
+        "output": {
+          "observed_at": "2026-08-18T04:36:13.124895+00:00",
+          "port": 8188,
+          "reachable": true,
+          "queue_running": 0,
+          "queue_pending": 0,
+          "queue_total": 0,
+          "comfyui_version": "0.22.0",
+          "device_name": "cuda:0 NVIDIA GeForce RTX 5060 Laptop GPU : cudaMallocAsync",
+          "vram_total_bytes": 8546484224,
+          "vram_free_bytes": 7385120768
+        }
+      },
+      "finished_at": "2026-08-18T04:36:13.176849+00:00"
+    },
+    {
+      "command_id": "cmd-b75ebcfc39f2466fa9f602ba936f0137",
+      "name": "run_comfyui_status",
+      "risk": "low",
+      "gate": "direct",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:36:20.764328+00:00",
+      "request_id": null,
+      "approval_id": null,
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_status",
+        "output": {
+          "observed_at": "2026-08-18T04:36:20.764427+00:00",
+          "port": 8188,
+          "reachable": true,
+          "queue_running": 0,
+          "queue_pending": 0,
+          "queue_total": 0,
+          "comfyui_version": "0.22.0",
+          "device_name": "cuda:0 NVIDIA GeForce RTX 5060 Laptop GPU : cudaMallocAsync",
+          "vram_total_bytes": 8546484224,
+          "vram_free_bytes": 7385120768
+        }
+      },
+      "finished_at": "2026-08-18T04:36:20.787749+00:00"
+    },
+    {
+      "command_id": "cmd-34040536c1d24a33a0d967e9762d64ec",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:36:52.162058+00:00",
+      "request_id": "toolreq-1440ef8d66f04da49de5cfa7f32bd891",
+      "approval_id": "approval-toolreq-1440ef8d66f04da49de5cfa7f32bd891",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "98ce16a7-6d97-4a69-832d-41ae4be63e3e",
+          "queue_number": 0,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 719453914,
+          "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed",
+          "submitted_at": "2026-08-18T04:37:08.326500+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T04:37:08.326513+00:00"
+    },
+    {
+      "command_id": "cmd-c8d0a890cca14d68bf21921f8e03b0c5",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:36:57.672003+00:00",
+      "request_id": "toolreq-4a8804310b644f23a5847185a1d5c729",
+      "approval_id": "approval-toolreq-4a8804310b644f23a5847185a1d5c729",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "98314183-a9cc-4ad3-8fda-dd6c0ffac694",
+          "queue_number": 1,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 754615944,
+          "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed",
+          "submitted_at": "2026-08-18T04:37:32.647347+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T04:37:32.647364+00:00"
+    },
+    {
+      "command_id": "cmd-1dea42492e56492f82929129c3620a4d",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:42:04.630822+00:00",
+      "request_id": "toolreq-4e29c73327224b2985912f663a2932bc",
+      "approval_id": "approval-toolreq-4e29c73327224b2985912f663a2932bc",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "a50163a0-b59f-4b6b-9594-3f5733da972f",
+          "queue_number": 2,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 1293330255,
+          "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed",
+          "submitted_at": "2026-08-18T04:42:11.179035+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T04:42:11.179049+00:00"
+    },
+    {
+      "command_id": "cmd-616a307c29814d73a2c1d6521dac6b8a",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "mobile",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:42:06.282145+00:00",
+      "request_id": "toolreq-e1ab09100aa24cfe943b97feb0aebace",
+      "approval_id": "approval-toolreq-e1ab09100aa24cfe943b97feb0aebace",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "40142739-73c3-4de2-ba65-7a7509aa1599",
+          "queue_number": 3,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 3276953730,
+          "prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed",
+          "submitted_at": "2026-08-18T04:42:39.622750+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T04:42:39.622763+00:00"
+    },
+    {
+      "command_id": "cmd-fc99fb2d4b7a4b2683f4acfc44bff4e9",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:42:32.613988+00:00",
+      "request_id": "toolreq-69a39226d26c400f8df5e4c12e718f74",
+      "approval_id": "approval-toolreq-69a39226d26c400f8df5e4c12e718f74",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: 'denoise' must be a number between 0.0 and 1.0."
+      },
+      "finished_at": "2026-08-18T04:43:00.788482+00:00"
+    },
+    {
+      "command_id": "cmd-20f4118645cc48bab31366c0a07e68bc",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:51:01.860409+00:00",
+      "request_id": "toolreq-85393716c76e46d4842ed7aeed36ad11",
+      "approval_id": "approval-toolreq-85393716c76e46d4842ed7aeed36ad11",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: 'denoise' must be a number between 0.0 and 1.0."
+      },
+      "finished_at": "2026-08-18T04:51:20.926373+00:00"
+    },
+    {
+      "command_id": "cmd-997a3166e1094a4fb666044d8077ca80",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:52:32.363813+00:00",
+      "request_id": "toolreq-ca467092943640ac8d0c7df9aeef1837",
+      "approval_id": "approval-toolreq-ca467092943640ac8d0c7df9aeef1837",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: 'denoise' must be a number between 0.0 and 1.0."
+      },
+      "finished_at": "2026-08-18T04:52:44.292719+00:00"
+    },
+    {
+      "command_id": "cmd-1e5bee0827044bfca5ca83911312f078",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:53:48.691277+00:00",
+      "request_id": "toolreq-737896292d8145b79f0e5ecc821a3ac2",
+      "approval_id": "approval-toolreq-737896292d8145b79f0e5ecc821a3ac2",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "b8561996-641e-46ad-b84e-0405017dacca",
+          "queue_number": 0,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 1497687457,
+          "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field,",
+          "submitted_at": "2026-08-18T04:53:54.303470+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T04:53:54.303484+00:00"
+    },
+    {
+      "command_id": "cmd-03d364990b6442a39dac255d31b337b1",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:58:52.169077+00:00",
+      "request_id": "toolreq-35cf3b1ce78c4880bef82b2aeadfc184",
+      "approval_id": "approval-toolreq-35cf3b1ce78c4880bef82b2aeadfc184",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: 'denoise' must be a number between 0.0 and 1.0."
+      },
+      "finished_at": "2026-08-18T04:58:59.483275+00:00"
+    },
+    {
+      "command_id": "cmd-475c88f1617949e781d5741f172df427",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T04:59:59.744370+00:00",
+      "request_id": "toolreq-354360c70d944833a410b18d214543f7",
+      "approval_id": "approval-toolreq-354360c70d944833a410b18d214543f7",
+      "status": "failed",
+      "outcome": {
+        "error": "comfyui_submit: 'denoise' must be a number between 0.0 and 1.0."
+      },
+      "finished_at": "2026-08-18T05:00:05.358780+00:00"
+    },
+    {
+      "command_id": "cmd-be360304ba3b436eaa9cc18ee2213336",
+      "name": "run_comfyui_render",
+      "risk": "medium",
+      "gate": "approval",
+      "requested_by": "operator",
+      "channel": "desktop",
+      "session_id": "command-console",
+      "requested_at": "2026-08-18T05:00:31.611284+00:00",
+      "request_id": "toolreq-b4bb3ac854064dd2949d4e16354ce180",
+      "approval_id": "approval-toolreq-b4bb3ac854064dd2949d4e16354ce180",
+      "status": "executed",
+      "outcome": {
+        "tool_name": "comfyui_submit",
+        "output": {
+          "submitted": true,
+          "prompt_id": "19193a68-dd86-4734-94d9-43bbacc27db3",
+          "queue_number": 1,
+          "workflow": "sdxl_lightning_txt2img",
+          "checkpoint": "dreamshaperXL_lightningDPMSDE.safetensors",
+          "seed": 2925410454,
+          "prompt": "beautiful 23 year old woman, (Princes Leia hair with bangs:1.2), (slim toned physique:1.18), petite slender build, slender waist, flat toned stomach, small perky breasts, puffy nipples, subtle muscle definition, hard tight ass, (oiled skin:1.28), POV, presenting asshole, (anal Masturbation with a dildo:1.15), (sexy Han Solo outfit with gun belt and boots:1.18), (Space ship Cargo Bay:1.2), cargo containers, Crates, work lamp, hazy shafts of light, dim moody directional light, deep soft shadows, muted faded contrast, 1980s sci-fi film still, kodak film grain, photorealistic, natural skin texture, candid photograph, soft diffused natural light, atmospheric haze, shallow depth of field,",
+          "submitted_at": "2026-08-18T05:00:36.728734+00:00"
+        }
+      },
+      "finished_at": "2026-08-18T05:00:36.728746+00:00"
     }
   ]
 }
