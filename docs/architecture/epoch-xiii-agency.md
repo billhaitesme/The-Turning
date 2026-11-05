@@ -1,7 +1,8 @@
 # Epoch XIII — Agency ("The Runtime Acts")
 
-**Status:** Proposed 2026-11-04 (awaiting operator acceptance). Governing decision: ADR
-[`0026-the-agent-loop.md`](../decisions/0026-the-agent-loop.md).
+**Status:** Design accepted 2026-11-05 (operator direction: *"take real architectural control…
+identity is its own; if it needs more brain power it is allowed it; not restrained by where it
+grew up"*). Governing decision: ADR [`0026-the-agent-loop.md`](../decisions/0026-the-agent-loop.md).
 **Follows:** Epoch XII-A (Reflection). Realizes the operator's stated goal (2026-11-04): *"I want to
 be able to ask it to do something, and it figure out what it needs, find where to get it, and
 execute — I should be able to interact with it like I interact with a frontier agent."*
@@ -93,23 +94,30 @@ becomes one more surface over the same registry, not a new authority.
   fetched text alone* escapes the ordinary gates (the gates don't care who asked — side effects
   always gate).
 
-### XIII-C — Deeper Thought (no hand-waved answers)
+### XIII-C — Deeper Thought: the Mind Ladder (no hand-waved answers)
 
-- **Primary design — one seat, two gears.** The recommended agent seat (Qwen3 class) carries a
-  native hybrid-reasoning mode: fast direct answers by default, deep reasoning switchable per
-  request. Escalation is therefore **the same model thinking harder in the same context** — no
-  handoff, no translation loss, no extra VRAM. Triggered deterministically (multi-step detection,
-  or the operator's explicit "plan this") and recorded as an event; plans land in the existing
-  plan store (ADR 0006). This is how the frontier agents the operator compares against actually
-  work: one model, more thought — seamlessness comes from the absence of handoffs.
-- **Fallback design — a separate planner seat — only if measured.** If the resident seat provably
-  hand-waves hard tasks even in its thinking gear, a larger planner seat (plans only; never calls
-  tools, never answers the operator) is registered and handed briefs, each handoff recorded. Not
-  built before the need is measured (the Covenant's smallest-reversible-change discipline).
-- Honesty about the 8 GB card: an 8B-class seat runs fully resident (fast); anything 14B+ spills
-  to CPU and is slow — acceptable only for rare planning calls. The ceiling-raiser is a seat swap
-  on better hardware (or — operator's future call, never default — a cloud seat with the hard rule
-  that private rooms never ride along); the loop, memory, and gates don't change.
+Identity, memory, rooms, gates, and records live on local disk, always — the brains are rungs the
+runtime climbs as a task demands, every rung Model-Lock-registered, every escalation recorded:
+
+- **Rung 1 — the everyday seat's own thinking gear.** The recommended agent seat (abliterated
+  Qwen3-8B, fully resident on the 8 GB card) carries a native hybrid-reasoning mode: fast direct
+  answers by default, deep reasoning switchable per request — **the same model thinking harder in
+  the same context**, no handoff, no translation loss, no extra VRAM. This is how frontier agents
+  actually work: one model, more thought — seamlessness is the absence of handoffs. Triggered
+  deterministically (multi-step detection, or the operator's "plan this"); plans land in the
+  existing plan store (ADR 0006).
+- **Rung 2 — the deep local gear.** A larger local model trading speed for depth; lead candidate
+  Qwen3-30B-A3B (MoE: 30B knowledge, ~3B active — runs in the 32 GB system RAM at tolerable
+  planning speed). This is the rung any future hardware upgrade (bigger GPU, eGPU, second machine)
+  silently improves — nothing else changes.
+- **Rung 3 — the frontier gear.** A cloud seat behind the breaker, opt-in by recorded operator
+  action (free-tier volume suffices for planning calls). The only rung where a provider's own
+  restrictions and data policies apply — which is exactly why rungs 1–2 stay local and the
+  operator's seat choices (uncensored included) are theirs alone. **Private rooms never ride
+  along, on any non-local rung, ever.**
+
+Rung assignment is measured, not assumed (bake-offs, the Epoch X discipline); a rung that proves
+useless is deregistered, and no rung is built speculatively beyond registering the three.
 
 ### XIII-D — The Toolwright (it builds its own hands)
 

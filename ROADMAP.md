@@ -3,9 +3,10 @@
 **Current epoch:** Epoch XII — Reflection
 **Current release:** 0.5.2 (IX-D Command Console slice 4, tagged `epoch-ix-d-slice-4`)
 **Active release line:** 0.5.x
-**Proposed next epoch:** Epoch XIII — Agency (design in
+**Next epoch:** Epoch XIII — Agency (design **accepted 2026-11-05**:
 [`docs/architecture/epoch-xiii-agency.md`](docs/architecture/epoch-xiii-agency.md), ADR
-[`0026`](docs/decisions/0026-the-agent-loop.md) — awaiting operator acceptance)
+[`0026`](docs/decisions/0026-the-agent-loop.md) — the agent loop, the breaker, the Mind Ladder,
+the Toolwright)
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
 

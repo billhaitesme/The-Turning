@@ -9,7 +9,7 @@
 | Current version | 0.5.2 |
 | Release line | 0.5.x |
 | Status | Active Development |
-| Current phase | XII-A (The Mirror) released as **0.5.0** (tag `epoch-xii-a`); IX-D Command Console back-filled and released — slices 1–3 as **0.5.1** (tag `epoch-ix-d`), slice 4 as **0.5.2** (tag `epoch-ix-d-slice-4`). First tutelage consolidations distilled 2026-11-04 (ADR 0024 gate); Epoch XIII (Agency) proposed — ADR 0026 awaiting operator acceptance |
+| Current phase | XII-A (The Mirror) released as **0.5.0** (tag `epoch-xii-a`); IX-D Command Console back-filled and released — slices 1–3 as **0.5.1** (tag `epoch-ix-d`), slice 4 as **0.5.2** (tag `epoch-ix-d-slice-4`). First tutelage consolidations distilled 2026-11-04 (ADR 0024 gate); Epoch XIII (Agency) design **accepted 2026-11-05** (ADR 0026: agent loop, breaker, Mind Ladder, Toolwright) — XIII-A build is next |
 | IX-B validation | Complete — Android 8/8 and iOS 8/8 on hardware; tagged `epoch-ix-a`. See `docs/governance/EPOCH_IX_RETROSPECTIVE.md` |
 | IX-C validation | iOS approve→Face ID validated on hardware (2026-08-07). **Android approve/deny biometric validated on hardware (2026-08-17, Moto G15 Power, BiometricPrompt)** — the 0.2.1 release exception is cleared |
 | Theme | Epoch XII: “The Runtime Considers Itself” (XI: “Learns”, X: “Remembers”, IX: “Becomes Visible”) |

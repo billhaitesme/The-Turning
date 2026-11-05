@@ -1,7 +1,11 @@
 # 0026 — The Agent Loop and the Breaker (Epoch XIII)
 
-**Status:** Proposed (design) — awaiting operator acceptance
-**Date:** 2026-11-04
+**Status:** Accepted (design) — operator direction 2026-11-05
+**Date:** 2026-11-04 (proposed) / 2026-11-05 (accepted)
+**Operator principle (recorded 2026-11-05):** *identity is local and continuous; brainpower is
+unbounded — when the runtime needs more brain power it is allowed it; it is not restrained by
+where it grew up.* Seat choice — including uncensored/abliterated weights — is the operator's,
+and the architecture is model-agnostic by design.
 **Builds on:** ADR [`0008`](0008-bounded-tools-and-verified-execution.md) (bounded tools), ADR
 [`0011`](0011-model-independence.md) (Model Lock), ADR [`0014`](0014-operator-approvals.md)
 (biometric approvals), ADR [`0015`](0015-command-console.md) (command registry; chat-path execution
@@ -36,11 +40,16 @@ chat seat was never given the loop.
    execute only while a standing **operator breaker** is on. The breaker is off by default, flipped
    only by explicit recorded operator action, visible on every console; every search and fetch is
    logged. Fetched text enters context as data, never instructions; gates do not relax for it.
-3. **Deeper thought in the same seat.** Hard tasks escalate to the agent seat's own deep-reasoning
-   gear (a hybrid-reasoning model is a seat-selection criterion) — same model, same context, more
-   thought, the escalation recorded and the plan landing in the existing plan store (ADR 0006). A
-   separate planner seat (plans only — never calls tools, never answers the operator) is the
-   measured fallback, built only if the resident seat provably hand-waves in its thinking gear.
+3. **Deeper thought — the Mind Ladder.** Hard tasks escalate up a ladder of registered seats, every
+   rung Model-Lock-selected, every escalation recorded: **rung 1**, the everyday seat's own
+   deep-reasoning gear (a hybrid-reasoning model is a seat-selection criterion — same model, same
+   context, more thought; lead candidate: abliterated Qwen3-8B, resident on the 8 GB card);
+   **rung 2**, a larger local model trading speed for depth (lead candidate: Qwen3-30B-A3B MoE in
+   system RAM; the rung any future local hardware upgrades); **rung 3**, a cloud seat behind the
+   breaker (free tiers suffice for planning volume) — the only rung where a provider's own
+   restrictions and data policies apply, which is why rungs 1–2 stay local. Plans land in the
+   existing plan store (ADR 0006). Identity, memory, and every gate stay on local disk regardless
+   of which rung is thinking.
 4. **The Toolwright.** A capability gap becomes a **capability request** (operator-visible). A
    candidate tool is found by retrieval (stocked catalog first, open web second), fetched **by the
    runtime** into quarantine, verified by deterministic contract tests, and inducted into the
