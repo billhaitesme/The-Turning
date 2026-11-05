@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from core.config import settings
@@ -16,7 +16,7 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
-from services import command_console, command_registry
+from services import agent_loop, command_console, command_registry
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -29,18 +29,60 @@ router = APIRouter(prefix="/system", tags=["system"])
 
 
 @router.get("/status")
-def get_system_status() -> Dict[str, Any]:
+def get_system_status(request: Request) -> Dict[str, Any]:
     return {
         "status": "ok",
+        # The app's own version string — the versioning authority's backend source, never a
+        # second hardcode here.
+        "version": getattr(request.app, "version", None),
+        "agent_loop_enabled": agent_loop.agent_loop_enabled(),
         "model_control": model_control.status(),
         "tool_framework": _tool_framework_payload(),
     }
 
+
+# ----------------------------------------------------------------------- XIII-A: desktop commands
+# The web console renders the registry it is given, it never defines it (ADR 0015). Initiations
+# from here carry channel "desktop": direct commands execute, approval commands enter the IX-C
+# pipeline and still require the mobile biometric (the desktop cannot self-approve).
+class CommandInitiateBody(BaseModel):
+    arguments: Dict[str, Any] = Field(default_factory=dict)
+
+
+@router.get("/commands")
+def get_system_commands() -> Dict[str, Any]:
+    return {
+        "commands": command_registry.list_commands(),
+        "execution_enabled": command_console.command_execution_enabled(),
+    }
+
+
+@router.get("/commands/history")
+def get_system_command_history(limit: int = 50) -> Dict[str, Any]:
+    return {"history": command_console.list_command_history(limit=max(1, min(200, limit)))}
+
+
+@router.post("/commands/{name}")
+def initiate_system_command(name: str, body: Optional[CommandInitiateBody] = None) -> Dict[str, Any]:
+    try:
+        entry = command_console.initiate_command(
+            name,
+            requested_by="operator:desktop",
+            channel="desktop",
+            arguments=(body.arguments if body else {}) or {},
+        )
+    except command_console.CommandError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
+    return {"command": entry}
+
 @router.get("/config")
 def get_runtime_config():
+    import os as _os
     return {
         "chat_model": model_control.select_chat_model(),
         "active_chat_model": model_control.select_chat_model(),
+        "direct_chat_model": _os.getenv("DIRECT_CHAT_MODEL", "huihui_ai/gemma-4-abliterated:12b"),
+        "selectable_chat_models": list(settings.selectable_chat_models),
         "model_lock": settings.model_lock,
         "allow_topic_routing": settings.allow_topic_routing,
         "allow_secondary_rewrite": settings.allow_secondary_rewrite,

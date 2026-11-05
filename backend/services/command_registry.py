@@ -27,6 +27,9 @@ from typing import Any, Dict, List, Optional
 RISK_LEVELS = ("low", "medium", "high", "forbidden")
 GATES = ("direct", "approval", "forbidden")
 
+# XIII-A: every command carries a category — the registry sorts its own hands so the consoles
+# can render quick-request groups without defining anything (ADR 0015's rule, extended). The
+# Toolwright (XIII-D) will file every inducted tool into a category the same way.
 COMMANDS: List[Dict[str, Any]] = [
     {
         "name": "new_conversation",
@@ -34,6 +37,7 @@ COMMANDS: List[Dict[str, Any]] = [
         "description": "Start a fresh conversation with the runtime (already an explicit operator action in IX-C).",
         "risk": "low",
         "gate": "direct",
+        "category": "runtime",
         "surfaces": ["mobile", "desktop"],
     },
     {
@@ -43,6 +47,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "request; executes only after a biometric-confirmed operator approval.",
         "risk": "medium",
         "gate": "approval",
+        "category": "diagnostics",
         "tool_name": "backend_health_check",
         # the tool's one required argument: the runtime's own port (OMEGA_BACKEND_PORT, default 8001)
         "arguments": {"port": int(os.getenv("OMEGA_BACKEND_PORT", "8001") or 8001)},
@@ -55,6 +60,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "executes immediately (nothing to gate on a read).",
         "risk": "low",
         "gate": "direct",
+        "category": "host",
         # Maps to a read-only bounded tool; the console direct-executes it (side_effects == []).
         "tool_name": "host_status",
         "surfaces": ["mobile", "desktop"],
@@ -66,6 +72,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "Read-only, so it executes immediately; reports 'not reachable' when ComfyUI is off.",
         "risk": "low",
         "gate": "direct",
+        "category": "image-forge",
         "tool_name": "comfyui_status",
         "surfaces": ["mobile", "desktop"],
     },
@@ -78,6 +85,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "add a prompt field; an API caller may pass its own prompt/seed/size.",
         "risk": "medium",
         "gate": "approval",
+        "category": "image-forge",
         "tool_name": "comfyui_submit",
         "arguments": {"prompt": "a lighthouse on a rocky coast at sunset, dramatic clouds, highly detailed"},
         # The consoles render an input form from this spec and pass the values as arguments on
@@ -101,6 +109,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "in-flight render, so it is approval-gated like any action — confirm on the phone.",
         "risk": "low",
         "gate": "approval",
+        "category": "image-forge",
         "tool_name": "comfyui_free_vram",
         "surfaces": ["mobile", "desktop"],
     },
@@ -111,6 +120,7 @@ COMMANDS: List[Dict[str, Any]] = [
                        "and output fidelity (ADR-IX-001, ADR-IX-002); model selection is its own recorded action.",
         "risk": "forbidden",
         "gate": "forbidden",
+        "category": "governance",
         "surfaces": [],
     },
 ]
@@ -135,6 +145,8 @@ def validate_registry() -> None:
         seen.add(command["name"])
         assert command["risk"] in RISK_LEVELS, command
         assert command["gate"] in GATES, command
+        assert command.get("category") and str(command["category"]).strip(), \
+            "every command carries a category (XIII-A: the registry sorts its own hands)"
         if command["gate"] == "forbidden":
             assert command["risk"] == "forbidden", "forbidden commands carry the forbidden risk class"
         if command["gate"] == "approval":

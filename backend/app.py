@@ -2386,6 +2386,34 @@ def assign_conversation_scope(conversation_id: str, req: ConversationScopeReques
     return ConversationScopeResponse(conversation_id=conversation_id, scope=req.scope)
 
 
+@app.get("/conversations")
+def list_recent_conversations(limit: int = 20) -> Dict[str, Any]:
+    """Recents (XIII side-work): every conversation is saved the moment it exists, so switching
+    devices never loses one — this lists them newest-activity-first so any console can offer
+    'continue the current conversation or start a new one' and resume any of them."""
+    bounded = max(1, min(100, int(limit or 20)))
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT c.id, c.title, c.scope, c.created_at, c.updated_at,
+               (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS message_count,
+               (SELECT m.content FROM messages m WHERE m.conversation_id = c.id AND m.role = 'user'
+                ORDER BY m.id DESC LIMIT 1) AS last_user_message
+        FROM conversations c
+        ORDER BY COALESCE(c.updated_at, c.created_at) DESC
+        LIMIT ?
+        """,
+        (bounded,),
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    for row in rows:
+        snippet = str(row.pop("last_user_message") or "")
+        row["preview"] = snippet[:80]
+    return {"conversations": rows}
+
+
 @app.get("/conversations/{conversation_id}", response_model=ConversationHistoryResponse)
 def get_conversation(conversation_id: str) -> ConversationHistoryResponse:
     if not conversation_exists(conversation_id):
