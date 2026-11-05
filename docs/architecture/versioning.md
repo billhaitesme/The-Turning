@@ -7,17 +7,17 @@ This document is the single source of truth for OMEGA-ARC release identity.
 | Field | Value |
 |---|---|
 | Epoch | Epoch XII — Reflection |
-| Release | 0.5.0 |
+| Release | 0.5.2 |
 | Active series | 0.5.x |
-| Active milestone | Epoch XII-A — The Mirror (released as 0.5.0; tag `epoch-xii-a`) |
+| Active milestone | Epoch IX-D — Command Console slice 4 (back-filled IX-D patch on the 0.5.x line; released as 0.5.2; tag `epoch-ix-d-slice-4`) |
 | Mobile API major | 1 |
-| Prior milestone tags | `epoch-ix-a` (IX-B, 0.2.0) · `epoch-ix-c` (IX-C, 0.2.1) · `epoch-x-a` (X-A, 0.3.0) · `epoch-x-b` (X-B, 0.3.1) · `epoch-x-c` (X-C, 0.3.2) · `epoch-xi-a` (XI-A, 0.4.0) · `epoch-xi-b` (XI-B, 0.4.1) · `epoch-xi-c` (XI-C, 0.4.2) |
+| Prior milestone tags | `epoch-ix-a` (IX-B, 0.2.0) · `epoch-ix-c` (IX-C, 0.2.1) · `epoch-x-a` (X-A, 0.3.0) · `epoch-x-b` (X-B, 0.3.1) · `epoch-x-c` (X-C, 0.3.2) · `epoch-xi-a` (XI-A, 0.4.0) · `epoch-xi-b` (XI-B, 0.4.1) · `epoch-xi-c` (XI-C, 0.4.2) · `epoch-xii-a` (XII-A, 0.5.0) · `epoch-ix-d` (IX-D slices 1–3, 0.5.1) |
 
 The Epoch communicates architectural continuity. Semantic versioning communicates compatibility and delivery. They are related but independent: an epoch can contain multiple compatible releases in its series (Epoch IX spanned 0.2.0–0.2.1; Epoch X begins the 0.3.x series per the milestone-versioning rule below).
 
 ## Component sources
 
-Every active component must report Epoch XII / 0.5.0 until the release version is advanced here.
+Every active component must report Epoch XII / 0.5.2 until the release version is advanced here.
 
 | Component | Authoritative field |
 |---|---|

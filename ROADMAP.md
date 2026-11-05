@@ -1,8 +1,11 @@
 # OMEGA-ARC Roadmap
 
 **Current epoch:** Epoch XII — Reflection
-**Current release:** 0.5.0
+**Current release:** 0.5.2 (IX-D Command Console slice 4, tagged `epoch-ix-d-slice-4`)
 **Active release line:** 0.5.x
+**Proposed next epoch:** Epoch XIII — Agency (design in
+[`docs/architecture/epoch-xiii-agency.md`](docs/architecture/epoch-xiii-agency.md), ADR
+[`0026`](docs/decisions/0026-the-agent-loop.md) — awaiting operator acceptance)
 
 ## Epoch IX-A — Mobile Operator Console (0.2.0)
 
@@ -80,7 +83,7 @@ Capability gaps, not defects, deliberately excluded from IX-B scope.
   re-types it. (A debug-only `buildConfigField` default remains possible later but is unnecessary
   now.)
 
-## Epoch IX-D — Command Console (slice 1 built 2026-08-17, unreleased)
+## Epoch IX-D — Command Console (released: slices 1–3 as 0.5.1 `epoch-ix-d`, slice 4 as 0.5.2 `epoch-ix-d-slice-4`)
 
 Promote the operator consoles from observe + approve to *initiate*: an operator command surface where
 every command flows through the existing gates — a risk registry, Model Lock, and the IX-C approval

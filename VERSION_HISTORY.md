@@ -78,7 +78,7 @@ boundary. Release line 0.2.x.
   approvals with on-device biometric confirmation, and the OMEGA-ARC app icon / real Aurebesh
   branding. 345 backend tests. **Released as 0.2.1**, tagged `epoch-ix-c` (with a documented Android
   on-device validation exception). Push delivery (APNs/FCM) designed but infra-blocked.
-- **IX-D — Command Console (slices 1+2 built 2026-08-17, unreleased):** operator-initiated commands through the existing gates — registry (3 commands), console service + command log, mobile/`/system` routes, Commands tab on Android and iOS; device-validated on both (REQUEST → Approve → fingerprint / Face ID → EXECUTED, `confirmation: biometric`). ADR 0015 Accepted with the recorded `COMMAND_EXECUTION` policy shift. Slice 3 (desktop panel, broader registry) open.
+- **IX-D — Command Console (released back-filled on the 0.5.x line):** operator-initiated commands through the existing gates — registry, console service + command log, mobile/`/system` routes. ADR 0015 Accepted with the recorded `COMMAND_EXECUTION` policy shift. Slices 1–3 (**0.5.1**, `epoch-ix-d`, 2026-08-17): Commands on all three consoles, device-validated (Android REQUEST → Approve → fingerprint → EXECUTED; iOS Face ID; desktop initiates, phone confirms — `confirmation: biometric`). Slice 4 (**0.5.2**, `epoch-ix-d-slice-4`, 2026-08-18): registry broadened one risk-classed command at a time — `run_host_status` (direct), `run_comfyui_status` (direct), `run_comfyui_render` (approval, desktop parameter form), `free_comfyui_vram` (approval). 433 backend tests.
 
 ## Epoch X — Memory ("The Runtime Remembers")
 
