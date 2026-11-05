@@ -87,6 +87,15 @@ class OperatorTodoTests(unittest.TestCase):
         todos = school_day.operator_todos(CURRICULUM, passed=["a1", "a2", "a3"], adapters=adapters)
         self.assertEqual(todos, [])
 
+    def test_private_subject_never_offers_consolidation(self):
+        # the consolidation gate refuses private subjects (study-only), so the to-do
+        # must not advertise an action the operator cannot take (seen 2026-11-04)
+        curriculum = {"subjects": [
+            {"id": "p1", "private": True, "lessons": [{"id": "r1", "prerequisites": []}]},
+        ]}
+        todos = school_day.operator_todos(curriculum, passed=["r1"], adapters={"adapters": []})
+        self.assertEqual(todos, [])
+
     def test_runner_never_calls_gated_endpoints(self):
         source = SCRIPT.read_text(encoding="utf-8")
         for forbidden in ("/consolidations", "/approve", "/adapters/", "supersession-candidates"):

@@ -218,6 +218,8 @@ def operator_todos(curriculum: Dict[str, Any], passed: List[str], adapters: Dict
     active_subjects = {a.get("subject_id") for a in adapters.get("adapters", [])
                        if a.get("status") == "active"}
     for subject in curriculum.get("subjects", []):
+        if subject.get("private"):
+            continue  # the consolidation gate refuses private subjects (study-only)
         lessons = subject.get("lessons", [])
         if lessons and all(l["id"] in passed_set for l in lessons) and subject["id"] not in active_subjects:
             todos.append(f"{subject['id']}: every lesson passed and no active adapter — consolidation is "
