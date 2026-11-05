@@ -16,7 +16,7 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
-from services import agent_loop, command_console, command_registry
+from services import agent_loop, command_console, command_registry, network_breaker
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -36,9 +36,39 @@ def get_system_status(request: Request) -> Dict[str, Any]:
         # second hardcode here.
         "version": getattr(request.app, "version", None),
         "agent_loop_enabled": agent_loop.agent_loop_enabled(),
+        "network_breaker_on": network_breaker.breaker_is_on(),
         "model_control": model_control.status(),
         "tool_framework": _tool_framework_payload(),
     }
+
+
+# ----------------------------------------------------------------------- XIII-B: the breaker
+class BreakerRequest(BaseModel):
+    on: bool
+    changed_by: str = Field(default="operator", max_length=120)
+
+
+@router.get("/breaker")
+def get_network_breaker() -> Dict[str, Any]:
+    state = network_breaker.breaker_state()
+    state["history"] = (state.get("history") or [])[-20:][::-1]
+    return state
+
+
+@router.post("/breaker")
+def set_network_breaker(req: BreakerRequest) -> Dict[str, Any]:
+    """Flip the standing network breaker — an explicit recorded operator action (ADR 0026).
+    The model has no path to this route: no registry command maps to it, by design."""
+    state = network_breaker.set_breaker(req.on, changed_by=f"operator:{req.changed_by}",
+                                        channel="desktop")
+    state["history"] = (state.get("history") or [])[-20:][::-1]
+    return state
+
+
+@router.get("/fetch-log")
+def get_fetch_log(limit: int = 50) -> Dict[str, Any]:
+    return {"entries": network_breaker.list_fetch_log(limit=limit),
+            "breaker_on": network_breaker.breaker_is_on()}
 
 
 # ----------------------------------------------------------------------- XIII-A: desktop commands

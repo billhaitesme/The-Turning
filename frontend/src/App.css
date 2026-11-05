@@ -2822,3 +2822,76 @@ button:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* -------------------------------------------------- the senses / breaker */
+.senses-section { border-bottom: 1px solid rgba(110, 180, 220, 0.15); padding-bottom: 10px; }
+
+.breaker-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.breaker-row > small { color: rgba(140, 190, 220, 0.5); font-size: 0.56rem; letter-spacing: 0.1em; }
+
+.breaker-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(20, 28, 38, 0.95), rgba(12, 16, 24, 0.98));
+  border: 1px solid rgba(150, 180, 200, 0.4);
+  color: #cfe9f5;
+}
+
+.breaker-switch strong { font-size: 0.66rem; letter-spacing: 0.12em; }
+
+.breaker-lever {
+  width: 34px;
+  height: 16px;
+  border-radius: 9px;
+  border: 1px solid currentColor;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.breaker-lever::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: left 0.18s ease;
+}
+
+.breaker-switch.is-off { color: rgba(150, 180, 200, 0.75); }
+.breaker-switch.is-off .breaker-lever::after { left: 2px; }
+.breaker-switch.is-on {
+  color: #7ef0a8;
+  border-color: rgba(126, 240, 168, 0.8);
+  box-shadow: 0 0 12px rgba(126, 240, 168, 0.25);
+}
+.breaker-switch.is-on .breaker-lever::after { left: 18px; }
+
+.fetch-log { display: flex; flex-direction: column; gap: 3px; margin-top: 7px; }
+
+.fetch-log-row {
+  display: grid;
+  grid-template-columns: 68px 52px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border-left: 2px solid rgba(126, 240, 168, 0.6);
+  background: rgba(8, 14, 12, 0.8);
+  color: rgba(170, 220, 190, 0.8);
+}
+
+.fetch-log-row.err { border-left-color: rgba(255, 141, 126, 0.7); color: rgba(240, 170, 160, 0.8); }
+.fetch-log-row .fetch-target { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.gated-row.direct-row { border-color: rgba(110, 200, 170, 0.35); background: rgba(10, 18, 15, 0.9); }
+.gated-row.direct-row strong { color: #c8ecd8; }
+.gated-row.direct-row input { border-color: rgba(110, 200, 170, 0.4); color: #d9f5e6; }
+.gated-row.direct-row button { background: rgba(22, 44, 34, 0.95); border-color: rgba(126, 240, 168, 0.5); color: #a9f0c6; }
+.row-cat { font-style: normal; font-size: 0.5rem; letter-spacing: 0.16em; color: rgba(140, 200, 230, 0.55); margin-left: 6px; }

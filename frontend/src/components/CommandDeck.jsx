@@ -22,6 +22,8 @@ export default function CommandDeck({ playCue = () => {} }) {
   const [flash, setFlash] = useState({});
   const [params, setParams] = useState({});
   const [error, setError] = useState("");
+  const [breaker, setBreaker] = useState({ on: false, changed_at: null });
+  const [fetchLog, setFetchLog] = useState([]);
   const aliveRef = useRef(true);
 
   async function refreshHistory() {
@@ -33,6 +35,33 @@ export default function CommandDeck({ playCue = () => {} }) {
     } catch { /* polling failure shows via main sync chip */ }
   }
 
+  async function refreshSenses() {
+    try {
+      const [b, f] = await Promise.all([
+        fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
+      ]);
+      if (!aliveRef.current) return;
+      if (b) setBreaker(b);
+      if (f) setFetchLog(f.entries || []);
+    } catch { /* same */ }
+  }
+
+  async function flipBreaker() {
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/system/breaker`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ on: !breaker.on, changed_by: "desktop-console" }),
+      });
+      if (res.ok) {
+        setBreaker(await res.json());
+        playCue(breaker.on ? "ack" : "verified");
+      }
+    } catch { /* surfaces on next poll */ }
+  }
+
   useEffect(() => {
     aliveRef.current = true;
     fetch(`${API_BASE}/system/commands`)
@@ -42,7 +71,11 @@ export default function CommandDeck({ playCue = () => {} }) {
       })
       .catch((err) => setError(String(err.message || err)));
     refreshHistory();
-    const timer = setInterval(refreshHistory, 8000);
+    refreshSenses();
+    const timer = setInterval(() => {
+      refreshHistory();
+      refreshSenses();
+    }, 8000);
     return () => {
       aliveRef.current = false;
       clearInterval(timer);
@@ -55,9 +88,12 @@ export default function CommandDeck({ playCue = () => {} }) {
     playCue("navigation");
     try {
       const args = {};
-      const promptValue = params[name];
-      if (promptValue && (command.parameters || []).some((p) => p.name === "prompt")) {
-        args.prompt = promptValue;
+      const textParam = (command.parameters || []).find(
+        (p) => (p.type === "text" || !p.type) && (p.required || p.name === "prompt")
+      );
+      const value = params[name];
+      if (textParam && value) {
+        args[textParam.name] = value;
       }
       const res = await fetch(`${API_BASE}/system/commands/${name}`, {
         method: "POST",
@@ -79,7 +115,9 @@ export default function CommandDeck({ playCue = () => {} }) {
   }
 
   const commands = registry.commands || [];
-  const quick = commands.filter((c) => c.gate === "direct");
+  const needsInput = (c) => (c.parameters || []).some((p) => p.required && (p.type === "text" || !p.type));
+  const quick = commands.filter((c) => c.gate === "direct" && !needsInput(c));
+  const quickWithInput = commands.filter((c) => c.gate === "direct" && needsInput(c));
   const gated = commands.filter((c) => c.gate === "approval");
   const forbidden = commands.filter((c) => c.gate === "forbidden");
   const categories = [...new Set(gated.map((c) => c.category || "uncategorized"))];
@@ -87,6 +125,32 @@ export default function CommandDeck({ playCue = () => {} }) {
   return (
     <div className="command-deck">
       {error ? <div className="command-deck-error">REGISTRY UNREACHABLE // {error}</div> : null}
+
+      <div className="command-deck-section senses-section">
+        <small className="command-deck-label">THE SENSES // NETWORK BREAKER (XIII-B)</small>
+        <div className="breaker-row">
+          <button
+            type="button"
+            className={`breaker-switch ${breaker.on ? "is-on" : "is-off"}`}
+            onClick={flipBreaker}
+            title="The operator's standing switch for internet reads — flips are recorded"
+          >
+            <span className="breaker-lever" />
+            <strong>{breaker.on ? "BREAKER ON — SENSES LIVE" : "BREAKER OFF — SENSES DARK"}</strong>
+          </button>
+          <small>{breaker.changed_at ? `last flip ${fmtTime(breaker.changed_at)}` : "never flipped"}</small>
+        </div>
+        <div className="fetch-log">
+          {fetchLog.length ? fetchLog.map((entry, i) => (
+            <div key={i} className={`fetch-log-row ${entry.ok ? "ok" : "err"}`}>
+              <span>{fmtTime(entry.at)}</span>
+              <strong>{entry.kind.toUpperCase()}</strong>
+              <span className="fetch-target">{entry.target}</span>
+              <span>{entry.detail || (entry.ok ? "OK" : "FAIL")}</span>
+            </div>
+          )) : <div className="empty">NO NETWORK READS LOGGED.</div>}
+        </div>
+      </div>
 
       <div className="command-deck-section">
         <small className="command-deck-label">QUICK REQUEST // DIRECT READS</small>
@@ -109,6 +173,31 @@ export default function CommandDeck({ playCue = () => {} }) {
             );
           })}
         </div>
+        {quickWithInput.length ? (
+          <div className="gated-list" style={{ marginTop: "8px" }}>
+            {quickWithInput.map((command) => {
+              const f = flash[command.name];
+              const textParam = (command.parameters || []).find((p) => p.required && (p.type === "text" || !p.type));
+              return (
+                <div key={command.name} className={`gated-row direct-row ${f ? `flash-${statusTone(f.status)}` : ""}`}>
+                  <div className="gated-copy">
+                    <strong>{command.title} <em className="row-cat">{String(command.category || "").toUpperCase()}</em></strong>
+                    <span>{f?.detail || (f ? String(f.status).toUpperCase() : command.description)}</span>
+                  </div>
+                  <input
+                    value={params[command.name] ?? ""}
+                    placeholder={(textParam?.label || textParam?.name || "VALUE").toUpperCase() + "…"}
+                    onChange={(e) => setParams((prev) => ({ ...prev, [command.name]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !busy[command.name]) initiate(command); }}
+                  />
+                  <button type="button" disabled={Boolean(busy[command.name])} onClick={() => initiate(command)}>
+                    {busy[command.name] ? "…" : "RUN"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {categories.map((category) => (

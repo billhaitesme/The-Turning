@@ -1045,6 +1045,7 @@ export default function App() {
           <SystemBadge label="Build" value={runtime.systemStatus?.version || "--"} />
           <SystemBadge label="Seat" value={activeSeat} />
           <SystemBadge label="Agent Loop" value={agentLoopOn ? "ON" : "OFF"} />
+          <SystemBadge label="Senses" value={runtime.systemStatus?.network_breaker_on ? "LIVE" : "DARK"} />
           <SystemBadge label="Adapters" value={runtime.tools.length} />
           <SystemBadge label="Poll" value={`${runtime.telemetry.poll_ms} ms`} />
           <SystemBadge label="Sync" value={`${runtime.telemetry.endpoint_up}/${runtime.telemetry.endpoint_total}`} />

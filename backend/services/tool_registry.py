@@ -10,6 +10,8 @@ from services.adapters.comfyui_submit import COMFYUI_SUBMIT_DESCRIPTOR, ComfyUIS
 from services.adapters.comfyui_free_vram import COMFYUI_FREE_VRAM_DESCRIPTOR, ComfyUIFreeVramAdapter
 from services.adapters.host_status import HOST_STATUS_DESCRIPTOR, HostStatusAdapter
 from services.adapters.tutelage_consolidation import TUTELAGE_CONSOLIDATION_DESCRIPTOR
+from services.adapters.web_fetch import WEB_FETCH_DESCRIPTOR, WebFetchAdapter
+from services.adapters.web_search import WEB_SEARCH_DESCRIPTOR, WebSearchAdapter
 from services.tool_contracts import ToolAdapter, validate_tool_definition
 
 TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
@@ -76,6 +78,12 @@ def register_default_tools() -> None:
         # Read-only pipeline truth (XIII-A follow-up): lets the chat seat verify whether an
         # operator approval actually landed instead of guessing; direct-executable.
         register_tool(APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter())
+    if "web_search" not in TOOL_REGISTRY:
+        # XIII-B senses: read-only internet reads, gated by the operator's network breaker
+        # inside the adapters themselves (off by default; every read logged).
+        register_tool(WEB_SEARCH_DESCRIPTOR, WebSearchAdapter())
+    if "web_fetch" not in TOOL_REGISTRY:
+        register_tool(WEB_FETCH_DESCRIPTOR, WebFetchAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).
