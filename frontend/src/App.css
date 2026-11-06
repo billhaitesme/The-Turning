@@ -2617,7 +2617,9 @@ button:hover {
 .chat-window.is-compact { min-height: 300px; max-height: 52vh; }
 
 /* -------------------------------------------------- command registry widget */
-.command-deck { display: flex; flex-direction: column; gap: 10px; }
+.command-deck { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+/* the deck sits in a one-column grid: no single long line may widen the panel past its cell */
+.command-deck > * { min-width: 0; }
 
 .command-deck-label {
   display: block;
@@ -2876,7 +2878,10 @@ button:hover {
 
 .fetch-log-row {
   display: grid;
-  grid-template-columns: 68px 52px 1fr auto;
+  /* minmax(0, 1fr), not 1fr: a bare 1fr never shrinks below its nowrap URL, so a long fetch
+     (the Toolwright forecast URLs, 2026-11-06) widened the whole Command Registry panel ~3x
+     and pushed every right-hand button (INDUCT/COMPLETE/DENY) out of sight. */
+  grid-template-columns: 68px 52px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   font-size: 0.58rem;
