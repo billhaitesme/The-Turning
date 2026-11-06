@@ -57,7 +57,29 @@ def _posix_zone() -> Optional[str]:
     return target.split(marker, 1)[1] if marker in target else None
 
 
+def _windows_live_zone() -> Optional[Dict[str, Any]]:
+    """Read the zone LIVE from the registry. Python caches the zone at process start, so after
+    Bill changed Windows from Eastern (PairVPN's auto-detect) to Central on 2026-11-06 the running
+    backend kept reporting Eastern until a restart. ActiveTimeBias is the current bias in minutes
+    (UTC = local + bias), daylight saving included."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                            r"SYSTEM\CurrentControlSet\Control\TimeZoneInformation") as key:
+            name = str(winreg.QueryValueEx(key, "TimeZoneKeyName")[0]).strip("\x00 ")
+            bias = int(winreg.QueryValueEx(key, "ActiveTimeBias")[0])
+    except (ImportError, OSError, ValueError):
+        return None
+    if bias >= 2 ** 31:  # REG_DWORD holds a signed value
+        bias -= 2 ** 32
+    return {"iana": WINDOWS_TO_IANA.get(name), "name": name, "utc_offset_minutes": -bias}
+
+
 def host_clock() -> Dict[str, Any]:
+    if os.name == "nt":
+        live = _windows_live_zone()
+        if live is not None:
+            return live
     now = datetime.now().astimezone()
     offset = now.utcoffset()
     standard_name = time.tzname[0] if time.tzname else ""
