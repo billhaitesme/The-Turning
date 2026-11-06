@@ -8,11 +8,13 @@ import {
   ActivityRibbon, AdapterTile, AnnunciatorStack, ChroniclePlate, CircularGauge, CognitiveBus,
   DataPlate, EvidenceStack, HardwareControlDeck, MeterStack, PanelFrame, RadarDisplay, ScopeTrace,
   SegmentMeter, SignalArray, SignalBar, StatusLamp, SystemBadge, cadenceBand, fmtTime, setHostClock,
-  panelPattern, phaseLabel, playTone, pushHistory, ratioPct, statusFromError,
+  panelPattern, phaseLabel, playTone, pushHistory, ratioPct, setCueVolume, statusFromError,
   toAurebeshGlyphText, tunedCadence,
 } from "./components/displays.jsx";
 import { ChatConsoleView, useChatChannel, ASSISTANT_NAME, API_BASE } from "./components/ChatConsole.jsx";
 import CommandDeck from "./components/CommandDeck.jsx";
+import { tempoFor } from "./components/consoleTempo.js";
+import { TipLayer, useTipsSetting } from "./components/tips.jsx";
 import { WIDGET_DEFS, WIDTH_CYCLE, loadDeck, saveDeck, widgetTitle } from "./deck.js";
 
 const BOOT_SEQUENCE = [
@@ -25,10 +27,36 @@ const BOOT_SEQUENCE = [
 const IS_COMPANION = new URLSearchParams(window.location.search).has("companion");
 
 export default function App() {
-  const [surfaceMode, setSurfaceMode] = useState("steady");
+  // The control bay's choices are remembered per browser (a phone on mobile data keeps QUIET).
+  const [surfaceMode, setSurfaceMode] = useState(() => {
+    try { return localStorage.getItem("omega.tempo") || "steady"; } catch { return "steady"; }
+  });
   const [panelLocked, setPanelLocked] = useState(false);
   const [scanBurst, setScanBurst] = useState(false);
-  const [gain, setGain] = useState(62);
+  const [gain, setGain] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem("omega.gain"));
+      return Number.isFinite(saved) && localStorage.getItem("omega.gain") !== null ? saved : 62;
+    } catch { return 62; }
+  });
+  const [tipsOn, toggleTips] = useTipsSetting();
+  const [lastScan, setLastScan] = useState(null);
+  const [deckRefreshSignal, setDeckRefreshSignal] = useState(0);
+  const surfaceModeRef = useRef(surfaceMode);
+  const pollNowRef = useRef(() => {});
+  const scanPendingRef = useRef(false);
+  const tempo = tempoFor(surfaceMode);
+
+  useEffect(() => {
+    surfaceModeRef.current = surfaceMode;
+    try { localStorage.setItem("omega.tempo", surfaceMode); } catch { /* private mode */ }
+    pollNowRef.current(); // a new tempo takes effect now, not after the old interval
+  }, [surfaceMode]);
+
+  useEffect(() => {
+    setCueVolume(gain);
+    try { localStorage.setItem("omega.gain", String(gain)); } catch { /* private mode */ }
+  }, [gain]);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioPrimed, setAudioPrimed] = useState(false);
   const [busPulseIndex, setBusPulseIndex] = useState(-1);
@@ -262,8 +290,17 @@ export default function App() {
     if (IS_COMPANION) return undefined; // the companion leaves telemetry polling to the bridge
     let alive = true;
     let timeoutId = null;
+    // one refresh chain only: "scan now" during an in-flight refresh queues a rerun instead of
+    // starting a second loop
+    let inFlight = false;
+    let rerun = false;
 
     const poll = async () => {
+      if (inFlight) {
+        rerun = true;
+        return;
+      }
+      inFlight = true;
       const pollStartedAt = performance.now();
       const endpoints = [
         ["systemStatus", `${API_BASE}/system/status`],
@@ -299,6 +336,7 @@ export default function App() {
         })
       );
 
+      inFlight = false;
       if (!alive) return;
       setHostClock(nextData.systemStatus?.host_clock);
       setRuntime((prev) => ({
@@ -329,9 +367,30 @@ export default function App() {
         startBusPulseSequence();
       }
 
-      timeoutId = setTimeout(poll, 4000);
+      if (scanPendingRef.current) {
+        scanPendingRef.current = false;
+        setLastScan({
+          at: now,
+          up: Object.keys(nextData).length,
+          total: endpoints.length,
+          ms: Math.round(performance.now() - pollStartedAt),
+        });
+      }
+
+      if (rerun) {
+        rerun = false;
+        poll();
+        return;
+      }
+      // the control bay's tempo sets the cadence (STEADY 4 s / SURGE 1 s / QUIET 20 s)
+      timeoutId = setTimeout(poll, tempoFor(surfaceModeRef.current).pollMs);
     };
 
+    pollNowRef.current = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = null;
+      poll();
+    };
     poll();
     return () => {
       alive = false;
@@ -344,6 +403,10 @@ export default function App() {
   }
 
   function triggerHardwareScan() {
+    // SCAN NOW: refresh every panel immediately and report the result in the bay
+    scanPendingRef.current = true;
+    pollNowRef.current();
+    setDeckRefreshSignal((n) => n + 1);
     setScanBurst(true);
     playAudioCue("scan");
     setLastCognitiveActivityAt(Date.now());
@@ -816,7 +879,7 @@ export default function App() {
         pattern={approvedPending > 0 ? "wait" : "idle"} cadence={deliberationCadence} band={deliberationBand}
         sparkValues={panelHistory.adapters} collapsed={s.collapsed} deckControls={deckControlsFor("commands")}
       >
-        <CommandDeck playCue={playAudioCue} />
+        <CommandDeck playCue={playAudioCue} deckMs={tempo.deckMs} refreshSignal={deckRefreshSignal} locked={panelLocked} />
       </PanelFrame>
     ),
     identity: (s) => (
@@ -1030,8 +1093,13 @@ export default function App() {
   return (
     <div
       className={`bridge-app mode-${surfaceMode} ${panelLocked ? "panel-locked" : ""} ${motionClass} ${silenceMode ? "is-silence" : ""}`}
-      style={{ "--gain-level": String(Math.max(0, Math.min(100, gain)) / 100) }}
+      style={{
+        "--gain-level": String(Math.max(0, Math.min(100, gain)) / 100),
+        // motion follows the real refresh tempo: SURGE looks busier because it is busier
+        "--motion-rate": String(silenceMode ? tempo.motion * 0.58 : tempo.motion),
+      }}
     >
+      <TipLayer enabled={tipsOn} />
       <header className="command-header">
         <div className="identity-plate">
           <h1>OMEGA-ARC</h1>
@@ -1058,6 +1126,10 @@ export default function App() {
           scanBurst={scanBurst}
           gain={gain}
           audioEnabled={audioEnabled && audioPrimed}
+          tempo={tempo}
+          lastScan={lastScan}
+          tipsOn={tipsOn}
+          onTipsToggle={toggleTips}
           onModeChange={handleModeChange}
           onLockToggle={() => {
             setPanelLocked((value) => !value);

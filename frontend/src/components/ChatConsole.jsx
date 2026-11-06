@@ -505,6 +505,7 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
             className={conversationMode === "runtime" ? "is-active" : ""}
             onClick={() => setConversationMode("runtime")}
             disabled={isStreaming}
+            data-tip="RUNTIME: talk to OMEGA in full: memory, tools, the guards and checks."
           >
             Runtime
           </button>
@@ -512,11 +513,12 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
             className={conversationMode === "direct" ? "is-active" : ""}
             onClick={() => setConversationMode("direct")}
             disabled={isStreaming}
+            data-tip="DIRECT MODEL: talk to the raw model with no OMEGA subsystems (no memory, tools or checks). For testing the model itself."
           >
             Direct Model
           </button>
           {onPopout ? (
-            <button type="button" className="popout-button" onClick={onPopout} title="Open companion window">
+            <button type="button" className="popout-button" onClick={onPopout} data-tip="Open the chat in its own window, sharing this conversation.">
               ⧉ Companion
             </button>
           ) : null}
@@ -607,15 +609,15 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
         }}
       />
       <div className="console-buttons">
-        {!conversationId ? <button onClick={createConversation}>Open Channel</button> : null}
-        {conversationId ? <button onClick={createConversation} disabled={isStreaming}>New Channel</button> : null}
-        <button onClick={streamMessage} disabled={isStreaming}>Transmit</button>
-        <button type="button" title="Attach image(s) — show it things"
+        {!conversationId ? <button onClick={createConversation} data-tip="Start a conversation.">Open Channel</button> : null}
+        {conversationId ? <button onClick={createConversation} disabled={isStreaming} data-tip="Start a fresh conversation. The old one stays in RECENTS.">New Channel</button> : null}
+        <button onClick={streamMessage} disabled={isStreaming} data-tip="Send, and watch the reply arrive as it is written.">Transmit</button>
+        <button type="button" data-tip="Attach image(s) for OMEGA to look at."
                 onClick={() => fileInputRef.current?.click()} disabled={isStreaming}>📷 Show</button>
         <button
           type="button"
           className={`mic-button ${recording ? "is-recording" : ""}`}
-          title="Hold to talk"
+          data-tip="Hold to talk: speak while holding, release to send. Transcribed locally."
           onPointerDown={startRecording}
           onPointerUp={stopRecording}
           onPointerLeave={() => recording && stopRecording()}
@@ -624,16 +626,16 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
           {recording ? "● REC" : "🎙 Talk"}
         </button>
         <button type="button" className={`voice-toggle ${voiceOut ? "is-on" : ""}`}
-                title="Speak replies aloud (Kokoro, local)" onClick={toggleVoiceOut}>
+                data-tip="Speak OMEGA's replies aloud (Kokoro voice, runs locally)." onClick={toggleVoiceOut}>
           {voiceOut ? "🔊 Voice ON" : "🔇 Voice"}
         </button>
-        {!compact ? <button onClick={sendMessage} disabled={isStreaming}>Send (no stream)</button> : null}
+        {!compact ? <button onClick={sendMessage} disabled={isStreaming} data-tip="Send, and show the reply only when it is complete.">Send (no stream)</button> : null}
       </div>
       {!compact ? (
         <>
           <div className="memory-search">
             <input value={memoryQuery} onChange={(e) => setMemoryQuery(e.target.value)} placeholder="QUERY MEMORY INDEX..." />
-            <button onClick={searchMemory}>Search</button>
+            <button onClick={searchMemory} data-tip="Search OMEGA's memory for anything matching what you type.">Search</button>
           </div>
           <div className="memory-results">
             {memoryResults.slice(0, 4).map((m, i) => (

@@ -3024,3 +3024,53 @@ button:hover {
   color: #9af0bd !important;
   box-shadow: 0 0 10px rgba(126, 240, 168, 0.25);
 }
+
+/* ------------------------------------------------ HUD tips (2026-11-06), toggled in the bay */
+.hud-tip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  padding: 7px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(98, 228, 255, 0.55);
+  background: rgba(6, 12, 18, 0.96);
+  box-shadow: 0 0 14px rgba(98, 228, 255, 0.18);
+  color: #cfe9f5;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* the control bay's live readout: what the tempo and the last scan actually are */
+.hardware-readout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 6px 0 2px;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: rgba(170, 220, 190, 0.85);
+}
+
+/* LOCK SHELL: the deck's controls sit in a fieldset that disables them all at once.
+   min-width 0 matters: a fieldset defaults to min-content and would re-widen the panel. */
+.command-deck-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.command-deck-fieldset:disabled { opacity: 0.55; }
+.command-deck-locked {
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 141, 126, 0.7);
+  border-radius: 4px;
+  color: rgba(255, 170, 160, 0.95);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+}

@@ -15,7 +15,7 @@ function statusTone(status) {
   return "steel";
 }
 
-export default function CommandDeck({ playCue = () => {} }) {
+export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refreshSignal = 0, locked = false }) {
   const [registry, setRegistry] = useState({ commands: [], execution_enabled: true });
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState({});
@@ -140,17 +140,22 @@ export default function CommandDeck({ playCue = () => {} }) {
         if (aliveRef.current) setRegistry(data);
       })
       .catch((err) => setError(String(err.message || err)));
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
+  // The control bay's tempo sets this deck's refresh (STEADY 8 s / SURGE 2 s / QUIET 30 s), and
+  // its SCAN NOW dial refreshes it immediately.
+  useEffect(() => {
     refreshHistory();
     refreshSenses();
     const timer = setInterval(() => {
       refreshHistory();
       refreshSenses();
-    }, 8000);
-    return () => {
-      aliveRef.current = false;
-      clearInterval(timer);
-    };
-  }, []);
+    }, deckMs);
+    return () => clearInterval(timer);
+  }, [deckMs, refreshSignal]);
 
   async function initiate(command) {
     const name = command.name;
@@ -195,15 +200,22 @@ export default function CommandDeck({ playCue = () => {} }) {
   return (
     <div className="command-deck">
       {error ? <div className="command-deck-error">REGISTRY UNREACHABLE // {error}</div> : null}
+      {locked ? (
+        <div className="command-deck-locked" data-tip="LOCK SHELL is on in the Physical Control Bay. Unlock it there to use these controls.">
+          SHELL LOCKED // CONTROLS SAFED — UNLOCK IN THE PHYSICAL CONTROL BAY
+        </div>
+      ) : null}
+      {/* LOCK SHELL: a disabled fieldset disables every button and input inside it at once */}
+      <fieldset className="command-deck-fieldset" disabled={locked}>
 
       <div className="command-deck-section senses-section">
-        <small className="command-deck-label">THE SENSES // NETWORK BREAKER (XIII-B)</small>
+        <small className="command-deck-label" data-tip="The network breaker, and below it the last internet reads OMEGA made (searches and fetches), newest first.">THE SENSES // NETWORK BREAKER (XIII-B)</small>
         <div className="breaker-row">
           <button
             type="button"
             className={`breaker-switch ${breaker.on ? "is-on" : "is-off"}`}
             onClick={flipBreaker}
-            title="The operator's standing switch for internet reads — flips are recorded"
+            data-tip="The network breaker: your standing switch for internet reads (web search, fetch, Toolwright tools). ON = OMEGA may read the web. Every flip is recorded."
           >
             <span className="breaker-lever" />
             <strong>{breaker.on ? "BREAKER ON — SENSES LIVE" : "BREAKER OFF — SENSES DARK"}</strong>
@@ -232,7 +244,7 @@ export default function CommandDeck({ playCue = () => {} }) {
                 key={command.name}
                 type="button"
                 className={`quick-chip cat-${command.category} ${busy[command.name] ? "is-busy" : ""} ${f ? `flash-${statusTone(f.status)}` : ""}`}
-                title={command.description}
+                data-tip={command.description}
                 disabled={Boolean(busy[command.name])}
                 onClick={() => initiate(command)}
               >
@@ -305,7 +317,7 @@ export default function CommandDeck({ playCue = () => {} }) {
           <small className="command-deck-label">FORBIDDEN // VISIBLE BOUNDARY</small>
           <div className="forbidden-list">
             {forbidden.map((command) => (
-              <div key={command.name} className="forbidden-row" title={command.description}>
+              <div key={command.name} className="forbidden-row" data-tip={`FORBIDDEN: neither you nor OMEGA can run this from here. ${command.description || ""}`}>
                 <strong>{command.title}</strong>
                 <span>NEVER EXECUTES</span>
               </div>
@@ -323,7 +335,7 @@ export default function CommandDeck({ playCue = () => {} }) {
               type="button"
               className={`deep-seat-choice ${choice.model === deepSeat.model ? "is-active" : ""}`}
               onClick={() => chooseDeepSeat(choice.model)}
-              title={choice.model}
+              data-tip={`${choice.model}: ${choice.note}. OMEGA decides WHEN to think deep; this picks WHICH model does it.`}
             >
               <strong>{choice.label}</strong>
               <span>{choice.note}</span>
@@ -343,7 +355,8 @@ export default function CommandDeck({ playCue = () => {} }) {
         <div className="cap-file-row">
           <input value={faceName} placeholder="NAME…" onChange={(e) => setFaceName(e.target.value)} />
           <button type="button" disabled={!faceName.trim()}
-                  onClick={() => faceFileRef.current?.click()}>ENROLL FROM PHOTO</button>
+                  onClick={() => faceFileRef.current?.click()}
+                  data-tip="Teach OMEGA a face: type the name, then choose a clear photo. Stored on this PC only.">ENROLL FROM PHOTO</button>
           <input ref={faceFileRef} type="file" accept="image/*" style={{ display: "none" }}
                  onChange={(e) => {
                    const file = e.target.files?.[0];
@@ -393,12 +406,13 @@ export default function CommandDeck({ playCue = () => {} }) {
       </div>
 
       <div className="command-deck-section">
-        <small className="command-deck-label">THE TOOLWRIGHT // CAPABILITY REQUESTS (XIII-D)</small>
+        <small className="command-deck-label" data-tip="How OMEGA gains new tools: a request is filed, a candidate found and tested, and only your fingerprint inducts it.">THE TOOLWRIGHT // CAPABILITY REQUESTS (XIII-D)</small>
         <div className="cap-file-row">
           <input value={capNeed} placeholder="WHAT CAPABILITY IS NEEDED…"
                  onChange={(e) => setCapNeed(e.target.value)} />
           <input value={capWhy} placeholder="WHY…" onChange={(e) => setCapWhy(e.target.value)} />
-          <button type="button" onClick={fileCapability}>FILE</button>
+          <button type="button" onClick={fileCapability}
+                  data-tip="FILE a capability request yourself: what is needed and why. Then PREPARE it.">FILE</button>
         </div>
         {capNote ? <div className="cap-note">{capNote}</div> : null}
         <div className="cap-list">
@@ -414,15 +428,20 @@ export default function CommandDeck({ playCue = () => {} }) {
               </div>
               <div className="cap-actions">
                 {req.status === "proposed" || req.status === "failed" ? (
-                  <button type="button" onClick={() => capAction(req.request_id, "prepare")}>PREPARE</button>
+                  <button type="button" onClick={() => capAction(req.request_id, "prepare")}
+                          data-tip="PREPARE: find a matching tool on the shelf, quarantine it, and verify it with one live test call.">PREPARE</button>
                 ) : null}
                 {req.status === "verified" || req.status === "awaiting_induction" ? (
-                  <button type="button" onClick={() => capAction(req.request_id, "induct")}>
+                  <button type="button" onClick={() => capAction(req.request_id, "induct")}
+                          data-tip={req.status === "verified"
+                            ? "INDUCT: sends an approval to your phone. Approve with your fingerprint within 5 minutes, then press COMPLETE."
+                            : "COMPLETE: finishes the induction once you have approved it on your phone. If the approval lapsed, this sends a fresh one."}>
                     {req.status === "verified" ? "INDUCT" : "COMPLETE"}
                   </button>
                 ) : null}
                 {!["inducted", "denied", "superseded"].includes(req.status) ? (
-                  <button type="button" className="cap-deny" onClick={() => capAction(req.request_id, "deny")}>DENY</button>
+                  <button type="button" className="cap-deny" onClick={() => capAction(req.request_id, "deny")}
+                          data-tip="DENY: reject this request and delete its tested copy. OMEGA would have to file it again.">DENY</button>
                 ) : null}
               </div>
             </div>
@@ -444,6 +463,7 @@ export default function CommandDeck({ playCue = () => {} }) {
           )) : <div className="empty">NO COMMAND HISTORY.</div>}
         </div>
       </div>
+      </fieldset>
     </div>
   );
 }

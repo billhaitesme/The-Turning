@@ -1,6 +1,7 @@
 // Display primitives of the Bridge Zero web console — the Imperial instrument library.
 // Extracted from the App monolith in the XIII-A deck refactor; behavior preserved.
 import { useEffect, useRef, useState } from "react";
+import { tipFor } from "./tips.jsx";
 
 // Every console time is 24-hour in the HOST's zone (the operator reads watches in HH:MM), not
 // the browser's: a phone opening the console over Tailscale from elsewhere sees host time.
@@ -118,6 +119,13 @@ export function toAurebeshGlyphText(text) {
   return String(text || "").toUpperCase().trim();
 }
 
+// The control bay's GAIN slider is the console's sound volume (62 = the original loudness,
+// 0 = silent). It used to turn the dial's needle and nothing else.
+let CUE_VOLUME = 1;
+export function setCueVolume(gainPercent) {
+  CUE_VOLUME = Math.max(0, Math.min(100, Number(gainPercent) || 0)) / 62;
+}
+
 export function playTone(context, {
   frequency = 440,
   duration = 0.08,
@@ -125,6 +133,8 @@ export function playTone(context, {
   gain = 0.025,
   offset = 0,
 }) {
+  const level = gain * CUE_VOLUME;
+  if (level <= 0.0001) return; // GAIN at 0: silent
   const osc = context.createOscillator();
   const amp = context.createGain();
   const start = context.currentTime + offset;
@@ -132,7 +142,7 @@ export function playTone(context, {
   osc.type = type;
   osc.frequency.setValueAtTime(frequency, start);
   amp.gain.setValueAtTime(0.0001, start);
-  amp.gain.exponentialRampToValueAtTime(gain, start + Math.min(0.02, duration * 0.35));
+  amp.gain.exponentialRampToValueAtTime(level, start + Math.min(0.02, duration * 0.35));
   amp.gain.exponentialRampToValueAtTime(0.0001, end);
   osc.connect(amp);
   amp.connect(context.destination);
@@ -202,7 +212,7 @@ export function PanelFrame({
           <div className="panel-glass">
             <div className="panel-header">
               <div className="panel-title-stack">
-                <h3>{title}</h3>
+                <h3 data-tip={tipFor(title)}>{title}</h3>
                 <div className="panel-title-accent aurebesh" aria-hidden="true">
                   {title.toUpperCase()}
                 </div>
@@ -269,7 +279,7 @@ export function StatusLamp({ status, pulse }) {
 
 export function SystemBadge({ label, value }) {
   return (
-    <div className="system-badge">
+    <div className="system-badge" data-tip={tipFor(label)}>
       <span>{label}</span>
       <strong>{value ?? "--"}</strong>
     </div>
@@ -278,7 +288,7 @@ export function SystemBadge({ label, value }) {
 
 export function DataPlate({ label, value }) {
   return (
-    <div className="data-plate">
+    <div className="data-plate" data-tip={tipFor(label)}>
       <span>{label}</span>
       <strong>{value ?? "--"}</strong>
     </div>
@@ -468,8 +478,14 @@ export function ChroniclePlate({ lastResult }) {
 export const SURFACE_MODES = [
   { id: "steady", label: "STEADY" },
   { id: "surge", label: "SURGE" },
-  { id: "lock", label: "LOCK" },
+  { id: "lock", label: "QUIET" },
 ];
+
+const MODE_TIPS = {
+  steady: "Normal tempo: telemetry refreshes every 4 s, the Command Deck every 8 s.",
+  surge: "Live tempo: telemetry every 1 s, the Command Deck every 2 s. Most responsive, most traffic.",
+  lock: "Low-bandwidth tempo: telemetry every 20 s, the Command Deck every 30 s, motion nearly still. Use it over a phone hotspot, PairVPN or mobile data.",
+};
 
 export function HardwareControlDeck({
   surfaceMode,
@@ -477,19 +493,24 @@ export function HardwareControlDeck({
   scanBurst,
   gain,
   audioEnabled,
+  tempo,
+  lastScan,
+  tipsOn,
   onModeChange,
   onLockToggle,
   onScanBurst,
   onGainChange,
   onAudioToggle,
+  onTipsToggle,
 }) {
+  const modeLabel = (SURFACE_MODES.find((m) => m.id === surfaceMode) || SURFACE_MODES[0]).label;
   return (
     <div className="hardware-controls">
       <div className="hardware-controls-head">
-        <small>PHYSICAL CONTROL BAY</small>
-        <strong>{surfaceMode.toUpperCase()}</strong>
+        <small data-tip="The console's physical controls: refresh tempo, scan now, sound, safety lock and tips.">PHYSICAL CONTROL BAY</small>
+        <strong>{modeLabel}</strong>
       </div>
-      <div className="mode-bank" role="group" aria-label="Surface mode">
+      <div className="mode-bank" role="group" aria-label="Console tempo">
         {SURFACE_MODES.map((mode) => (
           <button
             key={mode.id}
@@ -497,6 +518,7 @@ export function HardwareControlDeck({
             className={`rocker-switch ${surfaceMode === mode.id ? "is-active" : ""}`}
             onClick={() => onModeChange(mode.id)}
             disabled={locked}
+            data-tip={locked ? "Shell is locked: unlock to change tempo." : MODE_TIPS[mode.id]}
           >
             <span className="rocker-cap" />
             <span>{mode.label}</span>
@@ -508,25 +530,53 @@ export function HardwareControlDeck({
           type="button"
           className={`hardware-dial ${scanBurst ? "is-pulsing" : ""}`}
           onClick={onScanBurst}
-          aria-label="Trigger scan burst"
+          aria-label="Scan now"
+          data-tip="SCAN NOW: refresh every panel immediately and report how many endpoints answered and how fast."
         >
           <span className="dial-ring" />
           <span className="dial-pointer" style={{ transform: `rotate(${gain * 2.7}deg)` }} />
         </button>
-        <div className="gain-block">
-          <label htmlFor="gain-slider">GAIN</label>
+        <div className="gain-block" data-tip="GAIN = console sound volume. 62% is the original level; 0% is silent.">
+          <label htmlFor="gain-slider">GAIN // VOLUME</label>
           <input id="gain-slider" className="gain-slider" type="range" min="0" max="100" value={gain} onChange={(e) => onGainChange(Number(e.target.value))} />
-          <div className="gain-readout">{gain}%</div>
+          <div className="gain-readout">{gain === 0 ? "MUTE" : `${gain}%`}</div>
         </div>
       </div>
+      <div className="hardware-readout" data-tip="What the bay is doing right now: refresh rates for this tempo, and the result of the last scan.">
+        <span>REFRESH {tempo ? `${tempo.pollMs / 1000} s / DECK ${tempo.deckMs / 1000} s` : "--"}</span>
+        <span>
+          {lastScan
+            ? `LAST SCAN ${fmtTime(lastScan.at)} // ${lastScan.up}/${lastScan.total} UP // ${lastScan.ms} ms`
+            : "NO SCAN YET"}
+        </span>
+      </div>
       <div className="hardware-footer">
-        <button type="button" className={`lock-toggle ${locked ? "is-active" : ""}`} onClick={onLockToggle}>
+        <button
+          type="button"
+          className={`lock-toggle ${locked ? "is-active" : ""}`}
+          onClick={onLockToggle}
+          data-tip={locked
+            ? "Shell is LOCKED: every Command Deck action (breaker, commands, Toolwright, faces, deep seat) is disabled. Chat still works. Press to unlock."
+            : "LOCK SHELL: a safety lock. Disables every Command Deck action so nothing fires by accident. Chat keeps working."}
+        >
           {locked ? "UNLOCK SHELL" : "LOCK SHELL"}
         </button>
-        <button type="button" className={`audio-toggle ${audioEnabled ? "is-active" : ""}`} onClick={onAudioToggle}>
+        <button
+          type="button"
+          className={`audio-toggle ${audioEnabled ? "is-active" : ""}`}
+          onClick={onAudioToggle}
+          data-tip="Console sound cues on or off (GAIN sets how loud)."
+        >
           AUDIO {audioEnabled ? "ON" : "OFF"}
         </button>
-        <div className="hardware-legend">LOW-PLAYBACK // PHYSICAL FEEDBACK ENABLED</div>
+        <button
+          type="button"
+          className={`audio-toggle ${tipsOn ? "is-active" : ""}`}
+          onClick={onTipsToggle}
+          data-tip="Hover tips like this one, across the console. Your choice is remembered in this browser."
+        >
+          TIPS {tipsOn ? "ON" : "OFF"}
+        </button>
       </div>
     </div>
   );
@@ -575,7 +625,7 @@ export function ActivityRibbon({
       </div>
       <div className="activity-ribbon-content">
         {ribbonItems.map((item) => (
-          <div key={item.label} className={`activity-chip tone-${item.tone} ${item.blink ? "is-alert" : ""}`}>
+          <div key={item.label} className={`activity-chip tone-${item.tone} ${item.blink ? "is-alert" : ""}`} data-tip={tipFor(item.label)}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
           </div>
@@ -587,7 +637,7 @@ export function ActivityRibbon({
 
 export function IndicatorLamp({ label, value, blink = false, tone = "green" }) {
   return (
-    <div className={`indicator-lamp tone-${tone} ${blink ? "is-blinking" : ""}`}>
+    <div className={`indicator-lamp tone-${tone} ${blink ? "is-blinking" : ""}`} data-tip={tipFor(label)}>
       <span className="indicator-led" />
       <div className="indicator-copy">
         <span>{label}</span>
