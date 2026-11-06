@@ -29,7 +29,7 @@ from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import httpx
 
-from services import command_console, command_registry
+from services import command_console, command_registry, number_check
 
 EventGenerator = Generator[Dict[str, Any], None, None]
 # A seat turn: (conversation, tools-or-None, model) -> events ({"type": "delta"|"message", ...}).
@@ -279,6 +279,10 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
     budget = max_hops()
     cap = result_max_chars()
     rounds = 0
+    # every runtime answer this turn, uncapped: the evidence the number check grounds against
+    tool_results: List[tuple] = []
+    operator_message = next((str(m.get("content") or "") for m in reversed(messages)
+                             if m.get("role") == "user"), "")
 
     while True:
         offered = tools if (supports_tools and rounds < budget) else None
@@ -308,9 +312,17 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         # offered is None once the budget is spent (or the seat rejected schemas): any tool call
         # emitted then is ignored, which makes the loop's termination unconditional.
         if not tool_calls or offered is None:
+            # The reply has streamed; numbers the tools never returned are flagged, not edited.
+            unverified, note = number_check.check_reply("".join(reply_parts), tool_results,
+                                                        operator_message)
+            if note:
+                seam = "\n\n" if reply_parts else ""
+                reply_parts.append(seam + note)
+                yield {"event": "delta", "text": seam + note}
             yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
                    "seat_supports_tools": supports_tools,
-                   "eval_count": (final_message or {}).get("eval_count")}
+                   "eval_count": (final_message or {}).get("eval_count"),
+                   "unverified_numbers": unverified}
             return
 
         conversation.append({"role": "assistant",
@@ -328,6 +340,7 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             yield {"event": "tool_call", "name": name, "arguments": arguments}
             result = execute_tool_call(name, arguments, session_id=session_id)
             hops.append({"tool": name, "status": result.get("status")})
+            tool_results.append((name, result))
             yield {"event": "tool_result", "name": name, "status": result.get("status")}
             content = json.dumps(result, ensure_ascii=False)
             if len(content) > cap:
@@ -346,8 +359,10 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
 def run_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: str,
                    seat_turn: Optional[SeatTurn] = None) -> Dict[str, Any]:
     """Non-streaming wrapper: drain the loop, return the final event."""
-    final: Dict[str, Any] = {"reply": "", "hops": [], "seat_supports_tools": True, "eval_count": None}
+    final: Dict[str, Any] = {"reply": "", "hops": [], "seat_supports_tools": True, "eval_count": None,
+                             "unverified_numbers": []}
     for event in iter_agent_loop(messages=messages, model=model, session_id=session_id, seat_turn=seat_turn):
         if event.get("event") == "final":
-            final = {k: event.get(k) for k in ("reply", "hops", "seat_supports_tools", "eval_count")}
+            final = {k: event.get(k) for k in ("reply", "hops", "seat_supports_tools", "eval_count",
+                                               "unverified_numbers")}
     return final
