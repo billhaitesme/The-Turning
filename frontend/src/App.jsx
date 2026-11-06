@@ -7,7 +7,7 @@ import "./App.css";
 import {
   ActivityRibbon, AdapterTile, AnnunciatorStack, ChroniclePlate, CircularGauge, CognitiveBus,
   DataPlate, EvidenceStack, HardwareControlDeck, MeterStack, PanelFrame, RadarDisplay, ScopeTrace,
-  SegmentMeter, SignalArray, SignalBar, StatusLamp, SystemBadge, cadenceBand, fmtTime,
+  SegmentMeter, SignalArray, SignalBar, StatusLamp, SystemBadge, cadenceBand, fmtTime, setHostClock,
   panelPattern, phaseLabel, playTone, pushHistory, ratioPct, statusFromError,
   toAurebeshGlyphText, tunedCadence,
 } from "./components/displays.jsx";
@@ -300,6 +300,7 @@ export default function App() {
       );
 
       if (!alive) return;
+      setHostClock(nextData.systemStatus?.host_clock);
       setRuntime((prev) => ({
         ...prev,
         systemStatus: nextData.systemStatus || prev.systemStatus,

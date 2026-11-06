@@ -30,13 +30,15 @@ from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import httpx
 
-from services import command_console, command_registry, number_check, repeat_guard
+from services import command_console, command_registry, escalation, number_check, repeat_guard
 
 EventGenerator = Generator[Dict[str, Any], None, None]
 # A seat turn: (conversation, tools-or-None, model) -> events ({"type": "delta"|"message", ...}).
 SeatTurn = Callable[[List[Dict[str, Any]], Optional[List[Dict[str, Any]]], str], Iterable[Dict[str, Any]]]
 
 AGENT_REQUESTED_BY = "model:agent-seat"
+# calls the RUNTIME makes on its own judgement (escalation) are recorded as such, not as the model's
+RUNTIME_REQUESTED_BY = "runtime:escalation"
 
 AGENT_SYSTEM_ADDENDUM = """
 Hands (Epoch XIII-A):
@@ -174,7 +176,8 @@ def _coerce_arguments(command: Dict[str, Any], raw: Any) -> Dict[str, Any]:
 
 
 # ------------------------------------------------------------------ one tool call, resolved
-def execute_tool_call(name: str, arguments: Any, *, session_id: str) -> Dict[str, Any]:
+def execute_tool_call(name: str, arguments: Any, *, session_id: str,
+                      requested_by: str = AGENT_REQUESTED_BY) -> Dict[str, Any]:
     """Resolve one model-emitted tool call through the command console. Never raises: the model
     gets a structured result either way, and every path is recorded."""
     command = command_registry.get_command(name)
@@ -182,7 +185,7 @@ def execute_tool_call(name: str, arguments: Any, *, session_id: str) -> Dict[str
         command_console.record_refused_chat_call(
             name,
             reason="not in the command registry — only registered commands exist (ADR 0026)",
-            requested_by=AGENT_REQUESTED_BY,
+            requested_by=requested_by,
             session_id=session_id,
         )
         return {"status": "refused",
@@ -191,7 +194,7 @@ def execute_tool_call(name: str, arguments: Any, *, session_id: str) -> Dict[str
     try:
         entry = command_console.initiate_command(
             name,
-            requested_by=AGENT_REQUESTED_BY,
+            requested_by=requested_by,
             channel="chat",
             session_id=session_id,
             arguments=_coerce_arguments(command, arguments),
@@ -256,6 +259,17 @@ def _ollama_seat_turn(conversation: List[Dict[str, Any]],
     raise RuntimeError(f"{model} stream ended without a done marker.")
 
 
+def _cap_tool_content(content: str, cap: int) -> str:
+    """Bound a tool result for the seat's context, keeping the HEAD and the TAIL. A deep_think
+    answer ends with its conclusion; the old head-only cut threw exactly that away."""
+    if len(content) <= cap:
+        return content
+    marker = f" …[tool result: middle {len(content) - cap} chars cut to fit]… "
+    head = cap // 4
+    tail = cap - head
+    return content[:head] + marker + content[-tail:]
+
+
 # ------------------------------------------------------------------ the loop
 def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: str,
                     seat_turn: Optional[SeatTurn] = None) -> EventGenerator:
@@ -291,6 +305,28 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         [str(m.get("content") or "") for m in messages if m.get("role") == "assistant"],
         operator_message)
     repeats_caught = 0
+
+    # The runtime, not the seat, decides when a message is a multi-step problem (the 8B seat
+    # answered a probability puzzle inline and contradicted itself): run deep_think first, through
+    # the console like any call, and let the seat answer with that reasoning in hand.
+    reason = escalation.deep_task_reason(operator_message)
+    if reason and command_registry.get_command("deep_think") is not None:
+        reply_parts.append(escalation.ANNOUNCE)
+        yield {"event": "delta", "text": escalation.ANNOUNCE}
+        args = {"task": operator_message, "rung": "local"}
+        yield {"event": "tool_call", "name": "deep_think", "arguments": args}
+        result = execute_tool_call("deep_think", args, session_id=session_id,
+                                   requested_by=RUNTIME_REQUESTED_BY)
+        hops.append({"tool": "deep_think", "status": result.get("status")})
+        tool_results.append(("deep_think", result))
+        if result.get("status") == "executed":
+            guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
+        yield {"event": "tool_result", "name": "deep_think", "status": result.get("status")}
+        conversation.append({"role": "assistant", "content": "",
+                             "tool_calls": [{"function": {"name": "deep_think", "arguments": args}}]})
+        conversation.append({"role": "tool", "tool_name": "deep_think", "name": "deep_think",
+                             "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
+        conversation.append({"role": "system", "content": escalation.SEAT_NOTE.format(reason=reason)})
 
     while True:
         offered = tools if (supports_tools and rounds < budget) else None
@@ -392,9 +428,7 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             if result.get("status") == "executed":
                 guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
             yield {"event": "tool_result", "name": name, "status": result.get("status")}
-            content = json.dumps(result, ensure_ascii=False)
-            if len(content) > cap:
-                content = content[:cap] + f" …[tool result truncated at {cap} chars]"
+            content = _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)
             conversation.append({"role": "tool", "tool_name": name, "name": name, "content": content})
 
         rounds += 1

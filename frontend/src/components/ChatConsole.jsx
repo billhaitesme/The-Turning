@@ -2,7 +2,7 @@
 // XIII-A: the stream now carries tool_call / tool_result events (the agent loop's hops); they
 // render live on an LED trace strip and persist as chips on the message they belong to.
 import { useEffect, useRef, useState } from "react";
-import { SystemBadge, phaseLabel } from "./displays.jsx";
+import { SystemBadge, fmtDateTime, phaseLabel } from "./displays.jsx";
 
 export const API_BASE = "http://127.0.0.1:8001";
 export const ASSISTANT_NAME = "0M3-G4-ARC";
@@ -542,7 +542,7 @@ export function ChatConsoleView({ chat, telemetry = null, onPopout = null, compa
                 disabled={isStreaming}
                 onClick={() => resumeConversation(item.id)}
               >
-                <span>{new Date(item.updated_at || item.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                <span>{fmtDateTime(item.updated_at || item.created_at)}</span>
                 <strong>{item.preview || item.title || item.id.slice(0, 8)}</strong>
                 <span>{item.message_count} MSG</span>
               </button>

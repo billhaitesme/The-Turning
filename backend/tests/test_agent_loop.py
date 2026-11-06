@@ -153,14 +153,17 @@ def test_hop_budget_bounds_the_loop_and_forces_a_final_answer(monkeypatch):
 def test_tool_results_into_context_are_size_capped(monkeypatch):
     monkeypatch.setenv("AGENT_LOOP_RESULT_MAX_CHARS", "200")
     monkeypatch.setattr(agent_loop, "execute_tool_call",
-                        lambda name, args, session_id: {"status": "executed", "outcome": "x" * 5000})
+                        lambda name, args, session_id: {"status": "executed",
+                                                        "outcome": "x" * 5000 + "FINAL ANSWER 13/27"})
     final, seat = run([
         {"tool_calls": [tool_call("run_host_status")]},
         {"content": "done"},
     ])
     tool_message = next(m for m in seat.calls[1]["conversation"] if m.get("role") == "tool")
     assert len(tool_message["content"]) < 300
-    assert "truncated at 200 chars" in tool_message["content"]
+    assert "chars cut to fit" in tool_message["content"]
+    # the tail survives: a deep answer's conclusion is at its end
+    assert "FINAL ANSWER 13/27" in tool_message["content"]
 
 
 def test_seat_without_tool_support_degrades_honestly():

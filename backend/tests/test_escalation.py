@@ -1,0 +1,86 @@
+"""Runtime escalation (2026-11-06): the seat answered a probability puzzle inline and
+contradicted itself; the runtime now sends clear multi-step problems up the ladder itself."""
+from __future__ import annotations
+
+import pytest
+
+from services import agent_loop, escalation
+
+GOES_UP = [
+    # the live failure, verbatim
+    "Two children, at least one is a boy born on a Tuesday. Boys and girls equally likely, all "
+    "weekdays equally likely. What's the exact probability both are boys?",
+    "A ship departs at 23:40 on Monday, steaming at 14 knots over 337 nautical miles with one "
+    "2 h 15 min stop. What time does it arrive?",
+    "How many times do the hour and minute hands overlap between 00:00 and 23:59? It's a puzzle.",
+    "Can you put together a plan for moving my stuff to Norway in late January?",
+    "If I save 400 a month at 4 percent interest, how much will I have after 3 years?",
+]
+STAYS = [
+    "Tell me a joke about robots.",
+    "That was terrible. Tell me a different one.",
+    "Think deeper about what I asked, then respond.",  # the nudge from Bill's joke chat
+    "Quickly: what are the odds it rains tomorrow in Bergen?",
+    "What's the weather in Oslo for the next three days?",
+    "How are you doing today, OMEGA?",
+    "I have 2 dogs and 3 cats.",  # numbers, no question
+    "What time is it?",  # too short
+    "Status?",
+    # the one real false positive found scanning Bill's 978 messages: an Ø2-02 body brief
+    "Operating context, for this conversation only: you are speaking and acting through a body "
+    "— a quadruped called Ø2-02. Walk speed 0.5 m/s; how long until you reach the door 3 m away?",
+    "Here is a long pasted log to read, what time did the 2 errors happen? " + "x" * 1000,
+]
+
+
+@pytest.mark.parametrize("message", GOES_UP)
+def test_clear_multi_step_problems_go_up(message):
+    assert escalation.deep_task_reason(message)
+
+
+@pytest.mark.parametrize("message", STAYS)
+def test_chat_jokes_and_quick_asks_stay_with_the_seat(message):
+    assert escalation.deep_task_reason(message) is None
+
+
+def test_the_loop_runs_deep_think_first_and_the_seat_answers_with_it(monkeypatch):
+    calls = []
+    deep_answer = {"status": "executed", "outcome": {"rung": "local", "answer": "…long reasoning… = 13/27"}}
+
+    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY):
+        calls.append((name, args))
+        assert requested_by == "runtime:escalation"  # the audit log says who really asked
+        return deep_answer
+
+    monkeypatch.setattr(agent_loop, "execute_tool_call", fake_execute)
+    seen = {}
+
+    def seat(conversation, tools, model):
+        seen["conversation"] = [dict(m) for m in conversation]
+        yield {"type": "delta", "text": "It's 13/27."}
+        yield {"type": "message", "content": "It's 13/27.", "tool_calls": []}
+
+    events = list(agent_loop.iter_agent_loop(
+        messages=[{"role": "system", "content": "sys"}, {"role": "user", "content": GOES_UP[0]}],
+        model="t", session_id="c", seat_turn=seat))
+    assert calls == [("deep_think", {"task": GOES_UP[0], "rung": "local"})]
+    kinds = [e["event"] for e in events]
+    assert kinds.index("tool_call") < kinds.index("tool_result") < kinds.index("final")
+    final = events[-1]
+    assert final["reply"].startswith(escalation.ANNOUNCE) and final["reply"].endswith("It's 13/27.")
+    assert final["hops"][0] == {"tool": "deep_think", "status": "executed"}
+    roles = [m["role"] for m in seen["conversation"]]
+    assert roles[-3:] == ["assistant", "tool", "system"]  # the seat sees the call, the result, the note
+    assert "13/27" in seen["conversation"][-2]["content"]
+    assert final["unverified_numbers"] == []  # 13/27 is grounded in the deep result
+
+
+def test_ordinary_chat_never_calls_deep_think(monkeypatch):
+    monkeypatch.setattr(agent_loop, "execute_tool_call",
+                        lambda *a, **k: pytest.fail("deep_think must not run for chat"))
+
+    def seat(conversation, tools, model):
+        yield {"type": "message", "content": "Ha.", "tool_calls": []}
+
+    list(agent_loop.iter_agent_loop(messages=[{"role": "user", "content": STAYS[0]}],
+                                    model="t", session_id="c", seat_turn=seat))

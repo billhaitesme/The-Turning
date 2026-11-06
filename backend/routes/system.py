@@ -16,7 +16,8 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
-from services import agent_loop, command_console, command_registry, deep_seat, network_breaker, toolwright
+from services import (agent_loop, command_console, command_registry, deep_seat, host_clock,
+                      network_breaker, toolwright)
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -39,6 +40,8 @@ def get_system_status(request: Request) -> Dict[str, Any]:
         "network_breaker_on": network_breaker.breaker_is_on(),
         "model_control": model_control.status(),
         "tool_framework": _tool_framework_payload(),
+        # the consoles format every time 24-hour in the HOST's zone, not the browser's
+        "host_clock": host_clock.host_clock(),
     }
 
 

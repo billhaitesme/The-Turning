@@ -2,11 +2,55 @@
 // Extracted from the App monolith in the XIII-A deck refactor; behavior preserved.
 import { useEffect, useRef, useState } from "react";
 
-export function fmtTime(value) {
-  if (!value) return "--";
+// Every console time is 24-hour in the HOST's zone (the operator reads watches in HH:MM), not
+// the browser's: a phone opening the console over Tailscale from elsewhere sees host time.
+// The status poll supplies host_clock {iana, utc_offset_minutes}; until it arrives, the
+// browser's own zone is used, still 24-hour.
+let HOST_CLOCK = null;
+
+export function setHostClock(clock) {
+  if (clock && (clock.iana || Number.isFinite(clock.utc_offset_minutes))) HOST_CLOCK = clock;
+}
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function hostParts(d) {
+  if (HOST_CLOCK?.iana) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: HOST_CLOCK.iana, hourCycle: "h23", year: "numeric", month: "numeric",
+        day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).formatToParts(d);
+      const get = (type) => Number(parts.find((p) => p.type === type)?.value);
+      return { month: get("month") - 1, day: get("day"), h: get("hour"), m: get("minute"), s: get("second") };
+    } catch { /* unknown zone name: fall through to the offset */ }
+  }
+  if (HOST_CLOCK && Number.isFinite(HOST_CLOCK.utc_offset_minutes)) {
+    const t = new Date(d.getTime() + HOST_CLOCK.utc_offset_minutes * 60000);
+    return { month: t.getUTCMonth(), day: t.getUTCDate(), h: t.getUTCHours(), m: t.getUTCMinutes(), s: t.getUTCSeconds() };
+  }
+  return { month: d.getMonth(), day: d.getDate(), h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+}
+
+function parse(value) {
+  if (!value) return null;
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "--";
-  return d.toLocaleTimeString();
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function fmtTime(value) {
+  const d = parse(value);
+  if (!d) return "--";
+  const p = hostParts(d);
+  return `${pad2(p.h)}:${pad2(p.m)}:${pad2(p.s)}`;
+}
+
+export function fmtDateTime(value) {
+  const d = parse(value);
+  if (!d) return "--";
+  const p = hostParts(d);
+  return `${p.day} ${MONTHS[p.month]} ${pad2(p.h)}:${pad2(p.m)}`;
 }
 
 export function phaseLabel(name) {
