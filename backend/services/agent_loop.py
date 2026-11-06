@@ -25,11 +25,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import httpx
 
-from services import command_console, command_registry, number_check
+from services import command_console, command_registry, number_check, repeat_guard
 
 EventGenerator = Generator[Dict[str, Any], None, None]
 # A seat turn: (conversation, tools-or-None, model) -> events ({"type": "delta"|"message", ...}).
@@ -284,22 +285,46 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
     operator_message = next((str(m.get("content") or "") for m in reversed(messages)
                              if m.get("role") == "user"), "")
 
+    guard = repeat_guard.RepeatGuard(
+        [str(m.get("content") or "") for m in messages if m.get("role") == "assistant"],
+        operator_message)
+    repeats_caught = 0
+
     while True:
         offered = tools if (supports_tools and rounds < budget) else None
         final_message: Optional[Dict[str, Any]] = None
         emitted_this_round = False
+        # The newest repeat_guard.HOLD_CHARS of visible text are held back while streaming, so a
+        # copy of an earlier reply is caught before the operator sees it.
+        round_text = ""
+        emitted_upto = 0
+        copied = False
+
+        def release(upto: int):
+            nonlocal emitted_upto, emitted_this_round
+            if upto <= emitted_upto:
+                return
+            chunk = round_text[emitted_upto:upto]
+            emitted_upto = upto
+            if reply_parts and not emitted_this_round:
+                # a readable seam between rounds of visible text
+                reply_parts.append("\n\n")
+                yield {"event": "delta", "text": "\n\n"}
+            emitted_this_round = True
+            reply_parts.append(chunk)
+            yield {"event": "delta", "text": chunk}
+
+        stream = turn(conversation, offered, model)
         try:
-            for event in turn(conversation, offered, model):
+            for event in stream:
                 if event.get("type") == "delta":
                     text = str(event.get("text") or "")
                     if text:
-                        if reply_parts and not emitted_this_round:
-                            # a readable seam between rounds of visible text
-                            reply_parts.append("\n\n")
-                            yield {"event": "delta", "text": "\n\n"}
-                        emitted_this_round = True
-                        reply_parts.append(text)
-                        yield {"event": "delta", "text": text}
+                        round_text += text
+                        if guard.copying(round_text):
+                            copied = True
+                            break
+                        yield from release(len(round_text) - repeat_guard.HOLD_CHARS)
                 elif event.get("type") == "message":
                     final_message = event
         except ToolsUnsupportedError:
@@ -307,6 +332,27 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                 raise
             supports_tools = False
             continue  # retry the same round without tools
+        finally:
+            if hasattr(stream, "close"):
+                stream.close()  # a stopped copy also stops the model's generation
+
+        if copied:
+            repeats_caught += 1
+            print(f"repeat-guard: copy caught in {session_id} (attempt {repeats_caught}, "
+                  f"{len(round_text)} chars withheld)", file=sys.stderr, flush=True)
+            if repeats_caught == 1:
+                # retry the same round with the copied replies out of reach
+                conversation = guard.withhold(conversation)
+                conversation.append({"role": "system", "content": repeat_guard.RETRY_INSTRUCTION})
+                continue
+            seam = "\n\n" if reply_parts else ""
+            reply_parts.append(seam + repeat_guard.GAVE_UP_NOTE)
+            yield {"event": "delta", "text": seam + repeat_guard.GAVE_UP_NOTE}
+            yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
+                   "seat_supports_tools": supports_tools, "eval_count": None,
+                   "unverified_numbers": [], "repeats_caught": repeats_caught}
+            return
+        yield from release(len(round_text))  # the round ended clean: flush what was held
 
         tool_calls = (final_message or {}).get("tool_calls") or []
         # offered is None once the budget is spent (or the seat rejected schemas): any tool call
@@ -322,7 +368,7 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
                    "seat_supports_tools": supports_tools,
                    "eval_count": (final_message or {}).get("eval_count"),
-                   "unverified_numbers": unverified}
+                   "unverified_numbers": unverified, "repeats_caught": repeats_caught}
             return
 
         conversation.append({"role": "assistant",
@@ -341,6 +387,8 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             result = execute_tool_call(name, arguments, session_id=session_id)
             hops.append({"tool": name, "status": result.get("status")})
             tool_results.append((name, result))
+            if result.get("status") == "executed":
+                guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
             yield {"event": "tool_result", "name": name, "status": result.get("status")}
             content = json.dumps(result, ensure_ascii=False)
             if len(content) > cap:
@@ -360,9 +408,9 @@ def run_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: st
                    seat_turn: Optional[SeatTurn] = None) -> Dict[str, Any]:
     """Non-streaming wrapper: drain the loop, return the final event."""
     final: Dict[str, Any] = {"reply": "", "hops": [], "seat_supports_tools": True, "eval_count": None,
-                             "unverified_numbers": []}
+                             "unverified_numbers": [], "repeats_caught": 0}
     for event in iter_agent_loop(messages=messages, model=model, session_id=session_id, seat_turn=seat_turn):
         if event.get("event") == "final":
             final = {k: event.get(k) for k in ("reply", "hops", "seat_supports_tools", "eval_count",
-                                               "unverified_numbers")}
+                                               "unverified_numbers", "repeats_caught")}
     return final
