@@ -1708,7 +1708,10 @@ def build_ollama_messages(*, history, user_message, user_profile, memories, web_
         print("Prompt reasoning warning:", repr(exc))
 
     memory_block = build_memory_block(memories)
-    history_block = build_history_block(history)
+    # History is NOT rendered into the system message: it is already sent below as real
+    # user/assistant turns. Rendering it twice doubled every history token (2026-11-06: prompts
+    # reached 8058 of the 8192-token window, and Ollama truncates from the FRONT — the
+    # constitution and identity go first). build_history_block stays for other callers.
 
     web_block = "\n".join(
         f"- {item['title']}: {item['snippet']} ({item['url']})"
@@ -1776,9 +1779,6 @@ Adaptive guidance:
 
 Relevant memory:
 {memory_block}
-
-Recent history:
-{history_block}
 
 Web search results:
 {web_block}
