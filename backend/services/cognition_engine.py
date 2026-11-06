@@ -38,12 +38,12 @@ PROJECT_PATTERNS = (
     r"\bmy project is\s+([A-Za-z0-9][A-Za-z0-9 _\-]{1,80})",
 )
 
+# Only deliberate goal-setting creates a goal. "I want to / we need to / let's / I plan to" used
+# to count, and casual chat filled the goal store with active goals + plans nobody set
+# (2026-11-06: "Rerine them as much as you want", "Know: what can you actually do for me?").
 GOAL_PATTERNS = (
     r"\bmy goal is to\s+(.+)",
-    r"\bi want to\s+(.+)",
-    r"\bi plan to\s+(.+)",
-    r"\bwe need to\s+(.+)",
-    r"\blet's\s+(.+)",
+    r"\b(?:new goal|set (?:a )?goal|add (?:a )?goal)\s*[:\-]\s*(.+)",
 )
 
 PORT_PATTERN = re.compile(

@@ -82,11 +82,29 @@ def test_fetch_refuses_local_and_private_addresses_even_with_breaker_on(client):
         assert r.status_code == 422, f"{url} must be refused: {r.text}"
 
 
+def test_fetch_refuses_a_public_name_that_resolves_private(client, monkeypatch):
+    """Hotel Wi-Fi 2026-11-06 answered example.com with 127.0.0.1: the guard checks the ANSWER."""
+    from services.adapters import web_fetch
+    monkeypatch.setattr(web_fetch.socket, "getaddrinfo",
+                        lambda host, *a, **k: [(2, 1, 6, "", ("127.0.0.1", 0))])
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    TOOL_REGISTRY["web_fetch"]["adapter"]._fetch_fn = lambda url: (200, "<p>should not run</p>")
+    r = client.post("/system/commands/web_fetch", json={"arguments": {"url": "https://example.com/page"}})
+    assert r.status_code == 422 and "private" in r.json()["detail"]
+
+
 def test_loop_feeds_the_breaker_refusal_back_as_a_refusal():
     network_breaker.set_breaker(False, changed_by="test", channel="test")
     result = agent_loop.execute_tool_call("web_search", {"query": "anything"}, session_id="xiii-b-test")
     assert result["status"] == "refused"
     assert "breaker is OFF" in result["detail"]
+
+
+def test_the_real_search_backend_imports():
+    """Every live search failed 'No module named duckduckgo_search' until 2026-11-06: the
+    package is ddgs now. The stubbed tests above could never have caught that."""
+    from services.adapters import web_search
+    assert hasattr(web_search._load_ddgs(), "text")
 
 
 def test_extract_text_strips_script_and_style():

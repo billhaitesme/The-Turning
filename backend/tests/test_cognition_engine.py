@@ -29,6 +29,19 @@ class CognitionEngineTests(unittest.TestCase):
             ["add vision routing"],
         )
 
+    def test_explicit_goal_commands_count(self):
+        self.assertEqual(extract_explicit_goals("New goal: map the garage"), ["map the garage"])
+        self.assertEqual(extract_explicit_goals("set a goal - learn Norwegian"), ["learn Norwegian"])
+
+    def test_casual_chat_is_not_a_goal(self):
+        for line in ("Rerine them as much as you want",
+                     "I want to know: what can you actually do for me?",
+                     "let's check the canned reply fix",
+                     "we need to talk about the dog",
+                     "I plan to sleep soon"):
+            with self.subTest(line=line):
+                self.assertEqual(extract_explicit_goals(line), [])
+
     def test_detects_backend_port(self):
         self.assertEqual(
             extract_explicit_backend_port(

@@ -24,6 +24,30 @@ import app  # noqa: E402,F401  (import order is the point)
 os.environ["ENABLE_AGENT_LOOP"] = "false"
 
 
+import socket  # noqa: E402
+
+import pytest  # noqa: E402
+
+# Public-looking hosts the tests use, pinned to a public address. Without this the web_fetch
+# private-address guard answers to whatever DNS the PC is on: hotel Wi-Fi (2026-11-06) resolved
+# example.com to 127.0.0.1, so the guard refused it and two tests failed for network reasons.
+_PINNED_PUBLIC_HOSTS = {"example.com": "93.184.215.14"}
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_dns(monkeypatch):
+    real_getaddrinfo = socket.getaddrinfo
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        pinned = _PINNED_PUBLIC_HOSTS.get(str(host).lower())
+        if pinned:
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (pinned, 0))]
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    from services.adapters import web_fetch
+    monkeypatch.setattr(web_fetch.socket, "getaddrinfo", fake_getaddrinfo)
+
+
 @atexit.register
 def _remove_test_runtime_dir() -> None:
     shutil.rmtree(_TEST_RUNTIME_DIR, ignore_errors=True)
