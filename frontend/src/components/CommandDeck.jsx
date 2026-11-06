@@ -23,6 +23,7 @@ export default function CommandDeck({ playCue = () => {} }) {
   const [params, setParams] = useState({});
   const [error, setError] = useState("");
   const [breaker, setBreaker] = useState({ on: false, changed_at: null });
+  const [deepSeat, setDeepSeat] = useState({ model: "", choices: [], changed_at: null });
   const [fetchLog, setFetchLog] = useState([]);
   const [capRequests, setCapRequests] = useState([]);
   const [capNeed, setCapNeed] = useState("");
@@ -45,17 +46,19 @@ export default function CommandDeck({ playCue = () => {} }) {
 
   async function refreshSenses() {
     try {
-      const [b, f, t, fc] = await Promise.all([
+      const [b, f, t, fc, ds] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/faces`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/system/deep-seat`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
       if (f) setFetchLog(f.entries || []);
       if (t) setCapRequests(t.requests || []);
       if (fc) setFaces(fc);
+      if (ds) setDeepSeat(ds);
     } catch { /* same */ }
   }
 
@@ -109,6 +112,22 @@ export default function CommandDeck({ playCue = () => {} }) {
       if (res.ok) {
         setBreaker(await res.json());
         playCue(breaker.on ? "ack" : "verified");
+      }
+    } catch { /* surfaces on next poll */ }
+  }
+
+  async function chooseDeepSeat(model) {
+    if (model === deepSeat.model) return;
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/system/deep-seat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, changed_by: "desktop-console" }),
+      });
+      if (res.ok) {
+        setDeepSeat(await res.json());
+        playCue("verified");
       }
     } catch { /* surfaces on next poll */ }
   }
@@ -294,6 +313,28 @@ export default function CommandDeck({ playCue = () => {} }) {
           </div>
         </div>
       ) : null}
+
+      <div className="command-deck-section">
+        <small className="command-deck-label">THE MIND LADDER // DEEP THINKING SEAT</small>
+        <div className="deep-seat-row">
+          {deepSeat.choices.map((choice) => (
+            <button
+              key={choice.model}
+              type="button"
+              className={`deep-seat-choice ${choice.model === deepSeat.model ? "is-active" : ""}`}
+              onClick={() => chooseDeepSeat(choice.model)}
+              title={choice.model}
+            >
+              <strong>{choice.label}</strong>
+              <span>{choice.note}</span>
+            </button>
+          ))}
+        </div>
+        <small className="deep-seat-meta">
+          OMEGA decides WHEN to think deep; you choose WHICH model does it.
+          {deepSeat.changed_at ? ` Last switched ${fmtTime(deepSeat.changed_at)}.` : ""}
+        </small>
+      </div>
 
       <div className="command-deck-section">
         <small className="command-deck-label">

@@ -3,9 +3,9 @@
 Identity, memory, rooms, gates, and records live on local disk, always; the brains are rungs the
 runtime climbs as a task demands:
 
-  rung "local"    — the deep local gear: a larger model thinking hard in system RAM
-                    (DEEP_LOCAL_MODEL, lead: abliterated Qwen3-30B-A3B MoE). Slow by design —
-                    minutes, not seconds — trading speed for depth. No network, no breaker.
+  rung "local"    — the deep local gear: a model thinking hard (think=True). WHICH model is the
+                    operator's console switch (services/deep_seat.py): the 8B day to day, the
+                    30B-A3B MoE for heavy sessions. Minutes, not seconds. No network, no breaker.
   rung "frontier" — the cloud planner (GROQ_PLANNER_MODEL via the operator's GROQ_API_KEY).
                     A network call, so it executes only while the network breaker is ON, and
                     every call lands in the fetch log like any other egress.
@@ -50,7 +50,8 @@ def _compose_prompt(task: str, context: str) -> str:
 
 def _local_think(prompt: str) -> Tuple[str, str]:
     base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
-    model = os.getenv("DEEP_LOCAL_MODEL", "huihui_ai/qwen3-abliterated:30b-a3b")
+    from services import deep_seat  # the operator's console switch (8B light / 30B heavy)
+    model = deep_seat.local_model()
     try:
         response = httpx.post(
             f"{base}/chat",

@@ -16,7 +16,7 @@ from services.evidence_engine import (
     save_evidence_store,
     save_session_evidence_store,
 )
-from services import agent_loop, command_console, command_registry, network_breaker, toolwright
+from services import agent_loop, command_console, command_registry, deep_seat, network_breaker, toolwright
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -63,6 +63,32 @@ def set_network_breaker(req: BreakerRequest) -> Dict[str, Any]:
                                         channel="desktop")
     state["history"] = (state.get("history") or [])[-20:][::-1]
     return state
+
+
+# ----------------------------------------------------------------------- the deep rung's seat
+class DeepSeatRequest(BaseModel):
+    model: str = Field(max_length=200)
+    changed_by: str = Field(default="operator", max_length=120)
+
+
+@router.get("/deep-seat")
+def get_deep_seat() -> Dict[str, Any]:
+    data = deep_seat.state()
+    data["history"] = (data.get("history") or [])[-10:][::-1]
+    return data
+
+
+@router.post("/deep-seat")
+def set_deep_seat(req: DeepSeatRequest) -> Dict[str, Any]:
+    """Which model is the LOCAL deep rung — a recorded operator action from a console. No
+    registry command maps here: the model chooses local vs frontier, never which local model."""
+    try:
+        data = deep_seat.set_local_model(req.model, changed_by=f"operator:{req.changed_by}",
+                                         channel="desktop")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    data["history"] = (data.get("history") or [])[-10:][::-1]
+    return data
 
 
 @router.get("/fetch-log")
