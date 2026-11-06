@@ -380,7 +380,7 @@ export default function CommandDeck({ playCue = () => {} }) {
                     {req.status === "verified" ? "INDUCT" : "COMPLETE"}
                   </button>
                 ) : null}
-                {req.status !== "inducted" && req.status !== "denied" ? (
+                {!["inducted", "denied", "superseded"].includes(req.status) ? (
                   <button type="button" className="cap-deny" onClick={() => capAction(req.request_id, "deny")}>DENY</button>
                 ) : null}
               </div>

@@ -98,6 +98,20 @@ def get_request(request_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _inducted_owner(name: str, *, excluding: str = "") -> Optional[Dict[str, Any]]:
+    """The request whose inducted spec currently holds this tool name, if the Toolwright owns it.
+    Built-in tools and commands are never Toolwright-owned, so they can never be revised."""
+    from services.command_registry import COMMANDS
+
+    if any(c["name"] == name for c in COMMANDS):
+        return None
+    for e in _load_store().get("requests", []):
+        if (e.get("request_id") != excluding and e.get("status") == "inducted"
+                and isinstance(e.get("candidate"), dict) and e["candidate"].get("name") == name):
+            return e
+    return None
+
+
 def inducted_specs() -> List[Dict[str, Any]]:
     return [deepcopy(e["candidate"]) for e in _load_store().get("requests", [])
             if e.get("status") == "inducted" and isinstance(e.get("candidate"), dict)]
@@ -199,9 +213,20 @@ def verify_candidate(request_id: str) -> Dict[str, Any]:
                       "fixture covers required params")
         from services.command_registry import get_command
         from services.tool_registry import get_tool
-        if get_tool(spec["name"]) is not None or get_command(spec["name"]) is not None:
+        revises = _inducted_owner(spec["name"], excluding=request_id)
+        if revises is not None:
+            # A REVISION of a tool the Toolwright itself inducted (found 2026-11-06: the inducted
+            # weather_forecast reported km/h, the seat called it m/s, and no path existed to
+            # replace it short of hand-editing a live spec past the biometric). The old version
+            # stays live until this one passes induction; built-ins can never be revised.
+            entry["replaces"] = revises["request_id"]
+            checks.append(f"revises Toolwright tool '{spec['name']}' ({revises['request_id']}); "
+                          "the inducted version stays live until this one is inducted")
+        elif get_tool(spec["name"]) is not None or get_command(spec["name"]) is not None:
             raise ValueError(f"Name collision: '{spec['name']}' already exists in the registry.")
-        checks.append("no name collision with registered tools or commands")
+        else:
+            entry.pop("replaces", None)
+            checks.append("no name collision with registered tools or commands")
         build_descriptor(spec)
         checks.append("descriptor builds and validates")
         # One fixture call through the breaker — logged like any egress. Fails plainly if the
@@ -298,9 +323,15 @@ def complete_induction(request_id: str) -> Dict[str, Any]:
         raise PermissionError("Induction requires the operator's BIOMETRIC confirmation on a "
                               "mobile console — a plain approval does not admit a tool.")
     spec = entry["candidate"]
-    from services.tool_registry import TOOL_REGISTRY, register_tool
+    from services.tool_registry import TOOL_REGISTRY, register_tool, unregister_tool
 
-    if spec["name"] not in TOOL_REGISTRY:
+    old = get_request(entry["replaces"]) if entry.get("replaces") else None
+    if old is not None and old.get("status") == "inducted" and old["candidate"].get("name") == spec["name"]:
+        unregister_tool(spec["name"])
+        register_tool(build_descriptor(spec), SpecToolAdapter(spec))
+        _mark(old, "superseded", f"superseded by {request_id} (biometric-approved revision)")
+        _upsert(old)
+    elif spec["name"] not in TOOL_REGISTRY:
         register_tool(build_descriptor(spec), SpecToolAdapter(spec))
     consume_approval(entry["induction"]["approval_id"])
     entry["induction"]["inducted_at"] = utc_now_iso()
@@ -313,8 +344,8 @@ def deny_request(request_id: str, *, denied_by: str) -> Dict[str, Any]:
     entry = get_request(request_id)
     if entry is None:
         raise LookupError(f"Unknown capability request {request_id}.")
-    if entry["status"] == "inducted":
-        raise ValueError("An inducted tool is not denied; deregistration is its own action.")
+    if entry["status"] in ("inducted", "superseded"):
+        raise ValueError(f"A {entry['status']} tool is not denied; deregistration is its own action.")
     shutil.rmtree(_quarantine_dir(request_id), ignore_errors=True)  # denial deletes the quarantine
     _mark(entry, "denied", f"denied by {denied_by}; quarantine deleted")
     return _upsert(entry)

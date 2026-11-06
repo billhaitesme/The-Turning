@@ -137,6 +137,47 @@ def test_a_live_approval_is_not_re_raised(client):
     assert client.post(f"/system/toolwright/requests/{request_id}/induct").status_code == 403
 
 
+def _induct(client, request_id):
+    induction = client.post(f"/system/toolwright/requests/{request_id}/induct").json()["request"]["induction"]
+    tool_approval.approve_request(induction["request_id"], approved_by="operator", confirmation="biometric")
+    return client.post(f"/system/toolwright/requests/{request_id}/induct")
+
+
+def test_an_inducted_tool_is_revised_only_through_a_new_biometric_induction(client, monkeypatch):
+    """2026-11-06: weather_forecast reported km/h and the seat said m/s; there was no way to
+    replace an inducted tool except hand-editing a live spec past the biometric."""
+    first, _ = _file_and_prepare(client)
+    assert _induct(client, first).json()["request"]["status"] == "inducted"
+    old_url = toolwright.get_request(first)["candidate"]["url_template"]
+
+    # the catalog's weather_now changes; a new request for it verifies as a REVISION
+    revised = dict(next(c for c in toolwright._load_catalog() if c["name"] == "weather_now"))
+    revised["url_template"] += "&wind_speed_unit=ms"
+    monkeypatch.setattr(toolwright, "_load_catalog", lambda: [revised])
+    second, prepared = _file_and_prepare(client)
+    assert prepared.status_code == 200, prepared.text
+    entry = prepared.json()["request"]
+    assert entry["status"] == "verified" and entry["replaces"] == first
+    assert any("revises Toolwright tool" in c for c in entry["verification"]["checks"])
+    # until the operator's biometric, the OLD version is what runs
+    assert TOOL_REGISTRY["weather_now"]["adapter"].spec["url_template"] == old_url
+
+    assert _induct(client, second).json()["request"]["status"] == "inducted"
+    assert toolwright.get_request(first)["status"] == "superseded"
+    assert TOOL_REGISTRY["weather_now"]["adapter"].spec["url_template"].endswith("wind_speed_unit=ms")
+    assert [s["url_template"] for s in toolwright.inducted_specs()] == [revised["url_template"]]
+    # a superseded entry is history, not something to deny
+    assert client.post(f"/system/toolwright/requests/{first}/deny").status_code == 422
+
+
+def test_a_builtin_command_name_can_never_be_revised(client, monkeypatch):
+    spec = dict(next(c for c in toolwright._load_catalog() if c["name"] == "weather_now"))
+    spec["name"] = "check_capability_requests"  # a built-in command
+    monkeypatch.setattr(toolwright, "_load_catalog", lambda: [spec])
+    request_id, prepared = _file_and_prepare(client)
+    assert prepared.status_code == 422 and "Name collision" in prepared.json()["detail"]
+
+
 def test_every_catalog_entry_is_a_valid_unique_spec():
     from services.tool_registry import get_tool
     entries = toolwright._load_catalog()

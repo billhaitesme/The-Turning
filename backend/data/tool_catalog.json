@@ -70,11 +70,11 @@
     {
       "name": "weather_forecast",
       "title": "3-day forecast",
-      "description": "Three-day daily forecast for a latitude/longitude in local time: high/low temperature, precipitation, max wind, sunrise and sunset, from the keyless Open-Meteo API.",
+      "description": "Three-day daily forecast for a latitude/longitude in local time: high/low temperature (°C), precipitation (mm), max wind (m/s), sunrise and sunset, from the keyless Open-Meteo API.",
       "command_category": "acquired",
       "tags": ["forecast", "tomorrow", "week", "days", "daily", "sunrise", "sunset", "daylight", "precipitation", "snow", "plan"],
       "method": "GET",
-      "url_template": "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&timezone=auto&forecast_days=3",
+      "url_template": "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&wind_speed_unit=ms&timezone=auto&forecast_days=3",
       "params": [
         {"name": "latitude", "type": "number", "label": "Latitude", "required": true},
         {"name": "longitude", "type": "number", "label": "Longitude", "required": true}
