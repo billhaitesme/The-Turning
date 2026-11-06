@@ -239,6 +239,26 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"capability_request_id": filed["request_id"], "status": filed["status"],
                 "note": "Filed. The Toolwright pipeline (find → quarantine → verify → biometric "
                         "induction) decides whether this becomes a tool; filing is not having."}
+    if command["name"] == "check_capability_requests":
+        # Read-only view of the Toolwright, so the seat reports where a request stands from the
+        # store instead of from memory (added 2026-11-06 in the first Toolwright workshop).
+        from services.toolwright import inducted_specs, list_requests, shelf_summary
+        requests = [{
+            "capability_request_id": r.get("request_id"),
+            "need": r.get("need"),
+            "status": r.get("status"),
+            "matched_tool": (r.get("candidate") or {}).get("name"),
+            "requested_by": r.get("requested_by"),
+            "filed_at": r.get("filed_at"),
+            "last_event": ((r.get("history") or [{}])[-1]).get("event"),
+        } for r in list_requests()[:20]]
+        return {
+            "requests": requests,
+            "inducted_tools": [s.get("name") for s in inducted_specs()],
+            "shelf": shelf_summary(),
+            "note": "Only 'inducted' tools are usable. 'verified' and 'awaiting_induction' wait on "
+                    "the operator's biometric induction; say so, never claim the tool exists.",
+        }
     if command.get("tool_name"):
         return _execute_direct_tool(command, {**(command.get("arguments") or {}), **(arguments or {})})
     raise CommandError(500, f"No direct handler for {command['name']}")

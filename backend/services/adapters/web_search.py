@@ -15,18 +15,26 @@ from services.tool_contracts import validate_tool_definition
 MAX_RESULTS_CAP = 8
 
 
-def _ddg_search(query: str, max_results: int) -> List[Dict[str, str]]:
-    from duckduckgo_search import DDGS
+def _load_ddgs():
+    # The package was renamed duckduckgo_search -> ddgs; requirements.txt pins ddgs. Importing the
+    # old name only made every search fail with "No module named 'duckduckgo_search'" (found
+    # 2026-11-06 when the seat tried its senses for the first time on the live house).
+    try:
+        from ddgs import DDGS
+    except ImportError:  # an older venv that still carries the original package
+        from duckduckgo_search import DDGS
+    return DDGS
 
-    with DDGS() as ddgs:
-        items = []
-        for item in ddgs.text(query, max_results=max_results):
-            items.append({
-                "title": str(item.get("title") or "")[:200],
-                "url": str(item.get("href") or "")[:500],
-                "snippet": str(item.get("body") or "")[:400],
-            })
-        return items
+
+def _ddg_search(query: str, max_results: int) -> List[Dict[str, str]]:
+    items = []
+    for item in _load_ddgs()().text(query, max_results=max_results) or []:
+        items.append({
+            "title": str(item.get("title") or "")[:200],
+            "url": str(item.get("href") or item.get("url") or "")[:500],
+            "snippet": str(item.get("body") or "")[:400],
+        })
+    return items
 
 
 class WebSearchAdapter:

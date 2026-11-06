@@ -27,6 +27,9 @@ def client(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def clean_slate(monkeypatch):
+    # each test starts with an empty Toolwright store: an earlier test's inducted weather_now
+    # otherwise collides with the next test's verification (order-dependent results)
+    toolwright._store_path().unlink(missing_ok=True)
     network_breaker.set_breaker(True, changed_by="test", channel="test")
     # the fixture/network touchpoint is stubbed: the suite never reaches the real internet
     monkeypatch.setattr(spec_tool, "_http_get",
@@ -104,6 +107,64 @@ def test_induction_demands_the_biometric_and_then_the_tool_lives(client):
     assert client.post(f"/system/toolwright/requests/{request_id}/induct").status_code == 422
 
 
+def test_an_unanswered_induction_prompt_can_be_raised_again(client):
+    """Approvals live 5 minutes. An unanswered phone prompt used to strand the request in
+    awaiting_induction forever (2026-11-06); the next press now raises a fresh approval."""
+    request_id, _ = _file_and_prepare(client)
+    first = client.post(f"/system/toolwright/requests/{request_id}/induct").json()["request"]["induction"]
+    store = tool_approval.load_tool_approval_store()
+    for approval in store["approvals"]:
+        if approval["approval_id"] == first["approval_id"]:
+            approval["expires_at"] = "2000-01-01T00:00:00+00:00"  # the prompt lapsed overnight
+    tool_approval.save_tool_approval_store(store)
+    assert toolwright.induction_approval_is_dead(toolwright.get_request(request_id))
+    r = client.post(f"/system/toolwright/requests/{request_id}/induct")
+    assert r.status_code == 200, r.text
+    again = r.json()["request"]
+    assert again["status"] == "awaiting_induction"
+    assert again["induction"]["approval_id"] != first["approval_id"]
+    # and the fresh approval completes the induction the normal way
+    tool_approval.approve_request(again["induction"]["request_id"], approved_by="operator",
+                                  confirmation="biometric")
+    r = client.post(f"/system/toolwright/requests/{request_id}/induct")
+    assert r.status_code == 200 and r.json()["request"]["status"] == "inducted"
+
+
+def test_a_live_approval_is_not_re_raised(client):
+    request_id, _ = _file_and_prepare(client)
+    client.post(f"/system/toolwright/requests/{request_id}/induct")
+    assert not toolwright.induction_approval_is_dead(toolwright.get_request(request_id))
+    assert client.post(f"/system/toolwright/requests/{request_id}/induct").status_code == 403
+
+
+def test_every_catalog_entry_is_a_valid_unique_spec():
+    from services.tool_registry import get_tool
+    entries = toolwright._load_catalog()
+    names = [e["name"] for e in entries]
+    assert len(names) == len(set(names))
+    for entry in entries:
+        spec = spec_tool.validate_spec(entry)
+        spec_tool.build_descriptor(spec)
+        assert get_tool(spec["name"]) is None or spec["name"] in toolwright.inducted_specs(), spec["name"]
+
+
+@pytest.mark.parametrize("need, why, expected", [
+    # the seat's own words, filed 2026-11-06 in the first Toolwright workshop
+    ("turn a place name into coordinates",
+     "Bill needs this to input precise locations into weather and sea state tools", "geocode_place"),
+    ("multi-day forecast with sunrise and sunset",
+     "plan his watch duties and daily schedule; daylight hours vary in Norway", "weather_forecast"),
+    ("current sea state data", "assess sea conditions: wave height, swell, and sea temperature",
+     "marine_conditions"),
+    ("USD to NOK exchange rate", "manage his finances during the move to Norway", "exchange_rate"),
+    ("what is the weather and temperature outside", "operator asked", "weather_now"),
+    ("what time is it in Oslo", "timezone for a call", "world_time"),
+])
+def test_find_routes_real_needs_to_the_right_shelf(need, why, expected):
+    entry = toolwright.file_request(need, why, requested_by="test", session_id="test")
+    assert toolwright.find_candidate(entry["request_id"])["candidate"]["name"] == expected
+
+
 def test_denial_deletes_the_quarantine(client):
     request_id, _ = _file_and_prepare(client)
     assert (toolwright._quarantine_dir(request_id) / "spec.json").exists()
@@ -124,6 +185,21 @@ def test_the_seat_can_file_a_gap_but_filing_is_not_having(client):
     assert "not having" in outcome["note"]
     filed = toolwright.get_request(outcome["capability_request_id"])
     assert filed["status"] == "proposed" and filed["requested_by"] == "model:agent-seat"
+
+
+def test_the_seat_reads_where_its_requests_stand(client):
+    from services import agent_loop
+    request_id, _ = _file_and_prepare(client)
+    result = agent_loop.execute_tool_call("check_capability_requests", {}, session_id="chat-test")
+    assert result["status"] == "executed", result
+    outcome = result["outcome"]
+    mine = next(r for r in outcome["requests"] if r["capability_request_id"] == request_id)
+    assert mine["status"] == "verified" and mine["matched_tool"] == "weather_now"
+    assert outcome["inducted_tools"] == []
+    assert {"geocode_place", "marine_conditions"} <= {s["name"] for s in outcome["shelf"]}
+    assert "never claim" in outcome["note"]
+    # it is offered to the seat as a tool
+    assert "check_capability_requests" in {s["function"]["name"] for s in agent_loop.build_tool_schemas()}
 
 
 def test_spec_contract_refuses_the_dangerous_shapes():

@@ -134,6 +134,13 @@ def _load_catalog() -> List[Dict[str, Any]]:
     return data.get("entries", []) if isinstance(data, dict) else []
 
 
+def shelf_summary() -> List[Dict[str, str]]:
+    """What the stocked catalog can supply, one line each — lets the seat file needs the shelf can
+    actually meet (and say plainly when it cannot)."""
+    return [{"name": str(c.get("name")), "title": str(c.get("title") or ""),
+             "description": str(c.get("description") or "")[:200]} for c in _load_catalog()]
+
+
 def find_candidate(request_id: str) -> Dict[str, Any]:
     entry = get_request(request_id)
     if entry is None:
@@ -223,12 +230,41 @@ def verify_candidate(request_id: str) -> Dict[str, Any]:
 
 
 # ----------------------------------------------------------------------------- 5. induct
+def induction_approval_is_dead(entry: Dict[str, Any]) -> bool:
+    """True when a request awaiting induction holds an approval that can never complete it:
+    expired (by status or by clock), rejected, revoked, or gone. Approvals live 5 minutes by
+    default, so an unanswered phone prompt used to strand the request in awaiting_induction
+    forever — the only exit was denial, which deletes the verified quarantine (found 2026-11-06)."""
+    if entry.get("status") != "awaiting_induction":
+        return False
+    from datetime import datetime, timezone
+
+    from services.tool_approval import get_tool_approval, load_tool_approval_store
+
+    approval = get_tool_approval((entry.get("induction") or {}).get("approval_id") or "",
+                                 load_tool_approval_store())
+    if not approval or approval.get("consumed_at"):
+        return not approval
+    if approval.get("status") in {"expired", "rejected", "revoked"}:
+        return True
+    if approval.get("status") == "approved":
+        return False  # a live approval completes on the next press
+    try:
+        expires_at = datetime.fromisoformat(str(approval.get("expires_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    return expires_at <= datetime.now(timezone.utc)
+
+
 def request_induction(request_id: str, *, requested_by: str) -> Dict[str, Any]:
     entry = get_request(request_id)
     if entry is None:
         raise LookupError(f"Unknown capability request {request_id}.")
-    if entry["status"] != "verified":
+    reraise = induction_approval_is_dead(entry)
+    if entry["status"] != "verified" and not reraise:
         raise ValueError("Induction is requested on a verified candidate.")
+    if reraise:
+        _mark(entry, "verified", "previous induction approval lapsed unanswered; raising a fresh one")
     from services.tool_approval import create_approval_request
 
     request = build_tool_request(

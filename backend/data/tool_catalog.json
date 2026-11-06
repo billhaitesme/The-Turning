@@ -38,18 +38,85 @@
     {
       "name": "world_time",
       "title": "World time",
-      "description": "Current date, time, UTC offset, and day-of-year for an IANA timezone, from the keyless WorldTimeAPI.",
+      "description": "Current local date, time, day of week, and DST state for an IANA timezone, from the keyless timeapi.io. (Restocked 2026-11-06: worldtimeapi.org resets connections and failed every fetch.)",
       "command_category": "acquired",
-      "tags": ["time", "timezone", "clock", "date", "utc", "hour", "zone"],
+      "tags": ["time", "timezone", "clock", "date", "utc", "hour", "zone", "local"],
       "method": "GET",
-      "url_template": "https://worldtimeapi.org/api/timezone/{timezone}",
+      "url_template": "https://timeapi.io/api/time/current/zone?timeZone={timezone}",
       "params": [
-        {"name": "timezone", "type": "text", "label": "IANA timezone (e.g. America/Chicago)", "required": true}
+        {"name": "timezone", "type": "text", "label": "IANA timezone (e.g. America/Chicago, Europe/Oslo)", "required": true}
       ],
       "output_path": "",
       "max_output_chars": 2000,
       "fixture": {"args": {"timezone": "America/Chicago"}},
-      "source": "catalog:worldtimeapi.org"
+      "source": "catalog:timeapi.io"
+    },
+    {
+      "name": "geocode_place",
+      "title": "Find a place",
+      "description": "Turns a place name into coordinates: up to 3 matches with latitude, longitude, country, region, timezone, and population, from the keyless Open-Meteo geocoding API. Use it before any latitude/longitude tool.",
+      "command_category": "acquired",
+      "tags": ["geocode", "geocoding", "place", "places", "city", "town", "location", "coordinates", "latitude", "longitude", "where", "map", "name"],
+      "method": "GET",
+      "url_template": "https://geocoding-api.open-meteo.com/v1/search?name={name}&count=3&format=json",
+      "params": [
+        {"name": "name", "type": "text", "label": "Place name (e.g. Bergen, Trenton)", "required": true}
+      ],
+      "output_path": "results",
+      "max_output_chars": 3000,
+      "fixture": {"args": {"name": "Bergen"}},
+      "source": "catalog:open-meteo.com"
+    },
+    {
+      "name": "weather_forecast",
+      "title": "3-day forecast",
+      "description": "Three-day daily forecast for a latitude/longitude in local time: high/low temperature, precipitation, max wind, sunrise and sunset, from the keyless Open-Meteo API.",
+      "command_category": "acquired",
+      "tags": ["forecast", "tomorrow", "week", "days", "daily", "sunrise", "sunset", "daylight", "precipitation", "snow", "plan"],
+      "method": "GET",
+      "url_template": "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&timezone=auto&forecast_days=3",
+      "params": [
+        {"name": "latitude", "type": "number", "label": "Latitude", "required": true},
+        {"name": "longitude", "type": "number", "label": "Longitude", "required": true}
+      ],
+      "output_path": "daily",
+      "max_output_chars": 3000,
+      "fixture": {"args": {"latitude": 60.39, "longitude": 5.32}},
+      "source": "catalog:open-meteo.com"
+    },
+    {
+      "name": "marine_conditions",
+      "title": "Sea state",
+      "description": "Current sea state at a latitude/longitude: wave height/direction/period, swell height/direction, sea surface temperature, and ocean current, from the keyless Open-Meteo marine API. Model data for planning, NOT for navigation.",
+      "command_category": "acquired",
+      "tags": ["marine", "sea", "seas", "ocean", "wave", "waves", "swell", "current", "currents", "water", "watch", "ship", "mariner", "boat", "sailing"],
+      "method": "GET",
+      "url_template": "https://marine-api.open-meteo.com/v1/marine?latitude={latitude}&longitude={longitude}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,sea_surface_temperature,ocean_current_velocity,ocean_current_direction",
+      "params": [
+        {"name": "latitude", "type": "number", "label": "Latitude", "required": true},
+        {"name": "longitude", "type": "number", "label": "Longitude", "required": true}
+      ],
+      "output_path": "",
+      "max_output_chars": 3000,
+      "fixture": {"args": {"latitude": 60.39, "longitude": 5.2}},
+      "source": "catalog:open-meteo.com"
+    },
+    {
+      "name": "exchange_rate",
+      "title": "Exchange rate",
+      "description": "Latest reference exchange rate between two currencies (ISO codes such as USD, NOK, EUR), from the keyless Frankfurter API (European Central Bank data, updated on working days).",
+      "command_category": "acquired",
+      "tags": ["currency", "currencies", "exchange", "rate", "money", "convert", "conversion", "dollar", "dollars", "krone", "kroner", "nok", "usd", "eur", "euro"],
+      "method": "GET",
+      "url_template": "https://api.frankfurter.dev/v1/latest?from={base}&to={target}",
+      "params": [
+        {"name": "base", "type": "text", "label": "From currency (ISO code, e.g. USD)", "required": true},
+        {"name": "target", "type": "text", "label": "To currency (ISO code, e.g. NOK)", "required": true}
+      ],
+      "output_path": "",
+      "max_output_chars": 1000,
+      "fixture": {"args": {"base": "USD", "target": "NOK"}},
+      "source": "catalog:frankfurter.dev"
     }
   ]
 }

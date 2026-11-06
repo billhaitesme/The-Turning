@@ -157,7 +157,7 @@ def induct_capability_request(request_id: str) -> Dict[str, Any]:
         entry = toolwright.get_request(request_id)
         if entry is None:
             raise HTTPException(status_code=404, detail=f"Unknown capability request {request_id}.")
-        if entry["status"] == "verified":
+        if entry["status"] == "verified" or toolwright.induction_approval_is_dead(entry):
             entry = toolwright.request_induction(request_id, requested_by="operator:desktop")
             return {"request": entry,
                     "note": "Approval raised — confirm with the biometric on a mobile console, "

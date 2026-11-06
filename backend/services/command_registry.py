@@ -222,6 +222,19 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "check_capability_requests",
+        "title": "Toolwright status",
+        "description": "Read the Toolwright: every capability request with its status (proposed, "
+                       "found, verified, awaiting_induction, inducted, denied, failed) and matched "
+                       "tool, plus the stocked shelf it can find from. Read-only. Check this before "
+                       "filing (the need may already be filed) and before telling the operator "
+                       "where a request stands.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "toolwright",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",
         "description": "Silently change which model answers, or rewrite responses. Forbidden by Model Lock "
