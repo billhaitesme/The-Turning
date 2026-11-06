@@ -98,10 +98,37 @@ def test_transcribe_returns_the_heard_text(client, monkeypatch):
             return [FakeSegment()], FakeInfo()
 
     monkeypatch.setattr(voice_routes, "_get_whisper", lambda: FakeWhisper())
+    monkeypatch.setattr(voice_routes, "_decode_to_16k_mono", lambda _audio: [0.0] * 16000)
     r = client.post("/voice/transcribe", content=b"\x00" * 4000)
     assert r.status_code == 200, r.text
     assert r.json()["text"] == "hello omega"
     assert client.post("/voice/transcribe", content=b"").status_code == 422
+
+
+def test_decoder_reads_real_audio_to_16k_mono():
+    """The ears decode audio themselves (faster-whisper's decoder broke under PyAV 19).
+
+    A 1 s 44.1 kHz stereo WAV must come out as ~16000 float32 mono samples.
+    """
+    import io
+    import numpy as np
+    import soundfile as sf
+
+    t = np.linspace(0, 1.0, 44100, endpoint=False)
+    tone = (0.5 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+    buf = io.BytesIO()
+    sf.write(buf, np.stack([tone, tone], axis=1), 44100, format="WAV")
+    samples = voice_routes._decode_to_16k_mono(buf.getvalue())
+    assert samples.dtype == np.float32
+    assert abs(samples.size - 16000) < 400
+    assert 0.3 < float(np.abs(samples).max()) <= 1.0
+
+
+def test_transcribe_rejects_bytes_that_are_not_audio(client, monkeypatch):
+    monkeypatch.setattr(voice_routes, "_get_whisper", lambda: object())
+    r = client.post("/voice/transcribe", content=b"\x00" * 4000)
+    assert r.status_code == 422
+    assert "Could not transcribe" in r.json()["detail"]
 
 
 # --------------------------------------------------------------------------- the mouth

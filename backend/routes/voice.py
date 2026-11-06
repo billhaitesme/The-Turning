@@ -72,6 +72,32 @@ def _get_kokoro():
         return _kokoro_engine
 
 
+def _decode_to_16k_mono(audio: bytes):
+    """Any container PyAV reads (webm/opus from the browser, wav, ogg, m4a) -> float32 16 kHz mono.
+
+    Decoded here rather than by faster-whisper's own decode_audio: that helper passes
+    av.open(..., metadata_errors=...), a keyword PyAV 19 no longer accepts, so every
+    transcription failed with "open() got an unexpected keyword argument" (found 2026-11-06).
+    """
+    import av
+    import numpy as np
+
+    chunks = []
+    with av.open(io.BytesIO(audio), mode="r") as container:
+        stream = next((s for s in container.streams if s.type == "audio"), None)
+        if stream is None:
+            raise ValueError("no audio stream in the recording")
+        resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+        for frame in container.decode(stream):
+            for out in resampler.resample(frame):
+                chunks.append(out.to_ndarray().reshape(-1))
+        for out in resampler.resample(None):  # flush
+            chunks.append(out.to_ndarray().reshape(-1))
+    if not chunks:
+        raise ValueError("the recording decoded to silence (zero samples)")
+    return np.concatenate(chunks).astype(np.float32) / 32768.0
+
+
 @router.get("/status")
 def voice_status() -> Dict[str, Any]:
     return {
@@ -93,7 +119,8 @@ async def transcribe(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=422, detail="Audio exceeds the 15 MB cap.")
     model = _get_whisper()
     try:
-        segments, info = model.transcribe(io.BytesIO(audio), beam_size=1, vad_filter=True)
+        samples = _decode_to_16k_mono(audio)
+        segments, info = model.transcribe(samples, beam_size=1, vad_filter=True)
         text = " ".join(segment.text.strip() for segment in segments).strip()
     except Exception as exc:  # noqa: BLE001 — a failed transcription is a reported state
         raise HTTPException(status_code=422, detail=f"Could not transcribe: {exc}") from exc

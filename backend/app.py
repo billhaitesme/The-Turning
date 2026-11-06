@@ -96,6 +96,7 @@ from services.user_identity import (
 from services.cognition_pipeline import process_completed_turn
 from services.declarative_acknowledger import build_declarative_acknowledgement
 from services import agent_loop
+from services.stream_detach import detach_stream
 from services import command_console
 from services import image_store
 from routes.system import router as system_router
@@ -2837,7 +2838,7 @@ def chat_stream(req: ChatRequest):
             yield f"data: {json.dumps({'type': 'end'})}\n\n"
 
         return observe_streaming_response(StreamingResponse(
-            direct_event_generator(),
+            detach_stream(direct_event_generator()),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -3096,7 +3097,7 @@ def chat_stream(req: ChatRequest):
     }
 
     return observe_streaming_response(StreamingResponse(
-        event_generator(),
+        detach_stream(event_generator()),
         media_type="text/event-stream",
         headers=headers,
     ), conversation_id)

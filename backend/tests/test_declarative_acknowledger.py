@@ -13,6 +13,23 @@ class DeclarativeAcknowledgerTests(unittest.TestCase):
         self.assertEqual(text, "Vision routing is now tracked as an active goal.")
         self.assertNotIn("?", text)
 
+    def test_casual_conversation_reaches_the_model_not_a_canned_goal(self):
+        # Real operator lines from 2026-11-06 that were hijacked into "... tracked as an active goal".
+        for line in (
+            "absolutely! let's rerine them as much as you want",
+            "sorry, that was a typo. I meant \"refine\"",
+            "I want to hear a better joke",
+            "we need to talk about your sense of humor",
+            "I plan to sleep soon",
+        ):
+            with self.subTest(line=line):
+                self.assertIsNone(build_declarative_acknowledgement(line))
+
+    def test_long_message_mentioning_work_is_not_a_project_declaration(self):
+        text = build_declarative_acknowledgement(
+            "I'm working on my car tonight so tell me something funny while I wait for parts")
+        self.assertIsNone(text)
+
     def test_configuration_statement_uses_configured_wording(self):
         text = build_declarative_acknowledgement("The backend runs on port 8002.")
         self.assertEqual(text, "The backend is configured to use port 8002.")

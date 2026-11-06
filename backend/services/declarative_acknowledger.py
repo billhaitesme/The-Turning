@@ -15,6 +15,10 @@ USER_REPORTED_CHECK_PATTERN = re.compile(
 )
 
 
+EXPLICIT_GOAL_PATTERN = re.compile(r"\bmy goal is to\b", re.IGNORECASE)
+MAX_PROJECT_ACK_WORDS = 10
+
+
 def _capitalize_first(text: str) -> str:
     cleaned = str(text or "").strip()
     if not cleaned:
@@ -49,8 +53,13 @@ def build_declarative_acknowledgement(message: str) -> Optional[str]:
             "but I have not independently verified that result."
         )
 
-    projects = extract_explicit_projects(text)
-    goals = extract_explicit_goals(text)
+    # The canned acknowledgement bypasses the model entirely, so it fires only on unmistakable
+    # declarations. 2026-11-06: the broad goal patterns ("let's", "i want to", "we need to",
+    # "i plan to") turned ordinary conversation into "X is now tracked as an active goal" — e.g.
+    # "absolutely! let's refine them" — and the model then parroted that line on the next turn.
+    # Goal *tracking* still uses the broad patterns; only this model-bypassing reply is narrowed.
+    projects = extract_explicit_projects(text) if len(text.split()) <= MAX_PROJECT_ACK_WORDS else []
+    goals = [g for g in extract_explicit_goals(text) if EXPLICIT_GOAL_PATTERN.search(text)]
     backend_port = extract_explicit_backend_port(text)
 
     if not projects and not goals and backend_port is None:

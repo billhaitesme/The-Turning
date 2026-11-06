@@ -16,6 +16,11 @@ $ollamaExe = 'C:\Users\BillH\AppData\Local\Programs\Ollama\ollama.exe'
 $ollamaAppExe = 'C:\Users\BillH\AppData\Local\Programs\Ollama\ollama app.exe'
 $backendLauncher = Join-Path $PSScriptRoot 'launch_backend.py'
 
+# OMEGA's seat needs ~3000 fixed prompt tokens (system + agent rules + 13 tool schemas) before
+# memories and history; Ollama's 4096 default truncated real turns (4183 -> 2050, 2026-11-06).
+# Set server-wide so every caller of a model shares one context size (no reload ping-pong).
+if (-not $env:OLLAMA_CONTEXT_LENGTH) { $env:OLLAMA_CONTEXT_LENGTH = '8192' }
+
 New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 
 function Get-ListenerProcess([int]$Port) {

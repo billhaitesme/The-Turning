@@ -19,10 +19,15 @@ def build_client(monkeypatch, tmp_path):
     database = tmp_path / "mobile.db"
     conn = sqlite3.connect(database)
     conn.execute(
-        "CREATE TABLE conversations (id TEXT PRIMARY KEY, title TEXT, updated_at TEXT)"
+        "CREATE TABLE conversations (id TEXT PRIMARY KEY, title TEXT, updated_at TEXT, scope TEXT)"
     )
     conn.execute(
-        "INSERT INTO conversations VALUES ('active', 'Desktop', '2026-07-22T20:00:00Z')"
+        "INSERT INTO conversations VALUES ('active', 'Desktop', '2026-07-22T20:00:00Z', NULL)"
+    )
+    # A newer School Day lesson thread: the phones must never land in it (2026-11-06).
+    conn.execute(
+        "INSERT INTO conversations VALUES ('lesson', 'Lesson: The Gate and the Biometric', "
+        "'2026-07-22T21:00:00Z', 'omega-arc-command-console')"
     )
     conn.commit()
     conn.close()

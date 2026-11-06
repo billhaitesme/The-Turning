@@ -351,8 +351,13 @@ def latest_conversation_id() -> Optional[str]:
     runtime = _runtime()
     conn = runtime.get_db()
     try:
+        # Only the operator's own conversations. Scoped ones belong to a subsystem — School Day
+        # lessons (scope = a curriculum subject) and the Ø2-02 body — and the school writes a new
+        # lesson thread every few minutes, so "most recent of all" put the phones inside a lesson
+        # (2026-11-06: Bill's chat landed in "Lesson: The Gate and the Biometric").
         row = conn.execute(
-            "SELECT id FROM conversations ORDER BY updated_at DESC LIMIT 1"
+            "SELECT id FROM conversations WHERE scope IS NULL OR scope = '' "
+            "ORDER BY updated_at DESC LIMIT 1"
         ).fetchone()
         return str(row["id"]) if row else None
     finally:
