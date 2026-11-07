@@ -51,7 +51,7 @@ class OwnBrowserReadAdapter(ToolAdapter):
                 browser = p.chromium.launch(headless=True, channel="chromium")
                 try:
                     page = browser.new_page()
-                    page.goto(url, wait_until="load", timeout=NAV_TIMEOUT_MS)
+                    page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
                     title = page.title()
                     html = page.content()
                 finally:

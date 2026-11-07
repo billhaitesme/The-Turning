@@ -8,7 +8,7 @@ from services.tool_registry import get_tool, get_tool_adapter, register_default_
 class _Page:
     def goto(self, url, wait_until=None, timeout=None):
         self.url = url
-        assert wait_until == "load"
+        assert wait_until == "domcontentloaded"
 
     def title(self):
         return "Example"
