@@ -272,14 +272,49 @@ def _paths_in_text(root: Path, entry: Dict[str, Any]) -> List[str]:
     return found
 
 
+def _implementation_files(root: Path, entry: Dict[str, Any]) -> List[str]:
+    """A keyword that is the name of a registered tool, or of a command backed by one, resolves
+    to the file whose adapter implements it. OMEGA's first self-improvement proposal named only
+    `own_browser_read` and no file; word counts ranked agent_loop.py above the adapter and the
+    drafter was blocked for want of it (2026-11-07). The registry knows; ask it."""
+    out: List[str] = []
+    try:
+        from services import command_registry, tool_registry
+        tool_registry.register_default_tools()
+    except Exception:  # noqa: BLE001 — a broken registry is the suite's problem, not the search's
+        return out
+    for key in _keywords(entry):
+        names = [key]
+        command = command_registry.get_command(key)
+        if command and command.get("tool_name"):
+            names.append(str(command["tool_name"]))
+        for name in names:
+            adapter = tool_registry.get_tool_adapter(name)
+            module = sys.modules.get(type(adapter).__module__) if adapter is not None else None
+            file = getattr(module, "__file__", None)
+            if not file:
+                continue
+            try:
+                rel = Path(file).resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+            except ValueError:
+                continue
+            if (root / rel).is_file() and rel not in out and not _is_protected(rel):
+                out.append(rel)
+    return out
+
+
 def _find_files(root: Path, entry: Dict[str, Any]) -> List[str]:
     """Rank allowlisted files for the drafter. The first live proposal (2026-11-06) asked for
     describe_self + host_clock and raw word counts handed the drafter App.jsx and app.py: big
-    files full of "time" and "name". Now: files named by path first; then a score that rewards
-    a keyword in the path, a definition of it (def/assignment), and distinct keywords matched,
-    normalised by file size so a large file cannot win on bulk alone."""
+    files full of "time" and "name". Now: files named by path first, then the files that
+    implement the tools the proposal names; then a score that rewards a keyword in the path,
+    a definition of it (def/assignment), and distinct keywords matched, normalised by file
+    size so a large file cannot win on bulk alone."""
     keys = _keywords(entry)
     ranked: List[str] = _paths_in_text(root, entry)
+    for rel in _implementation_files(root, entry):
+        if rel not in ranked:
+            ranked.append(rel)
     scored: List[Tuple[float, str]] = []
     for rel in _candidate_files(root):
         if rel in ranked:
@@ -296,7 +331,10 @@ def _find_files(root: Path, entry: Dict[str, Any]) -> List[str]:
                 continue
             score += 3 + min(hits, 3)          # distinct keywords matter; bulk repetition does not
             identifier_like = "_" in k or len(k) >= 6   # "describe_self", not "host" or "time"
-            if identifier_like and k in rel.lower():
+            stem = PurePosixPath(rel).stem.lower()
+            # the keyword names the file ("describe_self" in command_console.py's path), or the
+            # file's name is the keyword's stem ("own_browser" in "own_browser_read")
+            if identifier_like and (k in rel.lower() or (len(stem) >= 6 and stem in k)):
                 score += 15
             if _defines(text, k):
                 score += 40                     # the file DEFINES the thing the proposal names:

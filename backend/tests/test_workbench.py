@@ -457,6 +457,45 @@ def test_helpers_named_by_module_and_protected_contracts_reach_the_drafter_read_
     assert "backend/services/tool_contracts.py" in workbench.gather_plan(repo, bare).reference
 
 
+def test_a_tool_name_in_the_proposal_resolves_to_the_file_that_implements_it(repo, monkeypatch):
+    """OMEGA's first self-improvement proposal (2026-11-07) said only "change own_browser_read to
+    wait for domcontentloaded": no file, no path. The registry knows which adapter implements a
+    tool; that file is ranked first, ahead of word-count noise."""
+    import sys
+    import types
+    from services import command_registry, tool_registry
+
+    adapter_file = repo / "backend" / "services" / "adapters" / "hello_read.py"
+    adapter_file.parent.mkdir()
+    adapter_file.write_text("def execute():\n    return 'hello'\n", encoding="utf-8")
+    module = types.ModuleType("services.adapters.hello_read")
+    module.__file__ = str(adapter_file)
+    monkeypatch.setitem(sys.modules, "services.adapters.hello_read", module)
+
+    class HelloReadAdapter(tool_registry.ToolAdapter):
+        __module__ = "services.adapters.hello_read"
+        def describe(self): return {}
+        def validate_arguments(self, a): return a
+        def dry_run(self, a): return a
+        def execute(self, a): return a
+
+    monkeypatch.setattr(tool_registry, "register_default_tools", lambda: None)
+    monkeypatch.setattr(tool_registry, "get_tool_adapter",
+                        lambda name: HelloReadAdapter() if name == "hello_read" else None)
+    monkeypatch.setattr(command_registry, "get_command",
+                        lambda name: {"name": "read_hello", "tool_name": "hello_read"} if name == "read_hello" else None)
+    # noise: a big file full of the proposal's plain words
+    (repo / "backend" / "services" / "noise.py").write_text(
+        "\n".join(f"# change wait content load page text results {i}" for i in range(400)), encoding="utf-8")
+    for what in ("Change hello_read to wait for the page content to load before reading the text results.",
+                 "Change the read_hello command to wait for the page content to load before reading the text results."):
+        entry = workbench.propose("Improve a read", what, "", requested_by="model:agent-seat", session_id="s")
+        files = workbench._find_files(repo, entry)
+        assert files[0] == "backend/services/adapters/hello_read.py", (what, files)
+        plan = workbench.gather_plan(repo, entry)
+        assert plan.files[0] == "backend/services/adapters/hello_read.py"
+
+
 def test_claude_code_drafts_headless_with_tools_off(monkeypatch, tmp_path):
     """`claude -p` on the operator's subscription: prompt on stdin, text out, no tools, no MCP,
     no settings, a plain environment (a nested `claude` inheriting the parent session's
