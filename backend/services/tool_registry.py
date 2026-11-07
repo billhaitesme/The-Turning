@@ -106,6 +106,10 @@ def register_default_tools() -> None:
         register_tool(WEB_SEARCH_DESCRIPTOR, WebSearchAdapter())
     if "web_fetch" not in TOOL_REGISTRY:
         register_tool(WEB_FETCH_DESCRIPTOR, WebFetchAdapter())
+    _own_browser_entry = TOOL_REGISTRY.get("own_browser_read")
+    if _own_browser_entry is not None and not isinstance(_own_browser_entry.get("adapter"), ToolAdapter):
+        # A stale/adapterless entry would leave the tool unrunnable; replace it.
+        TOOL_REGISTRY.pop("own_browser_read", None)
     if "own_browser_read" not in TOOL_REGISTRY:
         register_tool(OWN_BROWSER_READ_DESCRIPTOR, OwnBrowserReadAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:

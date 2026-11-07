@@ -2,7 +2,7 @@ import pytest
 
 from services import command_registry
 from services.adapters import own_browser
-from services.tool_registry import get_tool, get_tool_adapter, register_default_tools
+from services.tool_registry import get_tool, get_tool_adapter, register_default_tools, unregister_tool
 
 
 class _Page:
@@ -50,6 +50,7 @@ def stubbed(monkeypatch):
     monkeypatch.setattr(own_browser, "require_breaker_on", lambda: None)
     monkeypatch.setattr(own_browser, "_refuse_private_host", lambda url: None)
     monkeypatch.setattr(own_browser, "record_fetch", lambda *a, **k: log.append((a, k)))
+    unregister_tool("own_browser_read")
     register_default_tools()
     return log
 
