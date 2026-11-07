@@ -402,14 +402,32 @@ Rules:
 FILES:
 {context}
 
-Reply with ONLY a compact JSON object (no commentary, no code fences; your whole reply must stay
-under 2500 tokens, so keep new code lean and skip decorative comments):
-{{"summary": "<one or two sentences>", "edits": [{{"file": "<repo-relative path>", "old": "<exact text>", "new": "<replacement>"}}]}}
+Reply in EXACTLY this block format and nothing else (no JSON, no code fences, no commentary;
+keep the whole reply under 2500 tokens: lean code, no decorative comments):
+
+=== SUMMARY
+one or two sentences
+=== EDIT <repo-relative path>
+<<<OLD
+the exact existing text to replace (leave this part empty for a NEW file)
+>>>NEW
+the replacement text
+=== EDIT <another file>
+<<<OLD
+...
+>>>NEW
+...
+=== END
 
 If the change CANNOT be made without something only the operator can provide (a package not
 installed, a program, a device, an account or key) that is not listed as agreed above, do not
-draft. Reply instead with ONLY:
-{{"summary": "<why>", "needs_from_operator": "<exact commands or items, e.g. 'in backend/.venv: pip install playwright; playwright install chromium'>", "edits": []}}
+draft. Reply instead with:
+
+=== SUMMARY
+why
+=== NEEDS
+the exact commands or items, e.g. in backend/.venv: pip install playwright; playwright install chromium
+=== END
 """
 
 
@@ -448,35 +466,40 @@ def _frontier(prompt: str) -> Tuple[str, str]:
     return f"{model} (local fallback)", text
 
 
+_SUMMARY_RE = re.compile(r"=== SUMMARY[ \t]*\n(.*?)(?=\n=== |\Z)", re.DOTALL)
+_NEEDS_RE = re.compile(r"=== NEEDS[ \t]*\n(.*?)(?=\n=== |\Z)", re.DOTALL)
+_EDIT_RE = re.compile(r"=== EDIT[ \t]+(\S+)[ \t]*\n<<<OLD[ \t]*\n(.*?)\n?>>>NEW[ \t]*\n(.*?)(?=\n=== EDIT |\Z)", re.DOTALL)
+
+
 def _parse_draft(text: str) -> Dict[str, Any]:
-    match = re.search(r"\{.*\}", text or "", re.DOTALL)
-    if not match:
-        if "{" in (text or ""):
-            raise WorkbenchError("the draft was cut off before its closing brace (the reply was "
-                                 "cut off: answer more compactly, fewer and leaner edits)")
-        raise WorkbenchError("the drafter did not return a JSON object")
-    try:
-        data = json.loads(match.group(0))
-    except json.JSONDecodeError as exc:
-        hint = (" (the reply was cut off: answer more compactly, fewer and leaner edits)"
-                if "Unterminated" in exc.msg or "Expecting" in exc.msg else "")
-        raise WorkbenchError(f"the drafter's JSON did not parse ({exc.msg}){hint}") from exc
-    needs = str(data.get("needs_from_operator") or "").strip()
-    edits = data.get("edits")
-    if needs and not edits:
+    """The block format: code travels as plain text between markers, never inside JSON strings.
+    Three JSON drafts in a row broke on escaping or ran out of room (2026-11-06)."""
+    text = (text or "").replace("\r\n", "\n")
+    if "=== END" not in text:
+        if "=== " in text:
+            raise WorkbenchError("the draft was cut off before its === END line (answer more "
+                                 "compactly: fewer and leaner edits, no decorative comments)")
+        raise WorkbenchError("the drafter did not answer in the block format (=== SUMMARY / === EDIT / === END)")
+    body = text[: text.rindex("=== END")]
+    summary = (_SUMMARY_RE.search(body).group(1).strip() if _SUMMARY_RE.search(body) else "")[:600]
+    needs_match = _NEEDS_RE.search(body)
+    edits = _EDIT_RE.findall(body)
+    if needs_match and not edits:
         # The drafter's verdict: this cannot be done until the operator provides something.
         # Not a failure; the proposal shows it as NEEDS FROM YOU (Bill, 2026-11-06).
-        return {"summary": str(data.get("summary") or "").strip()[:600], "edits": [], "needs": needs}
-    if not isinstance(edits, list) or not edits:
-        raise WorkbenchError("the draft has no edits")
+        return {"summary": summary, "edits": [], "needs": needs_match.group(1).strip()[:1000]}
+    if not edits:
+        raise WorkbenchError("the draft has no === EDIT blocks")
     clean = []
-    for edit in edits:
-        if not isinstance(edit, dict):
-            raise WorkbenchError("an edit is not an object")
-        rel = _normalise_path(edit.get("file"))
+    for rel_raw, old, new in edits:
+        rel = _normalise_path(rel_raw)
         _assert_editable(rel)
-        clean.append({"file": rel, "old": str(edit.get("old") or ""), "new": str(edit.get("new") or "")})
-    return {"summary": str(data.get("summary") or "").strip()[:600], "edits": clean}
+        old = old.rstrip("\n")
+        new = new.rstrip("\n")
+        if old == "" and new and not new.endswith("\n"):
+            new += "\n"  # a new file ends with a newline
+        clean.append({"file": rel, "old": old, "new": new})
+    return {"summary": summary, "edits": clean}
 
 
 def _apply_edits(root: Path, edits: List[Dict[str, str]]) -> List[str]:

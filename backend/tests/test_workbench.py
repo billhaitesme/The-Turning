@@ -50,13 +50,24 @@ def repo(tmp_path, monkeypatch):
     workbench._store_path().unlink(missing_ok=True)
 
 
+def render_draft(draft):
+    """A draft dict in the block format the drafter is asked for."""
+    lines = ["=== SUMMARY", draft.get("summary", "")]
+    if draft.get("needs_from_operator"):
+        lines += ["=== NEEDS", draft["needs_from_operator"]]
+    for edit in draft.get("edits") or []:
+        lines += [f"=== EDIT {edit['file']}", "<<<OLD", edit["old"], ">>>NEW", edit["new"]]
+    lines.append("=== END")
+    return "\n".join(lines) + "\n"
+
+
 def frontier_with(*drafts):
     queue = list(drafts)
     prompts = []
 
     def frontier(prompt):
         prompts.append(prompt)
-        return "openai/gpt-oss-120b", json.dumps(queue.pop(0))
+        return "openai/gpt-oss-120b", render_draft(queue.pop(0))
     frontier.prompts = prompts
     return frontier
 
@@ -235,7 +246,7 @@ def test_a_rate_limited_frontier_is_waited_out_then_falls_back_to_the_local_rung
 
     def local(prompt):
         calls["local"] += 1
-        return "huihui_ai/qwen3-abliterated:30b-a3b", json.dumps(GOOD_EDIT)
+        return "huihui_ai/qwen3-abliterated:30b-a3b", render_draft(GOOD_EDIT)
 
     monkeypatch.setattr(deep_think, "_frontier_think", frontier_429)
     monkeypatch.setattr(deep_think, "_local_think", local)
@@ -247,12 +258,25 @@ def test_a_rate_limited_frontier_is_waited_out_then_falls_back_to_the_local_rung
         network_breaker.set_breaker(False, changed_by="test", channel="test")
     assert waited == [workbench.RATE_LIMIT_WAIT_SECONDS]          # one real wait, not an instant retry
     assert calls == {"frontier": 2, "local": 1}
-    assert model.endswith("(local fallback)") and json.loads(text)["summary"] == GOOD_EDIT["summary"]
+    assert model.endswith("(local fallback)") and workbench._parse_draft(text)["summary"] == GOOD_EDIT["summary"]
 
 
 def test_a_cut_off_draft_tells_the_drafter_to_be_compact():
     with pytest.raises(workbench.WorkbenchError, match="cut off"):
-        workbench._parse_draft('{"summary": "x", "edits": [{"file": "a.py", "old": "b", "new": "unterminated')
+        workbench._parse_draft("=== SUMMARY\nx\n=== EDIT backend/services/hello.py\n<<<OLD\nb\n>>>NEW\nunterminated")
+    with pytest.raises(workbench.WorkbenchError, match="block format"):
+        workbench._parse_draft('{"summary": "json is not the format"}')
+
+
+def test_the_block_format_carries_code_verbatim_and_new_files():
+    text = render_draft({"summary": "s", "edits": [
+        {"file": "backend/services/hello.py", "old": 'return f"Hello, {name}"', "new": 'return f"Hello, {name}!"  # "quoted"'},
+        {"file": "backend/tests/test_new.py", "old": "", "new": "def test_x():\n    assert 'a' in \"abc\""},
+    ]})
+    draft = workbench._parse_draft(text)
+    assert draft["summary"] == "s" and len(draft["edits"]) == 2
+    assert draft["edits"][0]["new"] == 'return f"Hello, {name}!"  # "quoted"'       # quotes survive untouched
+    assert draft["edits"][1]["old"] == "" and draft["edits"][1]["new"].endswith('"abc"\n')  # new file, trailing newline
 
 
 def test_pytest_summary_parsing():
