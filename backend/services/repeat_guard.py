@@ -40,6 +40,11 @@ RETRY_INSTRUCTION = (
     "it. Answer the operator's LATEST message afresh. Do not reuse earlier wording; if you cannot "
     "do what was asked, say so plainly in one sentence."
 )
+CONTINUE_INSTRUCTION = (
+    "Your reply above was cut off because you began repeating yourself. The operator has "
+    "already seen it. Continue from exactly where it stops (mid-sentence if need be), without "
+    "restating anything already said, and finish briefly."
+)
 GAVE_UP_NOTE = (
     "---\n⚠ Repeat guard (runtime, not the seat): the seat tried to send an earlier reply again, "
     "twice, so it was stopped. Rephrase the request, or ask for something different."

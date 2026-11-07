@@ -103,3 +103,10 @@ class CognitionEngineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_a_goal_is_its_first_sentence_not_the_whole_message():
+    from services.cognition_engine import extract_explicit_goals
+    msg = ("my goal is to improve your capabilities and self-awareness. currently i am working "
+           "towards giving you systems control upon user approval. what are your thoughts?")
+    assert extract_explicit_goals(msg) == ["improve your capabilities and self-awareness"]

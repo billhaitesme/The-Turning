@@ -104,7 +104,10 @@ def extract_explicit_goals(message: str) -> List[str]:
         if not match:
             continue
 
-        goal = match.group(1).strip(" .,!?:;")
+        # The goal is the first sentence: "my goal is to X. currently I am ... what are your
+        # thoughts?" saved the whole message, question included, as the title (2026-11-06).
+        goal = re.split(r"(?<=[.!?])\s+", match.group(1).strip(), maxsplit=1)[0]
+        goal = goal.strip(" .,!?:;")
 
         if 3 <= len(goal) <= 240:
             goals.append(goal)

@@ -331,11 +331,33 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         conversation.append({"role": "tool", "tool_name": "deep_think", "name": "deep_think",
                              "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
         conversation.append({"role": "system", "content": escalation.SEAT_NOTE.format(reason=reason)})
+    elif escalation.self_question(operator_message) \
+            and command_registry.get_command("describe_self") is not None:
+        # Ground BEFORE speaking: the seat claimed "I can write and execute code" and only then
+        # looked itself up (2026-11-06). A fast local read, recorded as the runtime's own call.
+        args = {}
+        yield {"event": "tool_call", "name": "describe_self", "arguments": args}
+        result = execute_tool_call("describe_self", args, session_id=session_id,
+                                   requested_by=RUNTIME_REQUESTED_BY)
+        hops.append({"tool": "describe_self", "status": result.get("status")})
+        tool_results.append(("describe_self", result))
+        if result.get("status") == "executed":
+            guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
+        yield {"event": "tool_result", "name": "describe_self", "status": result.get("status")}
+        conversation.append({"role": "assistant", "content": "",
+                             "tool_calls": [{"function": {"name": "describe_self", "arguments": args}}]})
+        conversation.append({"role": "tool", "tool_name": "describe_self", "name": "describe_self",
+                             "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
+        conversation.append({"role": "system", "content": escalation.SELF_NOTE})
+
+    promise_nudged = False
+    continue_inline = False  # the next round continues a cut-off sentence: no paragraph seam
 
     while True:
         offered = tools if (supports_tools and rounds < budget) else None
         final_message: Optional[Dict[str, Any]] = None
-        emitted_this_round = False
+        emitted_this_round = continue_inline
+        continue_inline = False
         # The newest repeat_guard.HOLD_CHARS of visible text are held back while streaming, so a
         # copy of an earlier reply is caught before the operator sees it.
         round_text = ""
@@ -385,7 +407,15 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             if repeats_caught == 1:
                 # retry the same round with the copied replies out of reach
                 conversation = guard.withhold(conversation)
-                conversation.append({"role": "system", "content": repeat_guard.RETRY_INSTRUCTION})
+                if emitted_upto > 0:
+                    # Part of this round already reached the operator. Restarting left a cut-off
+                    # opening followed by the whole reply again (Bill's chat, 2026-11-06): the
+                    # retry CONTINUES from the shown text instead.
+                    conversation.append({"role": "assistant", "content": round_text[:emitted_upto]})
+                    conversation.append({"role": "system", "content": repeat_guard.CONTINUE_INSTRUCTION})
+                    continue_inline = True
+                else:
+                    conversation.append({"role": "system", "content": repeat_guard.RETRY_INSTRUCTION})
                 continue
             seam = "\n\n" if reply_parts else ""
             reply_parts.append(seam + repeat_guard.GAVE_UP_NOTE)
@@ -399,6 +429,13 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         tool_calls = (final_message or {}).get("tool_calls") or []
         # offered is None once the budget is spent (or the seat rejected schemas): any tool call
         # emitted then is ignored, which makes the loop's termination unconditional.
+        if not tool_calls and offered is not None and not promise_nudged                 and escalation.promises_action(round_text):
+            # The seat ended on "let me check / I'll start by examining ..." and called nothing,
+            # so nothing happened (Bill's chat, 2026-11-06). Once per turn: send it back to act.
+            promise_nudged = True
+            conversation.append({"role": "assistant", "content": round_text})
+            conversation.append({"role": "system", "content": escalation.PROMISE_NUDGE})
+            continue
         if not tool_calls or offered is None:
             # The reply has streamed; numbers the tools never returned are flagged, not edited.
             unverified, note = number_check.check_reply("".join(reply_parts), tool_results,

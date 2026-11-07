@@ -251,8 +251,19 @@ def _describe_self() -> Dict[str, Any]:
         "network_breaker": "ON (web reads allowed)" if network_breaker.breaker_is_on()
                            else "OFF (no web reads)",
         "installed_toolwright_tools": [s.get("name") for s in inducted_specs()],
-        "limits": "You run on the operator's PC. You cannot change your own code, install "
-                  "software, or see anything the runtime does not hand you.",
+        # Explicit, because the seat turned a general limit into "I can write and execute code
+        # and make changes to myself ... with approval" (2026-11-06).
+        "code": {
+            "write_code_as_text": "YES: you can write code in a reply for the operator to read.",
+            "run_code": "NO: you cannot execute code. No command runs code you write.",
+            "change_yourself": "NO: there is no path for you to change your own code, even "
+                               "with the operator's approval. It is being designed (the "
+                               "Workbench: you propose, tests run, the operator approves).",
+            "new_tools": "Only through the Toolwright: file a request; a tested catalog tool "
+                         "is inducted by the operator's fingerprint.",
+        },
+        "limits": "You run on the operator's PC. You cannot install software, run code, change "
+                  "your own code, or see anything the runtime does not hand you.",
     }
 
 

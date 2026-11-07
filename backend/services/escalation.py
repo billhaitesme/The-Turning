@@ -68,3 +68,61 @@ SEAT_NOTE = (
     "operator a clear, correct final answer in your own words. If the deep reasoning and your "
     "own check disagree, say which you trust and why."
 )
+
+
+# ---------------------------------------------------------------- the say-do gap (2026-11-06)
+# Live: "Let me examine my current capabilities ... I'll start by checking my available tools."
+# and the reply ended. No tool ran. A reply whose closing words promise an action, from a turn
+# that called nothing in that round, gets sent back once to do it.
+_PROMISE = re.compile(
+    r"\b(?:let me|i'?ll|i will|i'?m going to|i am going to)\s+(?:now\s+|first\s+|quickly\s+)?"
+    r"(?:start by\s+|begin by\s+)?(?:check|checking|examine|examining|look|looking|search|"
+    r"searching|find|finding|run|running|fetch|fetching|query|verify|review|reviewing|inspect|"
+    r"inspecting|scan|scanning|go through|pull up|test|testing|investigate|call|calling)\b",
+    re.IGNORECASE)
+PROMISE_TAIL_CHARS = 260
+
+PROMISE_NUDGE = (
+    "You just said you would do something, but you called no tool, so nothing happened. Do it "
+    "now: call the tool that does it and report the result. If no tool can do it, say so "
+    "plainly in one sentence. Do not repeat what you already said."
+)
+
+
+# ---------------------------------------------------------------- self-questions (2026-11-06)
+# Live: asked "what can you do today ... examine yourself", the seat first wrote "I can write and
+# execute code ... make changes to my configuration" (false) and only THEN called describe_self.
+# For questions about OMEGA itself, the runtime reads describe_self FIRST (a fast local read,
+# no model call) so the seat answers from the facts instead of its priors.
+_SELF_QUESTION = re.compile(
+    r"\b(?:examine yourself|about yourself|describe yourself|tell me about you|who are you|"
+    r"what (?:can|can't|cannot) you(?: actually)? do|what are you capable of|"
+    r"your (?:voice|voices|capabilities|abilities|limits|limitations|body|settings|tools|setup|senses)|"
+    r"can you (?:hear|see|speak|talk|code|remember|access)|"
+    r"can you (?:write|change|edit|modify) (?:code|yourself|your own)|are you able to|"
+    r"what(?:'s| is) missing)\b", re.IGNORECASE)
+SELF_NOTE = (
+    "The runtime read describe_self because the operator asked about you. The tool result "
+    "above is the truth about your body, settings and limits. Answer from it. Claim no ability "
+    "it does not list; if it says you cannot do something, say so plainly."
+)
+
+
+def self_question(message: str) -> bool:
+    text = str(message or "").strip()
+    return len(text) <= MAX_CHARS and not text.lower().startswith(BODY_BRIEF_PREFIX) \
+        and bool(_SELF_QUESTION.search(text))
+
+
+_CONDITIONAL = re.compile(r"\b(?:when you|once you|if you|after you|whenever you)\b", re.IGNORECASE)
+
+
+def promises_action(round_text: str) -> bool:
+    """True when the closing words of a round promise an action ("let me check ..."). A promise
+    that waits on the operator ("when you're ready ... I'll run it") is not an empty one.
+    Scanned over OMEGA's 886 replies to Bill: fires on 2, both real empty promises."""
+    tail = str(round_text or "")[-PROMISE_TAIL_CHARS:]
+    for sentence in re.split(r"(?<=[.!?])\s+", tail):
+        if _PROMISE.search(sentence) and not _CONDITIONAL.search(sentence):
+            return True
+    return False
