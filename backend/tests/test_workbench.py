@@ -202,7 +202,7 @@ def test_excerpts_are_bounded_and_centred_on_the_definition(repo):
     entry = propose(files=["backend/services/command_console.py"])
     entry["title"], entry["what"] = "Add host time zone to describe_self", "Modify describe_self to include the host time zone name"
     files, context = workbench.gather_context(repo, entry)
-    assert files == ["backend/services/command_console.py"]             # it was NOT dropped (run 5)
+    assert files[0] == "backend/services/command_console.py"            # it was NOT dropped (run 5)
     assert len(context) <= workbench.MAX_CONTEXT_CHARS + 200
     assert "def _describe_self" in context                                # the window is centred on it
     assert context.count("... lines ") <= workbench.EXCERPT_BLOCKS
@@ -421,6 +421,40 @@ def test_new_files_the_proposal_names_by_path_are_planned_not_dropped(repo):
     # paced view of the new file: its note, no other file's code
     only = plan.text(only="backend/services/adapters/hello_adapter.py")
     assert "hello_adapter.py" in only and "def greet" not in only
+
+
+def test_helpers_named_by_module_and_protected_contracts_reach_the_drafter_read_only(repo):
+    """Sonnet's first own-browser draft guessed record_fetch's signature and missed ToolAdapter's
+    abstract describe(): the proposal named both by module (services.network_breaker,
+    services.tool_contracts) and neither file was shown (2026-11-06). Modules resolve to files;
+    a protected contract is shown READ ONLY and is never a target."""
+    (repo / "backend" / "services" / "network_breaker.py").write_text(
+        "def record_fetch(kind, target, *, byte_count=0, ok=True, detail=''):\n    return None\n", encoding="utf-8")
+    (repo / "backend" / "services" / "tool_contracts.py").write_text(
+        "class ToolAdapter:\n    def describe(self):\n        raise NotImplementedError\n", encoding="utf-8")
+    entry = workbench.propose(
+        "Add a hello adapter",
+        "Create backend/services/adapters/hello_adapter.py: a ToolAdapter from services.tool_contracts that "
+        "calls record_fetch from services.network_breaker and greet from services.hello.",
+        "", requested_by="m", session_id="s", files=["backend/services/adapters/hello_adapter.py"])
+    (repo / "backend" / "services" / "adapters").mkdir()
+    keys = workbench._keywords(entry)
+    assert keys[:4] == ["hello_adapter", "tool_contracts", "record_fetch", "network_breaker"]  # identifiers lead
+    found = workbench._paths_in_text(repo, entry)
+    assert {"backend/services/tool_contracts.py", "backend/services/network_breaker.py", "backend/services/hello.py"} <= set(found)
+    plan = workbench.gather_plan(repo, entry)
+    assert plan.targets == ["backend/services/adapters/hello_adapter.py"]
+    assert "backend/services/tool_contracts.py" in plan.reference and "backend/services/tool_contracts.py" not in plan.targets
+    text = plan.text()
+    assert "=== backend/services/tool_contracts.py (READ ONLY: protected" in text and "def describe" in text
+    assert "record_fetch -> backend/services/network_breaker.py line 1 (def record_fetch(kind, target" in text
+    # naming a protected file as something to EDIT is still refused out loud
+    with pytest.raises(workbench.WorkbenchError, match="protected"):
+        workbench.gather_plan(repo, {**entry, "files": ["backend/services/tool_contracts.py"]})
+    # a new adapter always sees the contract, even when the proposal never names the module
+    bare = workbench.propose("Add a hello adapter", "Create backend/services/adapters/hello_adapter.py wrapping greet.",
+                             "", requested_by="m", session_id="s", files=["backend/services/adapters/hello_adapter.py"])
+    assert "backend/services/tool_contracts.py" in workbench.gather_plan(repo, bare).reference
 
 
 def test_claude_code_drafts_headless_with_tools_off(monkeypatch, tmp_path):

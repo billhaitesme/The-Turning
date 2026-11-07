@@ -167,14 +167,22 @@ def _normalise_path(raw: str) -> str:
     return text
 
 
-def _assert_editable(rel: str) -> None:
-    if not rel.startswith(ALLOWED_ROOTS):
-        raise WorkbenchError(f"Refused {rel}: proposals may only touch {', '.join(ALLOWED_ROOTS)}.")
-    if any(rel == p or rel.startswith(p) for p in PROTECTED):
-        raise WorkbenchError(f"Refused {rel}: a protected file (a gate, a store, or a launcher).")
+def _is_protected(rel: str) -> bool:
+    return any(rel == p or rel.startswith(p) for p in PROTECTED)
+
+
+def _assert_not_secret_path(rel: str) -> None:
     name = PurePosixPath(rel).name.lower()
     if any(name == n or name.startswith(n) for n in PROTECTED_NAMES):
         raise WorkbenchError(f"Refused {rel}: secrets never enter a proposal.")
+
+
+def _assert_editable(rel: str) -> None:
+    if not rel.startswith(ALLOWED_ROOTS):
+        raise WorkbenchError(f"Refused {rel}: proposals may only touch {', '.join(ALLOWED_ROOTS)}.")
+    if _is_protected(rel):
+        raise WorkbenchError(f"Refused {rel}: a protected file (a gate, a store, or a launcher).")
+    _assert_not_secret_path(rel)
 
 
 # --------------------------------------------------------------------------- 1. propose
@@ -213,8 +221,13 @@ def propose(title: str, what: str, why: str, *, requested_by: str, session_id: s
 
 # --------------------------------------------------------------------------- 2. context
 def _keywords(entry: Dict[str, Any]) -> List[str]:
+    """Identifiers first (`_refuse_private_host`, `record_fetch`): the own-browser proposal
+    named its helpers after the 24th word and the cut dropped every one of them, so the
+    drafter guessed their signatures (2026-11-06). Plain words follow, up to the cap."""
     words = re.findall(r"[a-zA-Z_][a-zA-Z0-9_]{3,}", f"{entry['title']} {entry['what']}")
-    return [w for w in dict.fromkeys(w.lower() for w in words) if w not in _STOP][:24]
+    unique = [w for w in dict.fromkeys(w.lower() for w in words) if w not in _STOP]
+    identifiers = [w for w in unique if "_" in w]
+    return (identifiers + [w for w in unique if "_" not in w])[:32]
 
 
 def _candidate_files(root: Path) -> List[str]:
@@ -232,13 +245,22 @@ def _candidate_files(root: Path) -> List[str]:
 
 
 _PATH_IN_TEXT = re.compile(r"[\w./-]+\.(?:py|jsx|js|css|md)\b")
+# "services.adapters.web_fetch", "routes.system": module paths, the way a proposal written by a
+# model names the code it imports from (the own-browser proposal named four helpers this way
+# and none reached the drafter, 2026-11-06)
+_MODULE_IN_TEXT = re.compile(r"\b((?:services|routes)(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+)")
 
 
 def _paths_in_text(root: Path, entry: Dict[str, Any]) -> List[str]:
-    """Files the proposal mentions by path ("services/host_clock.py"), resolved against the
-    repo root and backend/; the strongest signal there is."""
+    """Files the proposal mentions by path ("services/host_clock.py") or by module
+    ("services.adapters.web_fetch"), resolved against the repo root and backend/; the
+    strongest signal there is. Protected files are returned too: the caller shows them
+    read-only (a new adapter has to see the contract it implements)."""
     found: List[str] = []
-    for token in _PATH_IN_TEXT.findall(f"{entry['title']} {entry['what']} {entry.get('why') or ''}"):
+    text = f"{entry['title']} {entry['what']} {entry.get('why') or ''}"
+    tokens = _PATH_IN_TEXT.findall(text)
+    tokens += [m.replace(".", "/") + ".py" for m in _MODULE_IN_TEXT.findall(text)]
+    for token in tokens:
         for candidate in (token, f"backend/{token}", f"backend/services/{token}", f"frontend/src/{token}"):
             try:
                 rel = _normalise_path(candidate)
@@ -406,19 +428,32 @@ def gather_plan(root: Path, entry: Dict[str, Any], *, large_budget: bool = False
     named = [f for f in (entry.get("files") or []) if (root / f).is_file()]
     new_files = _new_files_named(root, entry)
     files = named[:]
-    # the search adds files to READ when names are missing or guessed, and whenever a new file
-    # is to be written (its helpers live in files the proposal did not name)
-    if not named or new_files or len(named) + len(new_files) < len(entry.get("files") or []):
-        for rel in _find_files(root, entry):
-            if rel not in files:
-                files.append(rel)
-    files = files[:MAX_FILES]
+    # The search always adds files to READ: the helpers a change calls live in files the
+    # proposal did not list (the own-browser repair rounds saw only the four files touched and
+    # could not learn record_fetch's signature, 2026-11-06). Named files come first, so under a
+    # small budget the extras take only what is left.
+    if any(f.startswith("backend/services/adapters/") for f in new_files):
+        # a new adapter implements the ToolAdapter contract: show it (read-only) before anything
+        # the search adds, or the drafter guesses its abstract methods (Sonnet missed describe())
+        files.append("backend/services/tool_contracts.py")
+    for rel in _find_files(root, entry):
+        if rel not in files:
+            files.append(rel)
+    files = [f for f in files if (root / f).is_file()][:MAX_FILES]
     keys = _keywords(entry)
     chunks: Dict[str, str] = {}
     total = 0
     kept: List[str] = []
     for rel in files:
-        _assert_editable(rel)
+        read_only = _is_protected(rel)
+        if read_only:
+            # a protected file the proposal names (tool_contracts.py: the ABC a new adapter must
+            # implement) is shown but never a target; _parse_draft refuses any edit to it
+            _assert_not_secret_path(rel)
+            if rel in named:
+                raise WorkbenchError(f"Refused {rel}: a protected file (a gate, a store, or a launcher).")
+        else:
+            _assert_editable(rel)
         path = root / rel
         text = path.read_text(encoding="utf-8", errors="replace")
         if SECRET_LINE.search(text):
@@ -428,7 +463,8 @@ def gather_plan(root: Path, entry: Dict[str, Any], *, large_budget: bool = False
                 raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
             continue
         body = text if len(text) <= file_cap else _excerpts(text, keys)
-        chunk = f"=== {rel} ({'whole file' if len(text) <= file_cap else 'excerpts, numbered lines'}) ===\n{body}\n"
+        tag = ("READ ONLY: protected, cannot be edited; shown for its contract; " if read_only else "")
+        chunk = f"=== {rel} ({tag}{'whole file' if len(text) <= file_cap else 'excerpts, numbered lines'}) ===\n{body}\n"
         if total + len(chunk) > context_cap:
             if kept:
                 continue  # this one does not fit; a smaller file further down still may
