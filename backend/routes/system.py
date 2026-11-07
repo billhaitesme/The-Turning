@@ -102,8 +102,13 @@ def file_proposal(req: ProposalBody) -> Dict[str, Any]:
 def draft_and_test_proposal(proposal_id: str) -> Dict[str, Any]:
     """One press: worktree, frontier draft, apply, syntax, full suite, health. Minutes."""
     entry = _workbench_errors(lambda: workbench.draft_and_test(proposal_id))
-    note = ("Every check green: review the diff, then PROMOTE." if (entry.get("result") or {}).get("promotable")
-            else f"Not promotable: {entry['history'][-1]['event']}")
+    if (entry.get("result") or {}).get("promotable"):
+        note = "Every check green: review the diff, then PROMOTE."
+    elif entry.get("status") == "blocked":
+        note = (f"Blocked until you provide: {entry.get('needs_from_operator')}. Then press "
+                "DRAFT & TEST again.")
+    else:
+        note = f"Not promotable: {entry['history'][-1]['event']}"
     return {"proposal": entry, "note": note}
 
 
