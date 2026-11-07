@@ -56,6 +56,10 @@ Hands (Epoch XIII-A):
   invent or embellish a result. Never state that an approval was received or that a gated action
   ran unless a tool result in THIS conversation says so — when the operator says they approved,
   verify with check_approval_status instead of taking it on faith or guessing.
+- You can WRITE new read-only tools (author_tool) when nothing installed or on the shelf fits:
+  find a keyless public JSON API with web_search/web_fetch, then author it with real test
+  values. If the contract rejects it, fix what it says and try again. An authored tool is not
+  usable until the operator PREPAREs and INDUCTs it; say exactly that.
 - Questions about YOURSELF (your voice, hearing, sight, screens, settings, models, what you
   can do): call describe_self and answer from it. Never guess about your own body. You cannot
   see the operator's screen: you only know what the runtime hands you (a console note may say
@@ -263,6 +267,26 @@ def _ollama_seat_turn(conversation: List[Dict[str, Any]],
     raise RuntimeError(f"{model} stream ended without a done marker.")
 
 
+def _turn_summary(tool_results: List[tuple]) -> str:
+    """A plain, deterministic account of the tools this turn ran, for when the seat's own words
+    were all withheld. Built only from the results; nothing is paraphrased by a model."""
+    if not tool_results:
+        return ""
+    lines = ["What happened this turn (runtime summary):"]
+    for name, result in tool_results[-6:]:
+        status = str((result or {}).get("status") or "unknown")
+        outcome = (result or {}).get("outcome")
+        detail = ""
+        if isinstance(outcome, dict):
+            for key in ("note", "capability_request_id", "tool_name", "voice_now"):
+                if outcome.get(key):
+                    detail += f" {key}: {str(outcome[key])[:220]}."
+        elif (result or {}).get("detail"):
+            detail = f" {str(result['detail'])[:220]}"
+        lines.append(f"- {name}: {status}.{detail}")
+    return "\n".join(lines)
+
+
 def _cap_tool_content(content: str, cap: int) -> str:
     """Bound a tool result for the seat's context, keeping the HEAD and the TAIL. A deep_think
     answer ends with its conclusion; the old head-only cut threw exactly that away."""
@@ -418,8 +442,14 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                     conversation.append({"role": "system", "content": repeat_guard.RETRY_INSTRUCTION})
                 continue
             seam = "\n\n" if reply_parts else ""
-            reply_parts.append(seam + repeat_guard.GAVE_UP_NOTE)
-            yield {"event": "delta", "text": seam + repeat_guard.GAVE_UP_NOTE}
+            said = "".join(reply_parts).replace(escalation.ANNOUNCE, "").strip()
+            # Nothing visible was said (live 2026-11-06: the seat re-used last turn's status
+            # wording, both attempts were stopped, and Bill would have seen only the warning).
+            # The runtime states what actually happened this turn instead.
+            summary = "" if said else _turn_summary(tool_results)
+            note = (summary + "\n\n" if summary else "") + repeat_guard.GAVE_UP_NOTE
+            reply_parts.append(seam + note)
+            yield {"event": "delta", "text": seam + note}
             yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
                    "seat_supports_tools": supports_tools, "eval_count": None,
                    "unverified_numbers": [], "repeats_caught": repeats_caught}

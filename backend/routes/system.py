@@ -168,7 +168,10 @@ def prepare_capability_request(request_id: str) -> Dict[str, Any]:
     """Find → quarantine → verify, one operator press. Verification's fixture call needs the
     network breaker ON (it is a logged egress like any other)."""
     try:
-        toolwright.find_candidate(request_id)
+        if toolwright.is_authored(toolwright.get_request(request_id)):
+            toolwright.reprepare_authored(request_id)  # ADR 0027: its candidate is its own
+        else:
+            toolwright.find_candidate(request_id)
         toolwright.quarantine_candidate(request_id)
         entry = toolwright.verify_candidate(request_id)
     except LookupError as exc:

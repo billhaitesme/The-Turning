@@ -139,6 +139,54 @@ def file_request(need: str, why: str, *, requested_by: str, session_id: str) -> 
     return _upsert(entry)
 
 
+# ----------------------------------------------------------------------------- 1b. author (ADR 0027)
+def author_candidate(need: str, why: str, spec: Dict[str, Any], *, requested_by: str,
+                     session_id: str) -> Dict[str, Any]:
+    """OMEGA writes the candidate itself (slice 1 of the Workbench). The spec contract is the
+    safety boundary and is checked HERE, before anything is filed: a rejection raises ValueError
+    with the plain reason so the author can fix it. A valid spec becomes a request in 'found'
+    with provenance 'authored' (never 'catalog'); quarantine, the live fixture call and the
+    operator's biometric induction are unchanged. Authoring is not having."""
+    from services.adapters.spec_tool import validate_spec
+
+    candidate = validate_spec(dict(spec or {}))
+    # An address that already failed its live test is refused with that test's reason: the 8B
+    # re-filed a RapidAPI URL that had just answered 404, after reading the right docs (live).
+    for earlier in list_requests():
+        if (earlier.get("status") == "failed"
+                and (earlier.get("candidate") or {}).get("url_template") == candidate["url_template"]):
+            reason = (earlier.get("verification") or {}).get("failure") or "it failed verification"
+            raise ValueError(f"This exact url_template already failed its live test "
+                             f"({earlier['request_id']}: {reason}). Use a different, working "
+                             "endpoint from the API's own documentation.")
+    candidate["source"] = f"authored:{requested_by}"
+    entry = file_request(need, why, requested_by=requested_by, session_id=session_id)
+    entry["candidate"] = candidate
+    entry["provenance"] = {"source": "authored", "author": requested_by, "found_at": utc_now_iso()}
+    _mark(entry, "found", f"authored by {requested_by}: candidate '{candidate['name']}' "
+                          "(not from the catalog; contract-valid, untested)")
+    return _upsert(entry)
+
+
+def is_authored(entry: Optional[Dict[str, Any]]) -> bool:
+    return ((entry or {}).get("provenance") or {}).get("source") == "authored"
+
+
+def reprepare_authored(request_id: str) -> Dict[str, Any]:
+    """PREPARE for an authored request skips the catalog search (its candidate is its own); a
+    failed verification may be re-run on the same candidate."""
+    entry = get_request(request_id)
+    if entry is None:
+        raise LookupError(f"Unknown capability request {request_id}.")
+    if entry["status"] not in ("found", "failed"):
+        raise ValueError(f"Request is {entry['status']}; PREPARE runs on an authored candidate "
+                         "that is found or failed.")
+    if entry["status"] == "failed":
+        _mark(entry, "found", "re-preparing the authored candidate")
+        _upsert(entry)
+    return entry
+
+
 # ----------------------------------------------------------------------------- 2. find
 def _load_catalog() -> List[Dict[str, Any]]:
     try:

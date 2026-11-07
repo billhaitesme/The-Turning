@@ -220,6 +220,41 @@ def initiate_command(name: str, *, requested_by: str, channel: str, session_id: 
     return _upsert(entry)
 
 
+_AUTHOR_TAG_STOP = {"the", "and", "for", "with", "from", "that", "this", "what", "into", "tool",
+                    "give", "gives", "get", "gets", "data", "about", "your", "you", "need"}
+
+
+def _spec_from_author_fields(arguments: Dict[str, Any]) -> Dict[str, Any]:
+    """Build a spec-tool spec from author_tool's flat fields (an 8B fills flat fields far more
+    reliably than nested JSON). Validation is validate_spec's job, not this function's."""
+    import re as _re
+
+    url_template = str(arguments.get("url_template") or "").strip()
+    placeholders = list(dict.fromkeys(_re.findall(r"\{(\w+)\}", url_template)))
+    fixture: Dict[str, str] = {}
+    for part in _re.split(r"[;\n]", str(arguments.get("fixture_args") or "")):
+        if "=" in part:
+            key, value = part.split("=", 1)
+            if key.strip():
+                fixture[key.strip()] = value.strip()
+    words = _re.findall(r"[a-z]{3,}", f"{arguments.get('need') or ''} {arguments.get('title') or ''}".lower())
+    tags = [w for w in dict.fromkeys(words) if w not in _AUTHOR_TAG_STOP][:12]
+    return {
+        "name": str(arguments.get("name") or "").strip().lower(),
+        "title": str(arguments.get("title") or "").strip(),
+        "description": str(arguments.get("description") or "").strip(),
+        "command_category": "acquired",
+        "tags": tags,
+        "method": "GET",
+        "url_template": url_template,
+        "params": [{"name": p, "type": "text", "label": p.replace("_", " "), "required": True}
+                   for p in placeholders],
+        "output_path": str(arguments.get("output_path") or "").strip(),
+        "max_output_chars": 3000,
+        "fixture": {"args": fixture},
+    }
+
+
 def _describe_self() -> Dict[str, Any]:
     """OMEGA's real body and settings, read live — the answer to "examine yourself". Every value
     comes from the running system; nothing here is a claim the runtime cannot back."""
@@ -259,8 +294,10 @@ def _describe_self() -> Dict[str, Any]:
             "change_yourself": "NO: there is no path for you to change your own code, even "
                                "with the operator's approval. It is being designed (the "
                                "Workbench: you propose, tests run, the operator approves).",
-            "new_tools": "Only through the Toolwright: file a request; a tested catalog tool "
-                         "is inducted by the operator's fingerprint.",
+            "new_tools": "YES, within limits: author_tool lets you WRITE a new read-only tool "
+                         "(a keyless public JSON API, GET over https). It is tested live when "
+                         "the operator PREPAREs it and works only after the operator inducts it "
+                         "with a fingerprint. Or request_capability for a stocked shelf tool.",
         },
         "limits": "You run on the operator's PC. You cannot install software, run code, change "
                   "your own code, or see anything the runtime does not hand you.",
@@ -286,6 +323,22 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"capability_request_id": filed["request_id"], "status": filed["status"],
                 "note": "Filed. The Toolwright pipeline (find → quarantine → verify → biometric "
                         "induction) decides whether this becomes a tool; filing is not having."}
+    if command["name"] == "author_tool":
+        # ADR 0027 slice 1: OMEGA writes a candidate. Plain fields in; the runtime builds the
+        # structured spec (params from the URL's placeholders, tags from the need and title) and
+        # the unchanged spec contract judges it. Rejections go back to the author verbatim.
+        from services.toolwright import author_candidate
+        try:
+            spec = _spec_from_author_fields(arguments)
+            filed = author_candidate(str(arguments.get("need") or ""), str(arguments.get("why") or ""),
+                                     spec, requested_by=entry["requested_by"],
+                                     session_id=entry["session_id"])
+        except ValueError as exc:
+            raise CommandError(422, f"Spec rejected: {exc} Fix it and call author_tool again.") from exc
+        return {"capability_request_id": filed["request_id"], "status": filed["status"],
+                "tool_name": filed["candidate"]["name"],
+                "note": "Authored and filed. Not usable yet: the operator must PREPARE it (a live "
+                        "test call) and INDUCT it with a fingerprint. Say exactly that."}
     if command["name"] == "check_capability_requests":
         # Read-only view of the Toolwright, so the seat reports where a request stands from the
         # store instead of from memory (added 2026-11-06 in the first Toolwright workshop).

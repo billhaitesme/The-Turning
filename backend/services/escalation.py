@@ -78,7 +78,8 @@ _PROMISE = re.compile(
     r"\b(?:let me|i'?ll|i will|i'?m going to|i am going to)\s+(?:now\s+|first\s+|quickly\s+)?"
     r"(?:start by\s+|begin by\s+)?(?:check|checking|examine|examining|look|looking|search|"
     r"searching|find|finding|run|running|fetch|fetching|query|verify|review|reviewing|inspect|"
-    r"inspecting|scan|scanning|go through|pull up|test|testing|investigate|call|calling)\b",
+    r"inspecting|scan|scanning|go through|pull up|test|testing|investigate|call|calling|"
+    r"try|retry|search again|try again)\b",
     re.IGNORECASE)
 PROMISE_TAIL_CHARS = 260
 
@@ -121,8 +122,11 @@ def promises_action(round_text: str) -> bool:
     """True when the closing words of a round promise an action ("let me check ..."). A promise
     that waits on the operator ("when you're ready ... I'll run it") is not an empty one.
     Scanned over OMEGA's 886 replies to Bill: fires on 2, both real empty promises."""
-    tail = str(round_text or "")[-PROMISE_TAIL_CHARS:]
-    for sentence in re.split(r"(?<=[.!?])\s+", tail):
-        if _PROMISE.search(sentence) and not _CONDITIONAL.search(sentence):
-            return True
-    return False
+    # Only the CLOSING sentence: a promise followed by the actual content ("Let me try again with
+    # a better one: <joke>") is not empty. Every real empty promise found ended the reply.
+    tail = str(round_text or "")[-PROMISE_TAIL_CHARS:].strip()
+    sentences = [s for s in re.split(r"(?<=[.!?:])\s+", tail) if s.strip()]
+    if not sentences:
+        return False
+    last = sentences[-1]
+    return bool(_PROMISE.search(last)) and not _CONDITIONAL.search(last)

@@ -27,8 +27,14 @@ def _load_ddgs():
 
 
 def _ddg_search(query: str, max_results: int) -> List[Dict[str, str]]:
+    # ddgs picks a search engine per call; one can time out while the next answers (live
+    # 2026-11-06: mojeek timed out, the same query worked 6.7 s later). Retry once.
+    try:
+        found = _load_ddgs()().text(query, max_results=max_results)
+    except Exception:  # noqa: BLE001 — the retry's own failure is the one reported
+        found = _load_ddgs()().text(query, max_results=max_results)
     items = []
-    for item in _load_ddgs()().text(query, max_results=max_results) or []:
+    for item in found or []:
         items.append({
             "title": str(item.get("title") or "")[:200],
             "url": str(item.get("href") or item.get("url") or "")[:500],

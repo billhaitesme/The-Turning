@@ -222,6 +222,31 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "author_tool",
+        "title": "Author a tool",
+        "description": "Write a NEW read-only tool yourself when no shelf tool fits (ADR 0027): a "
+                       "keyless public JSON API you found with web_search/web_fetch. Give a "
+                       "snake_case name, a title, a description, an https url_template with "
+                       "{placeholders} for inputs, and fixture_args with real test values "
+                       "(e.g. 'year=2026; country=NO'). The contract is checked now; a rejection "
+                       "tells you what to fix. Authoring is not having: the operator PREPAREs "
+                       "(live test) and inducts it with a fingerprint.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "toolwright",
+        "parameters": [
+            {"name": "need", "label": "What capability this gives", "type": "text", "required": True},
+            {"name": "name", "label": "Tool name, snake_case (e.g. public_holidays)", "type": "text", "required": True},
+            {"name": "title", "label": "Short title", "type": "text", "required": True},
+            {"name": "description", "label": "What it returns, in one or two sentences", "type": "text", "required": True},
+            {"name": "url_template", "label": "https URL with {placeholders} for each input", "type": "text", "required": True},
+            {"name": "fixture_args", "label": "Real test values, 'key=value; key=value'", "type": "text", "required": True},
+            {"name": "output_path", "label": "Optional dotted path into the JSON to return", "type": "text", "required": False},
+            {"name": "why", "label": "Why it is needed", "type": "text", "required": False},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "check_capability_requests",
         "title": "Toolwright status",
         "description": "Read the Toolwright: every capability request with its status (proposed, "

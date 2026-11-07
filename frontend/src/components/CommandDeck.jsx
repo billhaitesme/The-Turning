@@ -473,10 +473,12 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
                   {String(req.status).toUpperCase().replace("_", " ")}
                   {req.candidate?.name ? ` // ${req.candidate.name}` : ""}
                   {req.requested_by ? ` // by ${req.requested_by}` : ""}
+                  {req.provenance?.source === "authored" ? " // AUTHORED BY OMEGA" : ""}
                 </span>
               </div>
               <div className="cap-actions">
-                {req.status === "proposed" || req.status === "failed" ? (
+                {req.status === "proposed" || req.status === "failed"
+                  || (req.status === "found" && req.provenance?.source === "authored") ? (
                   <button type="button" onClick={() => capAction(req.request_id, "prepare")}
                           data-tip="PREPARE: find a matching tool on the shelf, quarantine it, and verify it with one live test call.">PREPARE</button>
                 ) : null}

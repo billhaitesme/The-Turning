@@ -73,3 +73,33 @@ def test_a_caught_copy_after_shown_text_continues_instead_of_restarting(monkeypa
     # the reply reads as one continuous answer: the shown part, then the continuation inline
     assert final["reply"] == shown_before + "That covers everything."
     assert final["reply"].count("The backend restarted cleanly") == 1
+
+
+def test_let_me_try_again_is_a_promise():
+    assert escalation.promises_action(
+        "The web search timed out. Let me try again with a slightly different query.")
+
+
+def test_when_every_word_is_withheld_the_runtime_says_what_happened(monkeypatch):
+    authored = {"status": "executed", "outcome": {"capability_request_id": "cap-1", "tool_name": "public_holidays",
+                                                  "note": "Authored and filed. Not usable yet."}}
+    monkeypatch.setattr(agent_loop, "execute_tool_call", lambda name, args, session_id, **kw: authored)
+    earlier = "The tool has been authored and filed. " + LONG
+    script = iter([
+        ("", [{"function": {"name": "author_tool", "arguments": {}}}]),
+        (earlier, []),   # re-uses the previous reply's wording
+        (earlier, []),   # and again
+    ])
+
+    def seat(conversation, tools, model):
+        text, calls = next(script)
+        for i in range(0, len(text), 9):
+            yield {"type": "delta", "text": text[i:i + 9]}
+        yield {"type": "message", "content": text, "tool_calls": calls}
+
+    final = list(agent_loop.iter_agent_loop(
+        messages=[{"role": "assistant", "content": earlier}, {"role": "user", "content": "fix it"}],
+        model="t", session_id="c", seat_turn=seat))[-1]
+    assert final["repeats_caught"] == 2
+    assert "What happened this turn" in final["reply"]
+    assert "author_tool: executed" in final["reply"] and "cap-1" in final["reply"]
