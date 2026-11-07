@@ -105,7 +105,16 @@ async function inTab(tabId, func, args) {
   try {
     results = await chrome.scripting.executeScript({ target: { tabId: id }, func, args: args || [] });
   } catch (err) {
-    throw new Error(`cannot run in tab ${id}: ${err && err.message ? err.message : err} (browser-internal pages are off limits)`);
+    // Say what is actually wrong: a browser-internal page, an error page (reload it), or
+    // whatever the browser reported. The old blanket "(browser-internal pages are off limits)"
+    // was wrong for a tab showing a network error page (live, 2026-11-06).
+    const message = String(err && err.message ? err.message : err);
+    let url = "";
+    try { url = (await chrome.tabs.get(id)).url || ""; } catch { /* tab may be gone */ }
+    let hint = "";
+    if (/^(chrome|edge|about|moz-extension|chrome-extension|view-source|devtools):/.test(url)) hint = " (a browser-internal page: off limits)";
+    else if (/error page/i.test(message)) hint = " (the tab is showing an error page: open the URL again, then retry)";
+    throw new Error(`cannot run in tab ${id}${url ? ` [${url.slice(0, 80)}]` : ""}: ${message}${hint}`);
   }
   const first = results && results[0];
   if (!first) throw new Error(`no result from tab ${id}`);
