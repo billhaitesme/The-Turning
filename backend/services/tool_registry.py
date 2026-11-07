@@ -64,6 +64,11 @@ def get_tool_adapter(tool_name: str) -> Optional[ToolAdapter]:
 
 
 def register_default_tools() -> None:
+    # Browser Hands (ADR 0028): the operator's own browser through the paired extension.
+    from services.adapters.browser_hands import HANDS
+    for descriptor, adapter_cls in HANDS:
+        if descriptor["name"] not in TOOL_REGISTRY:
+            register_tool(descriptor, adapter_cls())
     if "backend_health_check" not in TOOL_REGISTRY:
         register_tool(BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter())
     if "host_status" not in TOOL_REGISTRY:

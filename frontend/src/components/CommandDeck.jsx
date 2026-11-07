@@ -26,6 +26,8 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
   const [deepSeat, setDeepSeat] = useState({ model: "", choices: [], changed_at: null });
   const [voices, setVoices] = useState({ current: "", current_label: "", voices: [] });
   const [proposals, setProposals] = useState([]);
+  const [hands, setHands] = useState({ switch: { on: false }, browsers: [], connected: false, log: [] });
+  const [pairing, setPairing] = useState({ token: "", shown: false });
   const [wbNote, setWbNote] = useState("");
   const [wbBusy, setWbBusy] = useState("");
   const [fetchLog, setFetchLog] = useState([]);
@@ -50,7 +52,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
 
   async function refreshSenses() {
     try {
-      const [b, f, t, fc, ds, vc, wb] = await Promise.all([
+      const [b, f, t, fc, ds, vc, wb, bh] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
@@ -58,6 +60,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
         fetch(`${API_BASE}/system/deep-seat`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/voice/voices`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/workbench`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/browser/status`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
@@ -67,6 +70,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
       if (ds) setDeepSeat(ds);
       if (vc) setVoices(vc);
       if (wb) setProposals(wb.proposals || []);
+      if (bh) setHands(bh);
     } catch { /* same */ }
   }
 
@@ -121,6 +125,31 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
         setBreaker(await res.json());
         playCue(breaker.on ? "ack" : "verified");
       }
+    } catch { /* surfaces on next poll */ }
+  }
+
+  async function flipHands() {
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/browser/switch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ on: !hands.switch?.on, changed_by: "desktop-console" }),
+      });
+      if (res.ok) {
+        playCue(hands.switch?.on ? "ack" : "verified");
+        refreshSenses();
+      }
+    } catch { /* surfaces on next poll */ }
+  }
+
+  async function showPairing() {
+    try {
+      const res = await fetch(`${API_BASE}/browser/pairing`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setPairing({ token: data.token, shown: true });
+      try { await navigator.clipboard.writeText(data.token); } catch { /* clipboard may be blocked */ }
     } catch { /* surfaces on next poll */ }
   }
 
@@ -528,6 +557,47 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
             </div>
           ))}
           {!capRequests.length ? <div className="empty">NO CAPABILITY REQUESTS.</div> : null}
+        </div>
+      </div>
+
+      <div className="command-deck-section">
+        <small className="command-deck-label"
+               data-tip="OMEGA acting in YOUR browser tabs through the OMEGA extension (Chrome, Edge, Firefox). Looking (tabs, read, screenshot, open a page) runs under this switch; clicking and typing also wait for your fingerprint. Every action is logged here.">
+          THE BROWSER HANDS // YOUR BROWSERS (XIII-F)
+        </small>
+        <div className="breaker-row">
+          <button
+            type="button"
+            className={`breaker-switch ${hands.switch?.on ? "is-on" : "is-off"}`}
+            onClick={flipHands}
+            data-tip="Your standing switch for OMEGA's hands in your browser. OFF = every browser action is refused. Flips are recorded."
+          >
+            <span className="breaker-lever" />
+            <strong>{hands.switch?.on ? "HANDS ON — BROWSER LIVE" : "HANDS OFF — BROWSER SAFE"}</strong>
+          </button>
+          <small>{hands.switch?.changed_at ? `last flip ${fmtTime(hands.switch.changed_at)}` : "never flipped"}</small>
+        </div>
+        <div className="hands-row">
+          <span data-tip="Browsers running the OMEGA extension that have polled in the last minute.">
+            {hands.browsers.filter((b) => b.connected).length
+              ? hands.browsers.filter((b) => b.connected).map((b) => `${b.browser.toUpperCase()} ${b.version} (${b.tabs} tabs)`).join(" // ")
+              : "NO BROWSER PAIRED — load extension/ in your browser, then pair it with the token"}
+          </span>
+          <button type="button" onClick={showPairing}
+                  data-tip="Shows the pairing token (and copies it). Paste it into the extension's options page. Keep it private: it is the key to your tabs.">
+            {pairing.shown ? "TOKEN SHOWN" : "SHOW PAIRING TOKEN"}
+          </button>
+        </div>
+        {pairing.shown ? <div className="cap-note hands-token">{pairing.token}</div> : null}
+        <div className="fetch-log">
+          {hands.log.length ? hands.log.slice(0, 6).map((entry, i) => (
+            <div key={i} className={`fetch-log-row ${entry.ok ? "ok" : "err"}`}>
+              <span>{fmtTime(entry.at)}</span>
+              <strong>{String(entry.action).toUpperCase()}</strong>
+              <span className="fetch-target">{entry.detail}</span>
+              <span>{entry.browser || "--"}</span>
+            </div>
+          )) : <div className="empty">NO BROWSER ACTIONS YET.</div>}
         </div>
       </div>
 

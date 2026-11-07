@@ -3104,3 +3104,8 @@ button:hover {
   text-transform: none;
 }
 .wb-needs { color: #f3be58; font-size: 0.6rem; letter-spacing: 0.06em; }
+
+/* Browser Hands: paired browsers and the pairing token */
+.hands-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0 2px; flex-wrap: wrap; }
+.hands-row span { font-size: 0.58rem; letter-spacing: 0.06em; color: rgba(170, 220, 190, 0.85); min-width: 0; }
+.hands-token { font-family: "Share Tech Mono", monospace; word-break: break-all; user-select: all; }

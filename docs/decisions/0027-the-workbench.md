@@ -82,6 +82,15 @@ proposals with `propose_change` and reads them with `check_change_proposals`; ev
 is an operator press on the console (DRAFT & TEST, PROMOTE twice around the biometric, ROLL
 BACK, REJECT). A promoted change runs only after the operator restarts the backend.
 
+### Slice 3 — Multi-file builds (next)
+
+The operator's direction (2026-11-06): *"it would be really nice if OMEGA could figure out how
+to do this itself, eventually"*, said of the browser extension, which was built by hand because
+the slice-2 drafter makes one small change per proposal. Slice 3: a proposal may be a BUILD:
+the drafter first plans the files and their responsibilities, then drafts them one at a time,
+runs the suite after each, and feeds failures back to itself, up to a budget; the operator
+reviews the whole branch. Same worktree, same gates, same biometric promote.
+
 ## Consequences
 
 - OMEGA can grow its own senses (slice 1) the day this lands, within the spec contract.

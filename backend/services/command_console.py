@@ -257,6 +257,20 @@ def _spec_from_author_fields(arguments: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _browser_hands_summary() -> Dict[str, Any]:
+    from services import browser_bridge
+    from services.browser_bridge import bridge
+
+    browsers = [b for b in bridge.browsers() if b["connected"]]
+    return {
+        "switch": "ON" if browser_bridge.switch_is_on() else "OFF (the operator flips it on the console)",
+        "paired_browsers": [f"{b['browser']} {b['version']} ({b['tabs']} tabs)" for b in browsers]
+        or ["none connected: the operator loads the OMEGA extension and pastes the pairing token"],
+        "can_do": "list tabs, read a tab's text, screenshot a tab, open a URL (under the switch); "
+                  "click and type (switch + biometric)",
+    }
+
+
 def _describe_self() -> Dict[str, Any]:
     """OMEGA's real body and settings, read live — the answer to "examine yourself". Every value
     comes from the running system; nothing here is a claim the runtime cannot back."""
@@ -282,8 +296,11 @@ def _describe_self() -> Dict[str, Any]:
         },
         "hearing": "The desktop console's hold-to-talk mic: speech is transcribed locally "
                    "(faster-whisper) and arrives as text. The phone apps have no mic yet.",
-        "sight": "Only images the operator attaches (look_at_image) and enrolled faces "
-                 "(recognize_faces). You cannot see the operator's screen or room.",
+        "sight": "Images the operator attaches (look_at_image), enrolled faces "
+                 "(recognize_faces), and, when the operator's BROWSER HANDS switch is ON and a "
+                 "browser is paired, their browser tabs (browser_tabs, browser_read, "
+                 "browser_screenshot). You cannot see the operator's screen or room otherwise.",
+        "browser_hands": _browser_hands_summary(),
         "screens": "Desktop web console (Bridge Zero) on the host PC; iPhone and Android apps "
                    "over Tailscale. All talk to the same backend.",
         "chat_model": (model_control.status() or {}).get("active_model"),

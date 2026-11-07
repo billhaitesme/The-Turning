@@ -101,6 +101,7 @@ from services import command_console
 from services import image_store
 from routes.system import router as system_router
 from routes.voice import router as voice_router
+from routes.browser import router as browser_router
 from routes.mobile import configure_mobile_runtime, router as mobile_router
 from routes.runtime_operations import router as runtime_operations_router
 
@@ -3146,3 +3147,4 @@ configure_mobile_runtime(
 app.include_router(mobile_router)
 app.include_router(runtime_operations_router)
 app.include_router(voice_router)
+app.include_router(browser_router)  # Browser Hands (ADR 0028): the paired extension's bridge
