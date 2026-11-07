@@ -222,6 +222,24 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "draft_tool",
+        "title": "Draft a tool",
+        "description": "PREFERRED way to get a new read-only tool when nothing installed or on "
+                       "the shelf fits (ADR 0027): describe the need, and a stronger model "
+                       "researches a free keyless JSON API, drafts the tool, and the runtime "
+                       "test-calls it, retrying with the failure reason, before filing it. Takes "
+                       "up to a minute; say so first. Filing is not having: the operator PREPAREs "
+                       "and INDUCTs it.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "toolwright",
+        "parameters": [
+            {"name": "need", "label": "What the tool should do, plainly", "type": "text", "required": True},
+            {"name": "why", "label": "Why it is needed", "type": "text", "required": False},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "author_tool",
         "title": "Author a tool",
         "description": "Write a NEW read-only tool yourself when no shelf tool fits (ADR 0027): a "

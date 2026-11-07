@@ -294,10 +294,12 @@ def _describe_self() -> Dict[str, Any]:
             "change_yourself": "NO: there is no path for you to change your own code, even "
                                "with the operator's approval. It is being designed (the "
                                "Workbench: you propose, tests run, the operator approves).",
-            "new_tools": "YES, within limits: author_tool lets you WRITE a new read-only tool "
-                         "(a keyless public JSON API, GET over https). It is tested live when "
-                         "the operator PREPAREs it and works only after the operator inducts it "
-                         "with a fingerprint. Or request_capability for a stocked shelf tool.",
+            "new_tools": "YES, within limits: draft_tool (preferred) has a stronger model "
+                         "research and draft a new read-only tool (a keyless public JSON API, GET "
+                         "over https), test-called before filing; author_tool if you already "
+                         "know the exact endpoint. Either works only after the operator PREPAREs "
+                         "and inducts it with a fingerprint. request_capability gets a stocked "
+                         "shelf tool.",
         },
         "limits": "You run on the operator's PC. You cannot install software, run code, change "
                   "your own code, or see anything the runtime does not hand you.",
@@ -323,6 +325,18 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"capability_request_id": filed["request_id"], "status": filed["status"],
                 "note": "Filed. The Toolwright pipeline (find → quarantine → verify → biometric "
                         "induction) decides whether this becomes a tool; filing is not having."}
+    if command["name"] == "draft_tool":
+        # ADR 0027 slice 1b: the frontier rung drafts, the runtime tests, only a passing
+        # candidate is filed. Breaker OFF or no working draft = a plain refusal with reasons.
+        from services.network_breaker import BreakerOpenError
+        from services.tool_drafter import draft_tool
+        try:
+            return draft_tool(str(arguments.get("need") or ""), str(arguments.get("why") or ""),
+                              requested_by=entry["requested_by"], session_id=entry["session_id"])
+        except BreakerOpenError as exc:
+            raise CommandError(422, str(exc)) from exc
+        except ValueError as exc:
+            raise CommandError(422, f"Drafting failed: {exc}") from exc
     if command["name"] == "author_tool":
         # ADR 0027 slice 1: OMEGA writes a candidate. Plain fields in; the runtime builds the
         # structured spec (params from the URL's placeholders, tags from the need and title) and
