@@ -67,7 +67,10 @@ def frontier_with(*drafts):
 
     def frontier(prompt):
         prompts.append(prompt)
-        return "openai/gpt-oss-120b", render_draft(queue.pop(0))
+        # out of scripted replies (e.g. a repair round the test did not plan for): a drafter
+        # with nothing to add, which leaves a red suite red
+        draft = queue.pop(0) if queue else {"summary": "nothing more to change", "edits": []}
+        return "openai/gpt-oss-120b", render_draft(draft)
     frontier.prompts = prompts
     return frontier
 
@@ -325,6 +328,25 @@ def test_stray_terminators_and_control_tokens_do_not_swallow_later_edits():
     assert draft["edits"][1]["old"] == "" and draft["edits"][1]["new"] == "class OwnBrowserReadAdapter:\n    pass\n"
     assert draft["more"] is False                                             # the LAST terminator is END
     assert workbench._parse_draft(text.replace("=== END\n", "=== CONTINUE\n", 3))["more"] is True
+
+
+def test_a_red_suite_gets_a_repair_round_with_the_failure_in_hand(repo, monkeypatch):
+    """The own-browser draft (2026-11-06) applied cleanly and failed only its own test (it never
+    called register_default_tools). The drafter should get the failure back and fix it."""
+    runs = iter([RED, GREEN])
+    monkeypatch.setattr(workbench, "run_suite", lambda worktree: next(runs))
+    repair = {"summary": "fix the test", "edits": [
+        {"file": "backend/tests/test_hello_polite.py", "old": "assert greet('Bill').endswith('!')",
+         "new": "assert greet('Bill') == 'Hello, Bill!'"}]}
+    frontier = frontier_with(GOOD_EDIT, repair)
+    tested = workbench.draft_and_test(propose(files=["backend/services/hello.py"])["proposal_id"], frontier=frontier)
+    assert tested["status"] == "tested" and tested["result"]["promotable"] is True
+    assert tested["draft"]["repairs"] == 1
+    repair_prompt = frontier.prompts[1]
+    assert "THE SUITE FAILED" in repair_prompt and "1 failed, 1 passed" in repair_prompt   # the tail travels
+    assert "test_hello_polite.py" in repair_prompt                                           # the file as it now is
+    assert "== 'Hello, Bill!'" in (workbench._worktree_dir(tested["proposal_id"]) / "backend" / "tests" / "test_hello_polite.py").read_text(encoding="utf-8")
+    assert "+    assert greet('Bill') == 'Hello, Bill!'" in tested["draft"]["diff"]          # the diff spans both rounds
 
 
 def test_pytest_summary_parsing():

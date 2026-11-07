@@ -75,6 +75,7 @@ EXCERPT_LINES = 40             # lines either side of a keyword hit in a big fil
 EXCERPT_BLOCKS = 3
 MAX_DRAFT_ATTEMPTS = 3
 MAX_DRAFT_PARTS = 4            # a draft delivered in parts (=== CONTINUE), each within the budget
+MAX_REPAIR_ROUNDS = 2          # red suite -> the failure goes back to the drafter, this many times
 MAX_DIFF_CHARS = 60_000
 SUITE_TIMEOUT_SECONDS = 900
 HEALTH_TIMEOUT_SECONDS = 180
@@ -440,6 +441,24 @@ def _sleep(seconds: float) -> None:  # module-level so tests can make waiting in
     time.sleep(seconds)
 
 
+REPAIR_PROMPT = """Your draft for this OMEGA-ARC change was applied, and THE SUITE FAILED. Fix it with further
+edits on top of the files as they are NOW (shown below). Re-read WHAT and make sure every
+requirement in it is met, including anything your draft skipped.
+
+PROPOSAL: {title}
+WHAT: {what}
+
+FAILURE:
+{failure}
+
+FILES AS THEY ARE NOW:
+{context}
+
+Reply in the same block format (=== SUMMARY / === EDIT <path> / <<<OLD / >>>NEW / === END):
+"old" must match the CURRENT text exactly once. Keep the reply under 2500 tokens.
+"""
+
+
 def _frontier(prompt: str) -> Tuple[str, str]:
     """The frontier planner drafts. A 429 (the minute's token budget is spent) is waited out
     once and retried; if the provider still refuses, the LOCAL deep rung drafts instead (ADR
@@ -713,15 +732,42 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     draft["summary"] = summary or draft.get("summary", "")
     draft["parts"] = parts
 
-    _git("add", "-A", cwd=worktree)
-    _git("-c", "user.name=OMEGA-ARC Workbench", "-c", "user.email=workbench@omega-arc.local",
-         "commit", "-q", "-m", f"Workbench {proposal_id}: {entry['title']}", cwd=worktree)
+    def commit_and_check() -> Tuple[List[str], Dict[str, Any]]:
+        _git("add", "-A", cwd=worktree)
+        _git("-c", "user.name=OMEGA-ARC Workbench", "-c", "user.email=workbench@omega-arc.local",
+             "commit", "-q", "--allow-empty", "-m", f"Workbench {proposal_id}: {entry['title']}", cwd=worktree)
+        syntax = syntax_check(worktree, touched)
+        tests = suite(worktree) if not syntax else {"ok": False, "passed": 0, "failed": 0, "tail": "skipped: syntax errors"}
+        return syntax, tests
+
+    syntax, tests = commit_and_check()
+    repairs = 0
+    # Red suite: the failure goes back to the drafter with the files AS THEY NOW ARE, and its
+    # further edits are applied on top (the own-browser draft failed only its own test, which
+    # never registered the tool, 2026-11-06). Syntax errors are repaired the same way.
+    while not tests["ok"] and repairs < MAX_REPAIR_ROUNDS:
+        repairs += 1
+        _, current = gather_context(worktree, {**entry, "files": touched})
+        prompt = REPAIR_PROMPT.format(
+            title=entry["title"], what=entry["what"],
+            failure="\n".join(syntax) if syntax else tests.get("tail", ""),
+            context=current)
+        try:
+            model, text = frontier(prompt)
+            fix = _parse_draft(text)
+            if fix.get("needs"):
+                break  # the drafter says it cannot be fixed without the operator: leave it red
+            for rel in _apply_edits(worktree, fix["edits"]):
+                if rel not in touched:
+                    touched.append(rel)
+        except WorkbenchError as exc:
+            failures.append(f"repair {repairs}: {exc}")
+            break
+        syntax, tests = commit_and_check()
     diff = _git("diff", f"{base}..HEAD", cwd=worktree)
-    syntax = syntax_check(worktree, touched)
-    tests = suite(worktree) if not syntax else {"ok": False, "passed": 0, "failed": 0, "tail": "skipped: syntax errors"}
     healthy = health(worktree) if tests["ok"] else {"ok": False, "tail": "skipped: tests not green"}
     entry["draft"] = {"model": model, "summary": draft.get("summary", ""), "files": touched,
-                      "attempts": len(failures) + 1, "parts": draft.get("parts", 1), "base": base,
+                      "attempts": len(failures) + 1, "parts": draft.get("parts", 1), "repairs": repairs, "base": base,
                       "head": _git("rev-parse", "HEAD", cwd=worktree).strip(),
                       "diff": diff[:MAX_DIFF_CHARS], "diff_truncated": len(diff) > MAX_DIFF_CHARS}
     entry["result"] = {"syntax_failures": syntax, "tests": tests, "health": healthy,
