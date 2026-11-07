@@ -260,6 +260,7 @@ COMMANDS: List[Dict[str, Any]] = [
             {"name": "url_template", "label": "https URL with {placeholders} for each input", "type": "text", "required": True},
             {"name": "fixture_args", "label": "Real test values, 'key=value; key=value'", "type": "text", "required": True},
             {"name": "output_path", "label": "Optional dotted path into the JSON to return", "type": "text", "required": False},
+            {"name": "output_fields", "label": "Optional fields to keep per item, comma-separated (e.g. 'date, localName, name')", "type": "text", "required": False},
             {"name": "why", "label": "Why it is needed", "type": "text", "required": False},
         ],
         "surfaces": ["mobile", "desktop"],

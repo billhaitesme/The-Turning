@@ -250,6 +250,8 @@ def _spec_from_author_fields(arguments: Dict[str, Any]) -> Dict[str, Any]:
         "params": [{"name": p, "type": "text", "label": p.replace("_", " "), "required": True}
                    for p in placeholders],
         "output_path": str(arguments.get("output_path") or "").strip(),
+        # comma-separated field names kept per item (validate_spec splits and checks them)
+        "output_fields": str(arguments.get("output_fields") or "").strip(),
         "max_output_chars": 3000,
         "fixture": {"args": fixture},
     }

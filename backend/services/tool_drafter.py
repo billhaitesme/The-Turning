@@ -23,7 +23,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from services.network_breaker import record_fetch, require_breaker_on
 
 MAX_ATTEMPTS = 3
-FIELDS = ("name", "title", "description", "url_template", "fixture_args", "output_path")
+FIELDS = ("name", "title", "description", "url_template", "fixture_args", "output_path",
+          "output_fields")
 
 DRAFT_PROMPT = """You write one read-only web tool for a local assistant. Need: {need}
 {why}
@@ -40,7 +41,10 @@ Reply with ONLY a JSON object with these keys:
   "description": one or two sentences on what it returns,
   "url_template": the https URL with {{placeholders}} for each input, e.g. https://host/api/v3/x/{{year}}/{{country}},
   "fixture_args": real test values for every placeholder, as "key=value; key=value",
-  "output_path": "" or a dotted path into the JSON to keep the output small.
+  "output_path": "" or a dotted path into the JSON to reach the useful part,
+  "output_fields": comma-separated field names to keep in each returned item (only the ones a
+    person needs, e.g. "date, localName, name"), or "" to keep everything. Output is capped at
+    3000 characters, so a long list MUST name its fields.
 """
 
 
@@ -74,7 +78,12 @@ def _parse_fields(text: str) -> Dict[str, str]:
         data = json.loads(match.group(0))
     except json.JSONDecodeError as exc:
         raise ValueError(f"the drafter's JSON did not parse ({exc.msg})") from exc
-    return {k: str(data.get(k) or "") for k in FIELDS}
+    fields = {}
+    for key in FIELDS:
+        value = data.get(key) or ""
+        # a model may answer a list (["date", "name"]) where a comma string was asked for
+        fields[key] = ", ".join(str(v) for v in value) if isinstance(value, list) else str(value)
+    return fields
 
 
 def _name_taken(name: str) -> bool:
@@ -102,6 +111,9 @@ def _live_test(spec: Dict[str, Any]) -> str:
     output = str(result.get("output") or "").strip()
     if not output or output in ("[]", "{}", "null"):
         return "the fixture call returned an empty result"
+    if result.get("truncated"):
+        return (f"the output was cut off at {spec['max_output_chars']} characters, so answers "
+                "would be incomplete; name only the needed fields in output_fields")
     return ""
 
 

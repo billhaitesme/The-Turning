@@ -25,6 +25,10 @@ SPEC_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,40}$")
 PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
 PARAM_TYPES = {"text", "number", "integer"}
 MAX_OUTPUT_CHARS_CAP = 20_000
+# Per-item field selection (2026-11-06): a year of public holidays is ~13 items of ~10 fields
+# each and overran the 3000-char output cap, so the later months were cut off. Keeping only the
+# fields that matter (date, localName, name) fits the whole year.
+OUTPUT_FIELDS_MAX = 20
 MAX_DOWNLOAD_BYTES = 500_000
 SPEC_TIMEOUT_SECONDS = 20.0
 
@@ -74,6 +78,18 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
     if missing:
         raise ValueError(f"Spec fixture must cover required params; missing {missing}.")
     max_output_chars = int(spec.get("max_output_chars") or 4000)
+    raw_fields = spec.get("output_fields") or []
+    if isinstance(raw_fields, str):
+        raw_fields = [f for f in re.split(r"[,\s]+", raw_fields) if f]
+    if not isinstance(raw_fields, list) or len(raw_fields) > OUTPUT_FIELDS_MAX:
+        raise ValueError(f"Spec output_fields must be a list of at most {OUTPUT_FIELDS_MAX} field names.")
+    output_fields = []
+    for field in raw_fields:
+        field = str(field).strip()
+        if not re.fullmatch(r"\w{1,60}", field):
+            raise ValueError(f"Bad output field name: {field!r}")
+        if field not in output_fields:
+            output_fields.append(field)
     return {
         "name": name,
         "title": title,
@@ -84,6 +100,7 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
         "url_template": url_template,
         "params": declared,
         "output_path": str(spec.get("output_path") or "").strip(),
+        "output_fields": output_fields,
         "max_output_chars": max(200, min(MAX_OUTPUT_CHARS_CAP, max_output_chars)),
         "fixture": {"args": dict(fixture_args)},
         "source": str(spec.get("source") or "unknown"),
@@ -101,6 +118,37 @@ def _http_get(url: str) -> Tuple[int, str]:
                 if len(raw) > MAX_DOWNLOAD_BYTES:
                     break
             return response.status_code, raw[:MAX_DOWNLOAD_BYTES].decode("utf-8", errors="replace")
+
+
+def _project(value: Any, fields: List[str]) -> Tuple[Any, List[str]]:
+    """Keep only `fields` in each object (a list of objects, or one object). Returns the projected
+    value and the keys that were available, so a miss can be reported precisely."""
+    if not fields:
+        return value, []
+    if isinstance(value, dict):
+        return {k: value[k] for k in fields if k in value}, list(value.keys())
+    if isinstance(value, list):
+        available: List[str] = []
+        projected = []
+        for item in value:
+            if isinstance(item, dict):
+                if not available:
+                    available = list(item.keys())
+                projected.append({k: item[k] for k in fields if k in item})
+            else:
+                projected.append(item)
+        return projected, available
+    return value, []
+
+
+def _projection_missed(value: Any) -> bool:
+    """True when field selection kept nothing at all (every object came back empty)."""
+    if isinstance(value, dict):
+        return not value
+    if isinstance(value, list):
+        objects = [v for v in value if isinstance(v, dict)]
+        return bool(objects) and all(not v for v in objects)
+    return False
 
 
 def _extract(payload: Any, output_path: str) -> Any:
@@ -177,6 +225,15 @@ class SpecToolAdapter:
         except json.JSONDecodeError:
             payload = body
         output = _extract(payload, self.spec["output_path"])
+        fields = self.spec.get("output_fields") or []
+        if fields:
+            output, available = _project(output, fields)
+            if _projection_missed(output):
+                record_fetch("fetch", url, byte_count=len(body.encode("utf-8", "ignore")),
+                             ok=False, detail=f"{self.spec['name']}: output_fields matched nothing")
+                return {"tool": self.spec["name"], "url": url,
+                        "error": f"none of output_fields {fields} exist in the response; "
+                                 f"available fields: {available[:30]}"}
         rendered = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
         truncated = len(rendered) > self.spec["max_output_chars"]
         record_fetch("fetch", url, byte_count=len(body.encode("utf-8", "ignore")),
