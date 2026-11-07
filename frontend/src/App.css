@@ -3086,3 +3086,20 @@ button:hover {
   padding: 5px 6px;
   font-size: 0.66rem;
 }
+
+/* the Workbench: a proposal's diff and check output, folded until read */
+.wb-diff { margin-top: 4px; min-width: 0; }
+.wb-diff summary { cursor: pointer; font-size: 0.56rem; letter-spacing: 0.08em; color: rgba(170, 220, 190, 0.85); }
+.wb-diff pre {
+  margin: 4px 0 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px 8px;
+  border-left: 2px solid rgba(98, 228, 255, 0.5);
+  background: rgba(6, 12, 18, 0.9);
+  color: #cfe9f5;
+  font-size: 0.6rem;
+  line-height: 1.35;
+  white-space: pre;
+  text-transform: none;
+}

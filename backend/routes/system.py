@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ from services.evidence_engine import (
     save_session_evidence_store,
 )
 from services import (agent_loop, command_console, command_registry, deep_seat, host_clock,
-                      network_breaker, toolwright)
+                      network_breaker, toolwright, workbench)
 from services.tool_approval import approve_request, create_approval_request, load_tool_approval_store, reject_request
 from services.tool_contracts import build_tool_request
 from services.tool_evidence_bridge import execute_backend_health_check_request
@@ -66,6 +66,75 @@ def set_network_breaker(req: BreakerRequest) -> Dict[str, Any]:
                                         channel="desktop")
     state["history"] = (state.get("history") or [])[-20:][::-1]
     return state
+
+
+# ----------------------------------------------------------------------- XIII-E: the Workbench
+class ProposalBody(BaseModel):
+    title: str = Field(..., min_length=1, max_length=160)
+    what: str = Field(..., min_length=1, max_length=4000)
+    why: str = Field(default="", max_length=2000)
+    files: List[str] = Field(default_factory=list)
+
+
+def _workbench_errors(fn):
+    try:
+        return fn()
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except workbench.WorkbenchError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/workbench")
+def get_workbench() -> Dict[str, Any]:
+    return {"proposals": workbench.list_proposals()}
+
+
+@router.post("/workbench")
+def file_proposal(req: ProposalBody) -> Dict[str, Any]:
+    entry = _workbench_errors(lambda: workbench.propose(
+        req.title, req.what, req.why, requested_by="operator:desktop", session_id="workbench",
+        files=req.files))
+    return {"proposal": entry, "note": "Filed. Press DRAFT & TEST to draft it in a worktree and run the suite."}
+
+
+@router.post("/workbench/{proposal_id}/test")
+def draft_and_test_proposal(proposal_id: str) -> Dict[str, Any]:
+    """One press: worktree, frontier draft, apply, syntax, full suite, health. Minutes."""
+    entry = _workbench_errors(lambda: workbench.draft_and_test(proposal_id))
+    note = ("Every check green: review the diff, then PROMOTE." if (entry.get("result") or {}).get("promotable")
+            else f"Not promotable: {entry['history'][-1]['event']}")
+    return {"proposal": entry, "note": note}
+
+
+@router.post("/workbench/{proposal_id}/promote")
+def promote_proposal(proposal_id: str) -> Dict[str, Any]:
+    """First press raises the biometric approval; after the operator confirms on a mobile
+    console, the next press merges the branch into main (one --no-ff commit)."""
+    def go():
+        entry = workbench.get_proposal(proposal_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail=f"Unknown proposal {proposal_id}.")
+        if entry["status"] == "tested" or workbench.promotion_approval_is_dead(entry):
+            entry = workbench.request_promotion(proposal_id, requested_by="operator:desktop")
+            return {"proposal": entry, "note": "Approval raised — confirm with the biometric on a "
+                                               "mobile console, then press PROMOTE again to merge."}
+        entry = workbench.complete_promotion(proposal_id)
+        return {"proposal": entry, "note": f"Promoted: merged into main as "
+                                           f"{entry['promotion']['merge_sha'][:10]}. Restart the backend to run it."}
+    return _workbench_errors(go)
+
+
+@router.post("/workbench/{proposal_id}/rollback")
+def rollback_proposal(proposal_id: str) -> Dict[str, Any]:
+    entry = _workbench_errors(lambda: workbench.rollback(proposal_id, by="operator:desktop"))
+    return {"proposal": entry, "note": "Rolled back: one revert commit on main. Restart the backend."}
+
+
+@router.post("/workbench/{proposal_id}/reject")
+def reject_proposal(proposal_id: str) -> Dict[str, Any]:
+    entry = _workbench_errors(lambda: workbench.reject(proposal_id, by="operator:desktop"))
+    return {"proposal": entry, "note": "Rejected; its worktree and branch are gone."}
 
 
 # ----------------------------------------------------------------------- the deep rung's seat

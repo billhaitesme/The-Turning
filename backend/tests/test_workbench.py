@@ -1,0 +1,175 @@
+"""The Workbench (ADR 0027 slice 2): proposal -> worktree draft -> syntax/tests/health -> review
+-> biometric promote (one merge) -> rollback (one revert). Git is real, on a temporary repo;
+the suite run, the health check and the frontier are stubbed."""
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from services import tool_approval, workbench
+
+HELLO = "def greet(name):\n    return f'Hello, {name}'\n"
+TEST_HELLO = "from services.hello import greet\n\n\ndef test_greet():\n    assert greet('Bill') == 'Hello, Bill'\n"
+GOOD_EDIT = {"summary": "Greet politely.", "edits": [
+    {"file": "backend/services/hello.py", "old": "return f'Hello, {name}'", "new": "return f'Hello, {name}!'"},
+    {"file": "backend/tests/test_hello_polite.py", "old": "",
+     "new": "from services.hello import greet\n\n\ndef test_polite():\n    assert greet('Bill').endswith('!')\n"},
+]}
+GREEN = {"ok": True, "passed": 2, "failed": 0, "tail": "2 passed"}
+RED = {"ok": False, "passed": 1, "failed": 1, "tail": "1 failed, 1 passed"}
+HEALTHY = {"ok": True, "tail": "HEALTH 200"}
+
+
+def git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", *args], cwd=str(repo), capture_output=True, text=True, check=True).stdout
+
+
+@pytest.fixture
+def repo(tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    (root / "backend" / "services").mkdir(parents=True)
+    (root / "backend" / "tests").mkdir()
+    (root / "backend" / "data").mkdir()
+    (root / "backend" / "services" / "hello.py").write_text(HELLO, encoding="utf-8")
+    (root / "backend" / "tests" / "test_hello.py").write_text(TEST_HELLO, encoding="utf-8")
+    (root / "backend" / "services" / "tool_approval.py").write_text("GATE = True\n", encoding="utf-8")
+    (root / "backend" / "services" / "keys.py").write_text("API_KEY = 'sk-abcdefghijklmnop123456'\n", encoding="utf-8")
+    git(root, "init", "-q", "-b", "main")
+    git(root, "config", "user.email", "t@t")
+    git(root, "config", "user.name", "t")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    monkeypatch.setattr(workbench, "REPO_ROOT", root)
+    monkeypatch.setattr(workbench, "run_suite", lambda worktree: GREEN)
+    monkeypatch.setattr(workbench, "health_check", lambda worktree: HEALTHY)
+    workbench._store_path().unlink(missing_ok=True)
+    yield root
+    workbench._store_path().unlink(missing_ok=True)
+
+
+def frontier_with(*drafts):
+    queue = list(drafts)
+    prompts = []
+
+    def frontier(prompt):
+        prompts.append(prompt)
+        return "openai/gpt-oss-120b", json.dumps(queue.pop(0))
+    frontier.prompts = prompts
+    return frontier
+
+
+def propose(files=None):
+    return workbench.propose("Polite greeting", "greet() should end with an exclamation mark",
+                             "warmth", requested_by="model:agent-seat", session_id="s", files=files)
+
+
+def test_proposals_refuse_gates_secrets_and_traversal(repo):
+    for bad in ("backend/services/tool_approval.py", "backend/data/goals.json", ".env",
+                "backend/../../etc/passwd", "scripts/launch_backend.py"):
+        with pytest.raises(workbench.WorkbenchError):
+            propose(files=[bad])
+    assert workbench.list_proposals() == []
+
+
+def test_draft_test_promote_and_rollback_end_to_end(repo):
+    entry = propose(files=["backend/services/hello.py"])
+    pid = entry["proposal_id"]
+    live = repo / "backend" / "services" / "hello.py"
+
+    tested = workbench.draft_and_test(pid, frontier=frontier_with(GOOD_EDIT))
+    assert tested["status"] == "tested" and tested["result"]["promotable"] is True
+    assert "+    return f'Hello, {name}!'" in tested["draft"]["diff"]
+    assert tested["draft"]["files"] == ["backend/services/hello.py", "backend/tests/test_hello_polite.py"]
+    assert live.read_text(encoding="utf-8") == HELLO                       # the live checkout is untouched
+    assert (workbench._worktree_dir(pid) / "backend" / "services" / "hello.py").read_text(encoding="utf-8").endswith("!'\n")
+    assert f"workbench/{pid}" in git(repo, "branch", "--list", f"workbench/{pid}")
+
+    waiting = workbench.request_promotion(pid, requested_by="operator:desktop")
+    assert waiting["status"] == "awaiting_promotion"
+    with pytest.raises(PermissionError):
+        workbench.complete_promotion(pid)                                  # no approval yet
+    tool_approval.approve_request(waiting["promotion"]["request_id"], approved_by="operator")
+    with pytest.raises(PermissionError, match="BIOMETRIC"):
+        workbench.complete_promotion(pid)                                  # plain approval is not enough
+    tool_approval.approve_request(waiting["promotion"]["request_id"], approved_by="operator",
+                                  confirmation="biometric")
+    promoted = workbench.complete_promotion(pid)
+    assert promoted["status"] == "promoted"
+    assert live.read_text(encoding="utf-8").endswith("!'\n")             # ONE merge changed main
+    assert "Workbench promote" in git(repo, "log", "-1", "--format=%s")
+    assert git(repo, "log", "-1", "--format=%P").split().__len__() == 2  # a merge commit (--no-ff)
+    assert not workbench._worktree_dir(pid).exists()
+    with pytest.raises(workbench.WorkbenchError):
+        workbench.complete_promotion(pid)                                  # a promoted proposal cannot be re-promoted
+
+    rolled = workbench.rollback(pid, by="operator:desktop")
+    assert rolled["status"] == "rolled_back"
+    assert live.read_text(encoding="utf-8") == HELLO                       # ONE revert restored it
+    assert not (repo / "backend" / "tests" / "test_hello_polite.py").exists()
+
+
+def test_a_missed_edit_goes_back_to_the_drafter_with_the_reason(repo):
+    miss = {"summary": "x", "edits": [{"file": "backend/services/hello.py", "old": "return 'nope'", "new": "y"}]}
+    frontier = frontier_with(miss, GOOD_EDIT)
+    tested = workbench.draft_and_test(propose()["proposal_id"], frontier=frontier)
+    assert tested["status"] == "tested" and tested["draft"]["attempts"] == 2
+    assert "found 0 times" in frontier.prompts[1]
+
+
+def test_red_tests_are_not_promotable(repo, monkeypatch):
+    monkeypatch.setattr(workbench, "run_suite", lambda worktree: RED)
+    tested = workbench.draft_and_test(propose()["proposal_id"], frontier=frontier_with(GOOD_EDIT))
+    assert tested["status"] == "tested" and tested["result"]["promotable"] is False
+    assert tested["result"]["health"]["tail"].startswith("skipped")
+    with pytest.raises(workbench.WorkbenchError, match="not promotable"):
+        workbench.request_promotion(tested["proposal_id"], requested_by="operator:desktop")
+
+
+def test_a_syntax_error_is_caught_before_the_suite_runs(repo, monkeypatch):
+    monkeypatch.setattr(workbench, "run_suite", lambda worktree: pytest.fail("suite must not run"))
+    broken = {"summary": "x", "edits": [{"file": "backend/services/hello.py", "old": "return f'Hello, {name}'",
+                                         "new": "return f'Hello, {name}'\n  oops ="}]}
+    tested = workbench.draft_and_test(propose()["proposal_id"], frontier=frontier_with(broken))
+    assert tested["result"]["syntax_failures"] and tested["result"]["promotable"] is False
+
+
+def test_a_file_with_a_secret_never_reaches_the_drafter(repo):
+    with pytest.raises(workbench.WorkbenchError, match="secret"):
+        workbench.gather_context(repo, propose(files=["backend/services/keys.py"]))
+
+
+def test_drafts_may_not_touch_protected_or_outside_files(repo):
+    for bad_file in ("backend/services/tool_approval.py", "backend/data/x.json", "scripts/x.py"):
+        bad = {"summary": "x", "edits": [{"file": bad_file, "old": "", "new": "pwned"}]}
+        failed = workbench.draft_and_test(propose()["proposal_id"], frontier=frontier_with(bad, bad, bad))
+        assert failed["status"] == "failed" and "Refused" in failed["history"][-1]["event"]
+        assert not (repo / bad_file).exists() or (repo / bad_file).read_text(encoding="utf-8") != "pwned"
+
+
+def test_reject_removes_worktree_and_branch(repo):
+    pid = propose()["proposal_id"]
+    workbench.draft_and_test(pid, frontier=frontier_with(GOOD_EDIT))
+    assert workbench._worktree_dir(pid).exists()
+    assert workbench.reject(pid, by="operator:desktop")["status"] == "rejected"
+    assert not workbench._worktree_dir(pid).exists()
+    assert git(repo, "branch", "--list", f"workbench/{pid}").strip() == ""
+
+
+def test_a_dirty_live_file_blocks_promotion(repo):
+    pid = propose()["proposal_id"]
+    workbench.draft_and_test(pid, frontier=frontier_with(GOOD_EDIT))
+    waiting = workbench.request_promotion(pid, requested_by="operator:desktop")
+    tool_approval.approve_request(waiting["promotion"]["request_id"], approved_by="o", confirmation="biometric")
+    (repo / "backend" / "services" / "hello.py").write_text(HELLO + "# local edit\n", encoding="utf-8")
+    with pytest.raises(workbench.WorkbenchError, match="uncommitted"):
+        workbench.complete_promotion(pid)
+
+
+def test_pytest_summary_parsing():
+    assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
+        "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}
+    red = workbench.summarize_pytest(1, "F..\n1 failed, 2 passed in 1.0s")
+    assert red["ok"] is False and red["failed"] == 1 and red["passed"] == 2

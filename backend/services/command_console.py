@@ -296,9 +296,11 @@ def _describe_self() -> Dict[str, Any]:
         "code": {
             "write_code_as_text": "YES: you can write code in a reply for the operator to read.",
             "run_code": "NO: you cannot execute code. No command runs code you write.",
-            "change_yourself": "NO: there is no path for you to change your own code, even "
-                               "with the operator's approval. It is being designed (the "
-                               "Workbench: you propose, tests run, the operator approves).",
+            "change_yourself": "ONLY by proposal: propose_change files what should change and "
+                               "why. The operator drafts and tests it in an isolated copy "
+                               "(DRAFT & TEST), reviews the diff, and promotes it with a "
+                               "fingerprint. You never edit code directly, and a proposal "
+                               "changes nothing until promoted.",
             "new_tools": "YES, within limits: draft_tool (preferred) has a stronger model "
                          "research and draft a new read-only tool (a keyless public JSON API, GET "
                          "over https), test-called before filing; author_tool if you already "
@@ -387,6 +389,32 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
                     "available. 'verified' and 'awaiting_induction' requests wait on the "
                     "operator's biometric induction; say so, never claim the tool exists.",
         }
+    if command["name"] == "propose_change":
+        from services import workbench
+        files = [f.strip() for f in str(arguments.get("files") or "").split(",") if f.strip()]
+        try:
+            filed = workbench.propose(str(arguments.get("title") or ""), str(arguments.get("what") or ""),
+                                      str(arguments.get("why") or ""), requested_by=entry["requested_by"],
+                                      session_id=entry["session_id"], files=files)
+        except workbench.WorkbenchError as exc:
+            raise CommandError(422, str(exc)) from exc
+        return {"proposal_id": filed["proposal_id"], "status": filed["status"],
+                "note": "Proposed. Nothing has changed: the operator must press DRAFT & TEST "
+                        "(the draft runs in an isolated copy with the full test suite), review "
+                        "the diff, and promote it with a fingerprint. Say exactly that."}
+    if command["name"] == "check_change_proposals":
+        from services import workbench
+        return {"proposals": [{
+            "proposal_id": p.get("proposal_id"), "title": p.get("title"), "status": p.get("status"),
+            "requested_by": p.get("requested_by"), "filed_at": p.get("filed_at"),
+            "summary": (p.get("draft") or {}).get("summary"),
+            "files": (p.get("draft") or {}).get("files") or p.get("files"),
+            "promotable": (p.get("result") or {}).get("promotable"),
+            "tests": {k: (p.get("result") or {}).get("tests", {}).get(k) for k in ("passed", "failed")},
+            "last_event": ((p.get("history") or [{}])[-1]).get("event"),
+        } for p in workbench.list_proposals()[:20]],
+            "note": "Only 'promoted' proposals are live code (after a backend restart). Every "
+                    "other status means nothing has changed yet; say so."}
     if command["name"] == "describe_self":
         return _describe_self()
     if command["name"] == "list_voices":

@@ -25,6 +25,9 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
   const [breaker, setBreaker] = useState({ on: false, changed_at: null });
   const [deepSeat, setDeepSeat] = useState({ model: "", choices: [], changed_at: null });
   const [voices, setVoices] = useState({ current: "", current_label: "", voices: [] });
+  const [proposals, setProposals] = useState([]);
+  const [wbNote, setWbNote] = useState("");
+  const [wbBusy, setWbBusy] = useState("");
   const [fetchLog, setFetchLog] = useState([]);
   const [capRequests, setCapRequests] = useState([]);
   const [capNeed, setCapNeed] = useState("");
@@ -47,13 +50,14 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
 
   async function refreshSenses() {
     try {
-      const [b, f, t, fc, ds, vc] = await Promise.all([
+      const [b, f, t, fc, ds, vc, wb] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/faces`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/deep-seat`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/voice/voices`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/system/workbench`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
@@ -62,6 +66,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
       if (fc) setFaces(fc);
       if (ds) setDeepSeat(ds);
       if (vc) setVoices(vc);
+      if (wb) setProposals(wb.proposals || []);
     } catch { /* same */ }
   }
 
@@ -117,6 +122,31 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
         playCue(breaker.on ? "ack" : "verified");
       }
     } catch { /* surfaces on next poll */ }
+  }
+
+  async function wbAction(id, action) {
+    // DRAFT & TEST runs the frontier draft plus the full suite in a worktree: minutes, one at a time
+    if (wbBusy) return;
+    setWbBusy(`${id}:${action}`);
+    setWbNote(action === "test" ? "Drafting in a worktree and running the full test suite — this takes a few minutes…" : "");
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/system/workbench/${id}/${action}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setWbNote(String(data?.detail || `HTTP ${res.status}`));
+        playCue("alarm-amber");
+      } else {
+        setWbNote(String(data?.note || `${action} done`));
+        playCue(data?.proposal?.status === "promoted" ? "completion" : "verified");
+      }
+    } catch (err) {
+      setWbNote(String(err?.message || err));
+      playCue("alarm-amber");
+    } finally {
+      if (aliveRef.current) setWbBusy("");
+      refreshSenses();
+    }
   }
 
   async function chooseVoice(voice) {
@@ -498,6 +528,71 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
             </div>
           ))}
           {!capRequests.length ? <div className="empty">NO CAPABILITY REQUESTS.</div> : null}
+        </div>
+      </div>
+
+      <div className="command-deck-section">
+        <small className="command-deck-label"
+               data-tip="How OMEGA changes its own code (ADR 0027): it proposes; DRAFT & TEST drafts the change in an isolated copy and runs the full test suite; you review the diff; your fingerprint promotes it as one commit; ROLL BACK is one revert.">
+          THE WORKBENCH // CODE PROPOSALS (XIII-E)
+        </small>
+        {wbNote ? <div className="cap-note">{wbNote}</div> : null}
+        <div className="cap-list">
+          {proposals.slice(0, 6).map((p) => {
+            const r = p.result || {};
+            const tests = r.tests || {};
+            const busy = wbBusy.startsWith(`${p.proposal_id}:`);
+            return (
+              <div key={p.proposal_id} className={`cap-row status-${p.status}`}>
+                <div className="cap-copy">
+                  <strong>{p.title}</strong>
+                  <span>
+                    {String(p.status).toUpperCase().replace("_", " ")}
+                    {p.requested_by ? ` // by ${p.requested_by}` : ""}
+                    {p.result ? ` // tests ${tests.passed ?? 0} pass / ${tests.failed ?? 0} fail // health ${r.health?.ok ? "OK" : "FAIL"}` : ""}
+                  </span>
+                  {p.draft?.summary ? <span>{p.draft.summary}</span> : null}
+                  {p.draft?.diff ? (
+                    <details className="wb-diff" data-tip="The exact change, as git shows it. Read it before promoting.">
+                      <summary>DIFF // {(p.draft.files || []).join(", ")}{p.draft.diff_truncated ? " (truncated)" : ""}</summary>
+                      <pre>{p.draft.diff}</pre>
+                    </details>
+                  ) : null}
+                  {p.result && !r.promotable ? (
+                    <details className="wb-diff">
+                      <summary>WHY NOT PROMOTABLE</summary>
+                      <pre>{(r.syntax_failures || []).join("\n")}{"\n"}{tests.tail || ""}{"\n"}{r.health?.tail || ""}</pre>
+                    </details>
+                  ) : null}
+                </div>
+                <div className="cap-actions">
+                  {["proposed", "failed", "tested"].includes(p.status) ? (
+                    <button type="button" disabled={Boolean(wbBusy)} onClick={() => wbAction(p.proposal_id, "test")}
+                            data-tip="DRAFT & TEST: a stronger model drafts the change in an isolated worktree, then syntax check, the full test suite and a health check run. A few minutes; the live backend is untouched.">
+                      {busy ? "WORKING…" : "DRAFT & TEST"}
+                    </button>
+                  ) : null}
+                  {(p.status === "tested" && r.promotable) || p.status === "awaiting_promotion" ? (
+                    <button type="button" disabled={Boolean(wbBusy)} onClick={() => wbAction(p.proposal_id, "promote")}
+                            data-tip={p.status === "tested"
+                              ? "PROMOTE: sends an approval to your phone. Approve with your fingerprint within 5 minutes, then press again to merge."
+                              : "Press again after approving on your phone: merges the branch into main as one commit."}>
+                      {p.status === "tested" ? "PROMOTE" : "MERGE"}
+                    </button>
+                  ) : null}
+                  {p.status === "promoted" ? (
+                    <button type="button" className="cap-deny" disabled={Boolean(wbBusy)} onClick={() => wbAction(p.proposal_id, "rollback")}
+                            data-tip="ROLL BACK: one revert commit undoes the promotion. Restart the backend afterwards.">ROLL BACK</button>
+                  ) : null}
+                  {!["promoted", "rolled_back", "rejected"].includes(p.status) ? (
+                    <button type="button" className="cap-deny" disabled={Boolean(wbBusy)} onClick={() => wbAction(p.proposal_id, "reject")}
+                            data-tip="REJECT: discard this proposal, its worktree and branch.">REJECT</button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+          {!proposals.length ? <div className="empty">NO CODE PROPOSALS.</div> : null}
         </div>
       </div>
 

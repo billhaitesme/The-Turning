@@ -265,6 +265,40 @@ COMMANDS: List[Dict[str, Any]] = [
         ],
         "surfaces": ["mobile", "desktop"],
     },
+    # -- the Workbench (ADR 0027 slice 2): OMEGA proposes code changes; the runtime drafts
+    #    (frontier), tests in a worktree, and only the operator's biometric promotes.
+    {
+        "name": "propose_change",
+        "title": "Propose a code change",
+        "description": "File a proposal to change OMEGA-ARC's own code (ADR 0027): a title, "
+                       "what should change, and why. Optionally the repo-relative files it "
+                       "touches. Proposing is not changing: the operator presses DRAFT & TEST "
+                       "(a stronger model drafts it in an isolated copy and the full test suite "
+                       "runs), reviews the diff, and promotes it with a fingerprint. Say "
+                       "exactly that.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "workbench",
+        "parameters": [
+            {"name": "title", "label": "Short title", "type": "text", "required": True},
+            {"name": "what", "label": "What should change, concretely", "type": "text", "required": True},
+            {"name": "why", "label": "Why", "type": "text", "required": False},
+            {"name": "files", "label": "Repo-relative files it touches, comma-separated (optional)", "type": "text", "required": False},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
+        "name": "check_change_proposals",
+        "title": "Workbench status",
+        "description": "Read the Workbench: every code-change proposal with its status "
+                       "(proposed, tested, awaiting_promotion, promoted, rolled_back, rejected, "
+                       "failed), test result and summary. Read-only. Check this before filing "
+                       "a proposal twice and before telling the operator where one stands.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "workbench",
+        "surfaces": ["mobile", "desktop"],
+    },
     {
         "name": "check_capability_requests",
         "title": "Toolwright status",

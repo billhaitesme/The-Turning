@@ -76,3 +76,6 @@ backend/models/
 
 # Enrolled face gallery - biometric data, local only, never committed
 backend/data/faces/
+
+# Workbench worktrees (ADR 0027): proposals are drafted and tested here, never in the live checkout
+.workbench/
