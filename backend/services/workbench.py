@@ -327,8 +327,13 @@ Rules:
 - Match the repository's style. No new dependencies. No network calls added.
 - Add or adjust a test under backend/tests/ when behaviour changes.
 - Only edit files shown below, or create a new file under backend/tests/ or docs/.
+- Change the EXISTING code that implements the behaviour. Never add a parallel function or
+  file with a similar name when the real one is shown below: edit the real one.
 - Each edit is an exact search/replace: "old" must appear EXACTLY ONCE in the file (copy it
   verbatim, including indentation; use enough lines to be unique). For a new file, "old" is "".
+- Some files are shown as numbered excerpts ("12: code"). The "N: " prefix is NOT in the file:
+  "old" must contain the code text only, never the line numbers.
+- Never write that something "now" does X in a comment or docstring unless your edit makes it so.
 {failures}
 FILES:
 {context}

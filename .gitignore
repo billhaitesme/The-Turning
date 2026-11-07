@@ -71,8 +71,15 @@ training/*.err
 # RebelsKum ComfyUI pipeline — private templates (checkpoints/LoRAs/face model names)
 backend/services/adapters/comfyui_private/
 
-# Voice engine model files (fetched at build time, never committed)
-backend/models/
+# Voice engine model files (fetched at build time, never committed). The directory's SOURCE
+# files are tracked: ignoring the whole directory hid routing.py from git (found 2026-11-06
+# when a Workbench worktree's suite failed to import it).
+# (the global "models/" rule above also hides it, so the directory is un-ignored first and its
+# contents re-ignored; only the two source files come through)
+!backend/models/
+backend/models/*
+!backend/models/__init__.py
+!backend/models/routing.py
 
 # Enrolled face gallery - biometric data, local only, never committed
 backend/data/faces/
