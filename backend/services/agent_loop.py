@@ -30,7 +30,8 @@ from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import httpx
 
-from services import command_console, command_registry, escalation, number_check, repeat_guard
+from services import (claim_check, command_console, command_registry, escalation, number_check,
+                      repeat_guard)
 
 EventGenerator = Generator[Dict[str, Any], None, None]
 # A seat turn: (conversation, tools-or-None, model) -> events ({"type": "delta"|"message", ...}).
@@ -60,7 +61,9 @@ Hands (Epoch XIII-A):
   with the need in plain words: a stronger model researches the API and the runtime test-calls
   it before filing (up to a minute; say so first). Use author_tool only when you already know
   an exact, working, keyless endpoint. Either way the tool is not usable until the operator
-  PREPAREs and INDUCTs it; say exactly that.
+  PREPAREs and INDUCTs it; say exactly that. These make DATA LOOKUPS only (read a public JSON
+  web API). They cannot add voices, install anything, download files, control a browser or the
+  PC, or change you: for those say plainly that no path exists yet.
 - Questions about YOURSELF (your voice, hearing, sight, screens, settings, models, what you
   can do): call describe_self and answer from it. Never guess about your own body. You cannot
   see the operator's screen: you only know what the runtime hands you (a console note may say
@@ -471,14 +474,21 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             # The reply has streamed; numbers the tools never returned are flagged, not edited.
             unverified, note = number_check.check_reply("".join(reply_parts), tool_results,
                                                         operator_message)
-            if note:
-                seam = "\n\n" if reply_parts else ""
-                reply_parts.append(seam + note)
-                yield {"event": "delta", "text": seam + note}
+            # ... and so is an outcome claimed for a tool that never ran this turn.
+            claims = claim_check.claimed_but_not_run(
+                "".join(reply_parts), [c["name"] for c in command_registry.list_commands()],
+                [h["tool"] for h in hops])
+            claim_note = claim_check.note_for(claims, [h["tool"] for h in hops])
+            for extra in (note, claim_note):
+                if extra:
+                    seam = "\n\n" if reply_parts else ""
+                    reply_parts.append(seam + extra)
+                    yield {"event": "delta", "text": seam + extra}
             yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
                    "seat_supports_tools": supports_tools,
                    "eval_count": (final_message or {}).get("eval_count"),
-                   "unverified_numbers": unverified, "repeats_caught": repeats_caught}
+                   "unverified_numbers": unverified, "repeats_caught": repeats_caught,
+                   "unverified_claims": [name for name, _ in claims]}
             return
 
         conversation.append({"role": "assistant",

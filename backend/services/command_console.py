@@ -273,6 +273,9 @@ def _describe_self() -> Dict[str, Any]:
             "installed_english_voices": len(english),
             "how_to_change": "list_voices shows the options; set_voice changes it when the "
                              "operator asks. You CAN change it yourself.",
+            "more_voices": "NO path: the voices are the ones built into the installed Kokoro "
+                           "voice pack. None can be downloaded or added by any tool; more "
+                           "voices would mean the operator installing a different engine.",
             "when_it_speaks": "Only when the operator turns on read-aloud ('Voice ON') in the "
                               "desktop console. You cannot see that switch; a console note in "
                               "the conversation tells you its state when the console sends it.",

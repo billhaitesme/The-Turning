@@ -99,6 +99,7 @@ _SELF_QUESTION = re.compile(
     r"\b(?:examine yourself|about yourself|describe yourself|tell me about you|who are you|"
     r"what (?:can|can't|cannot) you(?: actually)? do|what are you capable of|"
     r"your (?:voice|voices|capabilities|abilities|limits|limitations|body|settings|tools|setup|senses)|"
+    r"(?:other|more|new|different|additional) voices?|download(?:ed|ing)? (?:a |more |new |other )?voices?|"
     r"can you (?:hear|see|speak|talk|code|remember|access)|"
     r"can you (?:write|change|edit|modify) (?:code|yourself|your own)|are you able to|"
     r"what(?:'s| is) missing)\b", re.IGNORECASE)

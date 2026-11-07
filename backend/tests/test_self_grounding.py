@@ -12,6 +12,8 @@ SELF = [
     "can you see the chat im currently having with you on the android?",
     "can you access my computer?",
     "who are you?",
+    # Bill's voice chat: dodged instead of answering "no path" because this did not register
+    "are there any other voices that we could download from somewhere that we could add?",
 ]
 NOT_SELF = [
     "can you write me a prompt that will deliver that style of writing in a response?",
