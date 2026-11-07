@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from copy import deepcopy
 from pathlib import Path, PurePosixPath
@@ -63,8 +64,13 @@ MAX_FILES = 6
 # The frontier's per-request budget is small on the free tier (Groq answered 413 Payload Too
 # Large to a 90k-char context on the first live proposal, 2026-11-06). ~4 chars per token:
 # 24k chars of code plus the instructions stays well inside an 8k-token request.
-MAX_FILE_CHARS = 12_000        # whole file goes to the drafter below this
-MAX_CONTEXT_CHARS = 24_000     # total sent to the drafter
+MAX_FILE_CHARS = 10_000        # whole file goes to the drafter below this
+# Groq's free tier allows 8,000 tokens per minute and refuses any single request above it,
+# prompt AND completion together. 16k chars of code (~4k tokens) plus ~1k of instructions leaves
+# ~3k tokens for the draft. (24k chars left nothing: the first own-browser draft was cut off
+# mid-JSON and the retries were throttled, 2026-11-06.)
+MAX_CONTEXT_CHARS = 16_000     # total sent to the drafter
+RATE_LIMIT_WAIT_SECONDS = 61.0 # a 429 means the minute's budget is spent: wait it out once
 EXCERPT_LINES = 40             # lines either side of a keyword hit in a big file
 EXCERPT_BLOCKS = 3
 MAX_DRAFT_ATTEMPTS = 3
@@ -396,7 +402,8 @@ Rules:
 FILES:
 {context}
 
-Reply with ONLY a JSON object:
+Reply with ONLY a compact JSON object (no commentary, no code fences; your whole reply must stay
+under 2500 tokens, so keep new code lean and skip decorative comments):
 {{"summary": "<one or two sentences>", "edits": [{{"file": "<repo-relative path>", "old": "<exact text>", "new": "<replacement>"}}]}}
 
 If the change CANNOT be made without something only the operator can provide (a package not
@@ -406,30 +413,54 @@ draft. Reply instead with ONLY:
 """
 
 
+def _sleep(seconds: float) -> None:  # module-level so tests can make waiting instant
+    time.sleep(seconds)
+
+
 def _frontier(prompt: str) -> Tuple[str, str]:
-    from services.adapters.deep_think import _frontier_think
+    """The frontier planner drafts. A 429 (the minute's token budget is spent) is waited out
+    once and retried; if the provider still refuses, the LOCAL deep rung drafts instead (ADR
+    0027: "the local deep rung as fallback"), recorded as such."""
+    from services.adapters.deep_think import _frontier_think, _local_think
     from services.network_breaker import record_fetch, require_breaker_on
 
     require_breaker_on()
+    last_error = ""
+    for attempt in (1, 2):
+        try:
+            model, text = _frontier_think(prompt)
+            record_fetch("frontier", f"groq:{model}", byte_count=len(text), ok=bool(text),
+                         detail=f"workbench draft: prompt {len(prompt)} chars")
+            return model, text
+        except ValueError as exc:
+            last_error = str(exc)
+            record_fetch("frontier", "groq", byte_count=0, ok=False, detail=f"workbench draft: {last_error[:160]}")
+            if "429" in last_error and attempt == 1:
+                _sleep(RATE_LIMIT_WAIT_SECONDS)
+                continue
+            break
     try:
-        model, text = _frontier_think(prompt)
-    except ValueError as exc:  # the provider refused or is unreachable: a reported failure
-        record_fetch("frontier", "groq", byte_count=0, ok=False,
-                     detail=f"workbench draft: {str(exc)[:160]}")
-        raise WorkbenchError(f"the drafter was refused: {exc}") from exc
-    record_fetch("frontier", f"groq:{model}", byte_count=len(text), ok=bool(text),
-                 detail=f"workbench draft: prompt {len(prompt)} chars")
-    return model, text
+        model, text = _local_think(prompt)
+    except ValueError as exc:
+        raise WorkbenchError(f"the drafter was refused: {last_error[:200]}; local fallback failed: {exc}") from exc
+    record_fetch("frontier", f"local-fallback:{model}", byte_count=len(text), ok=bool(text),
+                 detail=f"workbench draft after frontier refusal: prompt {len(prompt)} chars")
+    return f"{model} (local fallback)", text
 
 
 def _parse_draft(text: str) -> Dict[str, Any]:
     match = re.search(r"\{.*\}", text or "", re.DOTALL)
     if not match:
+        if "{" in (text or ""):
+            raise WorkbenchError("the draft was cut off before its closing brace (the reply was "
+                                 "cut off: answer more compactly, fewer and leaner edits)")
         raise WorkbenchError("the drafter did not return a JSON object")
     try:
         data = json.loads(match.group(0))
     except json.JSONDecodeError as exc:
-        raise WorkbenchError(f"the drafter's JSON did not parse ({exc.msg})") from exc
+        hint = (" (the reply was cut off: answer more compactly, fewer and leaner edits)"
+                if "Unterminated" in exc.msg or "Expecting" in exc.msg else "")
+        raise WorkbenchError(f"the drafter's JSON did not parse ({exc.msg}){hint}") from exc
     needs = str(data.get("needs_from_operator") or "").strip()
     edits = data.get("edits")
     if needs and not edits:

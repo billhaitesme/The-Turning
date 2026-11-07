@@ -221,6 +221,40 @@ def test_the_drafter_can_say_what_the_operator_must_provide_first(repo):
     assert again["status"] == "tested"
 
 
+def test_a_rate_limited_frontier_is_waited_out_then_falls_back_to_the_local_rung(repo, monkeypatch):
+    """Groq 429 on the first own-browser draft (2026-11-06): the retries fired within the same
+    minute and were refused too, and the local rung was never tried."""
+    from services.adapters import deep_think
+    waited = []
+    monkeypatch.setattr(workbench, "_sleep", lambda s: waited.append(s))
+    calls = {"frontier": 0, "local": 0}
+
+    def frontier_429(prompt):
+        calls["frontier"] += 1
+        raise ValueError("deep rung 'frontier' refused by provider: HTTP 429 (Rate limit reached)")
+
+    def local(prompt):
+        calls["local"] += 1
+        return "huihui_ai/qwen3-abliterated:30b-a3b", json.dumps(GOOD_EDIT)
+
+    monkeypatch.setattr(deep_think, "_frontier_think", frontier_429)
+    monkeypatch.setattr(deep_think, "_local_think", local)
+    from services import network_breaker
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    try:
+        model, text = workbench._frontier("draft please")
+    finally:
+        network_breaker.set_breaker(False, changed_by="test", channel="test")
+    assert waited == [workbench.RATE_LIMIT_WAIT_SECONDS]          # one real wait, not an instant retry
+    assert calls == {"frontier": 2, "local": 1}
+    assert model.endswith("(local fallback)") and json.loads(text)["summary"] == GOOD_EDIT["summary"]
+
+
+def test_a_cut_off_draft_tells_the_drafter_to_be_compact():
+    with pytest.raises(workbench.WorkbenchError, match="cut off"):
+        workbench._parse_draft('{"summary": "x", "edits": [{"file": "a.py", "old": "b", "new": "unterminated')
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}
