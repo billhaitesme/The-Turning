@@ -260,7 +260,7 @@ def _spec_from_author_fields(arguments: Dict[str, Any]) -> Dict[str, Any]:
 def _describe_self() -> Dict[str, Any]:
     """OMEGA's real body and settings, read live — the answer to "examine yourself". Every value
     comes from the running system; nothing here is a claim the runtime cannot back."""
-    from services import deep_seat, network_breaker, voice_setting
+    from services import deep_seat, network_breaker, voice_setting, host_clock
     from services.model_control import model_control
     from services.toolwright import inducted_specs
 
@@ -291,6 +291,8 @@ def _describe_self() -> Dict[str, Any]:
         "network_breaker": "ON (web reads allowed)" if network_breaker.breaker_is_on()
                            else "OFF (no web reads)",
         "installed_toolwright_tools": [s.get("name") for s in inducted_specs()],
+        "host_time_zone": host_clock.host_clock()["name"],
+        "host_utc_offset_minutes": host_clock.host_clock()["utc_offset_minutes"],
         # Explicit, because the seat turned a general limit into "I can write and execute code
         # and make changes to myself ... with approval" (2026-11-06).
         "code": {
