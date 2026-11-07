@@ -289,19 +289,29 @@ def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
     files = files[:MAX_FILES]
     keys = _keywords(entry)
     chunks, total = [], 0
+    kept: List[str] = []
     for rel in files:
         _assert_editable(rel)
         path = root / rel
         text = path.read_text(encoding="utf-8", errors="replace")
         if SECRET_LINE.search(text):
-            raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
+            # A file the proposer NAMED is refused out loud. One the keyword search found is
+            # simply left out: the second live run died on test_workbench.py's fake API key.
+            if rel in named:
+                raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
+            continue
+        kept.append(rel)
         body = text if len(text) <= MAX_FILE_CHARS else _excerpts(text, keys)
         chunk = f"=== {rel} ({'whole file' if len(text) <= MAX_FILE_CHARS else 'excerpts, numbered lines'}) ===\n{body}\n"
         if total + len(chunk) > MAX_CONTEXT_CHARS:
+            kept.pop()
             break
         chunks.append(chunk)
         total += len(chunk)
-    return files, "".join(chunks)
+    if not kept:
+        raise WorkbenchError("No file could be shown to the drafter (none found, or every "
+                             "candidate holds what looks like a secret). Name the files to change.")
+    return kept, "".join(chunks)
 
 
 # --------------------------------------------------------------------------- 3. draft

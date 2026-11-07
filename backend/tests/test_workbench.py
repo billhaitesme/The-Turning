@@ -137,8 +137,15 @@ def test_a_syntax_error_is_caught_before_the_suite_runs(repo, monkeypatch):
 
 
 def test_a_file_with_a_secret_never_reaches_the_drafter(repo):
+    # named by the proposer: refused out loud
     with pytest.raises(workbench.WorkbenchError, match="secret"):
         workbench.gather_context(repo, propose(files=["backend/services/keys.py"]))
+    # found by the keyword search: silently left out, the rest still goes (live failure #2)
+    (repo / "backend" / "services" / "keys.py").write_text(
+        "# greet greet greet exclamation polite\nAPI_KEY = 'sk-abcdefghijklmnop123456'\n", encoding="utf-8")
+    files, context = workbench.gather_context(repo, propose())
+    assert "backend/services/keys.py" not in files and "sk-abcdef" not in context
+    assert "backend/services/hello.py" in files
 
 
 def test_drafts_may_not_touch_protected_or_outside_files(repo):
