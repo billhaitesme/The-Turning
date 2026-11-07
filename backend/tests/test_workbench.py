@@ -279,6 +279,35 @@ def test_the_block_format_carries_code_verbatim_and_new_files():
     assert draft["edits"][1]["old"] == "" and draft["edits"][1]["new"].endswith('"abc"\n')  # new file, trailing newline
 
 
+def test_a_new_source_file_is_allowed_anywhere_editable(repo):
+    # a new adapter under services/adapters is the canonical self-extension (own-browser draft, 2026-11-06)
+    draft = {"summary": "new adapter", "edits": [
+        {"file": "backend/services/adapters/own_browser.py", "old": "", "new": "def read(url):\n    return url\n"}]}
+    tested = workbench.draft_and_test(propose()["proposal_id"], frontier=frontier_with(draft))
+    assert tested["status"] == "tested" and tested["draft"]["files"] == ["backend/services/adapters/own_browser.py"]
+
+
+def test_a_big_draft_arrives_in_parts_with_continue(repo):
+    part1 = render_draft({"summary": "two files", "edits": [
+        {"file": "backend/services/hello.py", "old": "return f'Hello, {name}'", "new": "return f'Hello, {name}!'"}]}
+    ).replace("=== END", "=== CONTINUE")
+    part2 = render_draft({"summary": "two files", "edits": [
+        {"file": "backend/tests/test_hello_polite.py", "old": "",
+         "new": "from services.hello import greet\n\n\ndef test_polite():\n    assert greet('x').endswith('!')\n"}]})
+    replies = iter([part1, part2])
+    prompts = []
+
+    def frontier(prompt):
+        prompts.append(prompt)
+        return "openai/gpt-oss-120b", next(replies)
+
+    tested = workbench.draft_and_test(propose(files=["backend/services/hello.py"])["proposal_id"], frontier=frontier)
+    assert tested["status"] == "tested" and tested["result"]["promotable"] is True
+    assert tested["draft"]["files"] == ["backend/services/hello.py", "backend/tests/test_hello_polite.py"]
+    assert "ALREADY APPLIED" in prompts[1] and "backend/services/hello.py" in prompts[1]
+    assert tested["draft"]["parts"] == 2
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}

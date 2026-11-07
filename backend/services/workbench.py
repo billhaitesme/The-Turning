@@ -74,6 +74,7 @@ RATE_LIMIT_WAIT_SECONDS = 61.0 # a 429 means the minute's budget is spent: wait 
 EXCERPT_LINES = 40             # lines either side of a keyword hit in a big file
 EXCERPT_BLOCKS = 3
 MAX_DRAFT_ATTEMPTS = 3
+MAX_DRAFT_PARTS = 4            # a draft delivered in parts (=== CONTINUE), each within the budget
 MAX_DIFF_CHARS = 60_000
 SUITE_TIMEOUT_SECONDS = 900
 HEALTH_TIMEOUT_SECONDS = 180
@@ -419,6 +420,10 @@ the replacement text
 ...
 === END
 
+If the whole change does not fit in one reply, stop at a FILE boundary and end with
+=== CONTINUE
+instead of === END; you will be asked for the rest (and told which files are already done).
+
 If the change CANNOT be made without something only the operator can provide (a package not
 installed, a program, a device, an account or key) that is not listed as agreed above, do not
 draft. Reply instead with:
@@ -475,12 +480,15 @@ def _parse_draft(text: str) -> Dict[str, Any]:
     """The block format: code travels as plain text between markers, never inside JSON strings.
     Three JSON drafts in a row broke on escaping or ran out of room (2026-11-06)."""
     text = (text or "").replace("\r\n", "\n")
-    if "=== END" not in text:
+    more = "=== CONTINUE" in text and "=== END" not in text
+    terminator = "=== CONTINUE" if more else "=== END"
+    if terminator not in text:
         if "=== " in text:
             raise WorkbenchError("the draft was cut off before its === END line (answer more "
-                                 "compactly: fewer and leaner edits, no decorative comments)")
+                                 "compactly, or stop at a file boundary with === CONTINUE and "
+                                 "deliver the rest when asked)")
         raise WorkbenchError("the drafter did not answer in the block format (=== SUMMARY / === EDIT / === END)")
-    body = text[: text.rindex("=== END")]
+    body = text[: text.rindex(terminator)]
     summary = (_SUMMARY_RE.search(body).group(1).strip() if _SUMMARY_RE.search(body) else "")[:600]
     needs_match = _NEEDS_RE.search(body)
     edits = _EDIT_RE.findall(body)
@@ -499,7 +507,7 @@ def _parse_draft(text: str) -> Dict[str, Any]:
         if old == "" and new and not new.endswith("\n"):
             new += "\n"  # a new file ends with a newline
         clean.append({"file": rel, "old": old, "new": new})
-    return {"summary": summary, "edits": clean}
+    return {"summary": summary, "edits": clean, "more": more}
 
 
 def _apply_edits(root: Path, edits: List[Dict[str, str]]) -> List[str]:
@@ -511,8 +519,9 @@ def _apply_edits(root: Path, edits: List[Dict[str, str]]) -> List[str]:
             if path.exists():
                 raise WorkbenchError(f"{edit['file']}: 'old' is empty but the file exists; "
                                      "give the exact text to replace")
-            if not (edit["file"].startswith("backend/tests/") or edit["file"].startswith("docs/")):
-                raise WorkbenchError(f"{edit['file']}: new files are allowed only under backend/tests/ or docs/")
+            # A new file anywhere editable: a new adapter under backend/services/adapters/ is
+            # the canonical self-extension, and the tests/docs-only rule rejected a complete,
+            # valid own-browser draft (2026-11-06). _assert_editable already excluded the gates.
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(edit["new"], encoding="utf-8")
         else:
@@ -648,14 +657,20 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     draft: Dict[str, Any] = {}
     touched: List[str] = []
     model = ""
-    for attempt in range(1, MAX_DRAFT_ATTEMPTS + 1):
+    attempt = 0
+    parts = 0           # a big draft may arrive in parts (=== CONTINUE), each within the budget
+    continuation = ""
+    summary = ""
+    while attempt < MAX_DRAFT_ATTEMPTS:
+        if not continuation:
+            attempt += 1
         prompt = DRAFT_PROMPT.format(
             title=entry["title"], what=entry["what"], why=entry["why"] or "(not given)",
             needs=(f"THE OPERATOR HAS AGREED TO PROVIDE: {entry['needs_from_operator']}\n"
                    if entry.get("needs_from_operator") else ""),
             context=context,
             failures=("\nEARLIER ATTEMPTS FAILED TO APPLY, fix this:\n" + "\n".join(failures) + "\n")
-            if failures else "")
+            if failures else "") + continuation
         try:
             model, text = frontier(prompt)
             draft = _parse_draft(text)
@@ -665,14 +680,23 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
                 _mark(entry, "blocked", f"the drafter needs something from the operator: {draft['needs'][:200]}")
                 _remove_worktree(proposal_id)
                 return _upsert(entry)
-            # undo a half-applied earlier attempt (edited files, and any new file it created)
-            _git("checkout", "--", ".", cwd=worktree, check=False)
-            _git("clean", "-fdq", cwd=worktree, check=False)
-            touched = _apply_edits(worktree, draft["edits"])
+            if parts == 0:
+                # a fresh attempt: undo any half-applied earlier one (edited files, new files)
+                _git("checkout", "--", ".", cwd=worktree, check=False)
+                _git("clean", "-fdq", cwd=worktree, check=False)
+                summary = draft.get("summary", "")
+            for rel in _apply_edits(worktree, draft["edits"]):
+                if rel not in touched:
+                    touched.append(rel)
+            parts += 1
+            if draft.get("more") and parts < MAX_DRAFT_PARTS:
+                continuation = ("\nALREADY APPLIED in earlier parts (do not repeat them; continue with the "
+                                f"remaining edits, then === END): {', '.join(touched)}\n")
+                continue
             break
         except WorkbenchError as exc:
             failures.append(f"attempt {attempt}: {exc}")
-            draft, touched = {}, []
+            draft, touched, parts, continuation = {}, [], 0, ""
             if "413" in str(exc) or "too large" in str(exc).lower():
                 context = context[: len(context) // 2] + "\n... (context halved: the drafter's request limit)\n"
     if not touched:
@@ -680,6 +704,8 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
         entry["draft"] = {"model": model, "failures": failures}
         _remove_worktree(proposal_id)
         return _upsert(entry)
+    draft["summary"] = summary or draft.get("summary", "")
+    draft["parts"] = parts
 
     _git("add", "-A", cwd=worktree)
     _git("-c", "user.name=OMEGA-ARC Workbench", "-c", "user.email=workbench@omega-arc.local",
@@ -689,7 +715,7 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     tests = suite(worktree) if not syntax else {"ok": False, "passed": 0, "failed": 0, "tail": "skipped: syntax errors"}
     healthy = health(worktree) if tests["ok"] else {"ok": False, "tail": "skipped: tests not green"}
     entry["draft"] = {"model": model, "summary": draft.get("summary", ""), "files": touched,
-                      "attempts": len(failures) + 1, "base": base,
+                      "attempts": len(failures) + 1, "parts": draft.get("parts", 1), "base": base,
                       "head": _git("rev-parse", "HEAD", cwd=worktree).strip(),
                       "diff": diff[:MAX_DIFF_CHARS], "diff_truncated": len(diff) > MAX_DIFF_CHARS}
     entry["result"] = {"syntax_failures": syntax, "tests": tests, "health": healthy,
