@@ -248,30 +248,75 @@ def _find_files(root: Path, entry: Dict[str, Any]) -> List[str]:
             if not hits:
                 continue
             score += 3 + min(hits, 3)          # distinct keywords matter; bulk repetition does not
-            if k in rel.lower():
+            identifier_like = "_" in k or len(k) >= 6   # "describe_self", not "host" or "time"
+            if identifier_like and k in rel.lower():
                 score += 15
-            if re.search(rf"^\s*(?:def|class)\s+_?{re.escape(k)}\b|^{re.escape(k)}\s*=", text, re.MULTILINE | re.IGNORECASE):
-                score += 20                     # the file DEFINES the thing the proposal names
+            if _defines(text, k):
+                score += 40                     # the file DEFINES the thing the proposal names:
+                                                # this must beat every other signal (run 4 buried
+                                                # command_console.py under files with "host" in
+                                                # their path, and the drafter never saw it)
         if score:
             scored.append((score / (1 + len(text) / 50_000), rel))
     scored.sort(reverse=True)
-    return ranked + [rel for _, rel in scored[: max(0, 4 - len(ranked))]]
+    return ranked + [rel for _, rel in scored[: max(0, 5 - len(ranked))]]
+
+
+def _defines(text: str, keyword: str) -> bool:
+    return bool(re.search(rf"^\s*(?:def|class)\s+_?{re.escape(keyword)}\b|^{re.escape(keyword)}\s*=",
+                          text, re.MULTILINE | re.IGNORECASE))
+
+
+def definitions_in(root: Path, files: List[str], entry: Dict[str, Any]) -> List[str]:
+    """'describe_self -> backend/services/command_console.py line 270 (def _describe_self)':
+    deterministic pointers to where the proposal's own identifiers are defined, so the drafter
+    edits the real code instead of adding a lookalike elsewhere."""
+    pointers: List[str] = []
+    for k in _keywords(entry):
+        if not ("_" in k or len(k) >= 6):
+            continue
+        for rel in files:
+            try:
+                lines = (root / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                continue
+            for n, line in enumerate(lines, start=1):
+                if re.match(rf"^\s*(?:def|class)\s+_?{re.escape(k)}\b", line, re.IGNORECASE):
+                    pointers.append(f"{k} -> {rel} line {n} ({line.strip()[:80]})")
+                    break
+    return pointers
 
 
 def _excerpts(text: str, keys: List[str]) -> str:
+    """At most EXCERPT_BLOCKS windows of 2*EXCERPT_LINES lines, so the size is bounded whatever
+    the keywords. Windows are centred first on lines that DEFINE a keyword (def _describe_self),
+    then on hits of identifier-like keywords, then on any hit. Overlapping windows are skipped
+    rather than merged: merging on common words ("name", "time") once grew an excerpt past
+    the whole context budget and the file was dropped (run 5, 2026-11-06)."""
     lines = text.splitlines()
-    hits = [i for i, line in enumerate(lines) if any(k in line.lower() for k in keys)]
-    if not hits:
+    strong = [k for k in keys if "_" in k or len(k) >= 6]
+    centres: List[int] = []
+    for pool in (
+        [i for i, l in enumerate(lines) if any(re.match(rf"^\s*(?:def|class)\s+_?{re.escape(k)}\b", l, re.IGNORECASE) for k in keys)],
+        [i for i, l in enumerate(lines) if any(k in l.lower() for k in strong)],
+        [i for i, l in enumerate(lines) if any(k in l.lower() for k in keys)],
+    ):
+        for i in pool:
+            if i not in centres:
+                centres.append(i)
+    if not centres:
         return "\n".join(f"{i + 1}: {l}" for i, l in enumerate(lines[:EXCERPT_LINES * 2]))
     blocks: List[Tuple[int, int]] = []
-    for i in hits:
+    for i in centres:
         lo, hi = max(0, i - EXCERPT_LINES), min(len(lines), i + EXCERPT_LINES)
-        if blocks and lo <= blocks[-1][1]:
-            blocks[-1] = (blocks[-1][0], hi)
-        else:
-            blocks.append((lo, hi))
+        if any(lo < b_hi and hi > b_lo for b_lo, b_hi in blocks):
+            continue  # already covered by an earlier (higher-priority) window
+        blocks.append((lo, hi))
+        if len(blocks) == EXCERPT_BLOCKS:
+            break
+    blocks.sort()
     parts = []
-    for lo, hi in blocks[:EXCERPT_BLOCKS]:
+    for lo, hi in blocks:
         parts.append(f"... lines {lo + 1}-{hi} ...\n" + "\n".join(f"{n + 1}: {lines[n]}" for n in range(lo, hi)))
     return "\n".join(parts)
 
@@ -300,18 +345,22 @@ def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
             if rel in named:
                 raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
             continue
-        kept.append(rel)
         body = text if len(text) <= MAX_FILE_CHARS else _excerpts(text, keys)
         chunk = f"=== {rel} ({'whole file' if len(text) <= MAX_FILE_CHARS else 'excerpts, numbered lines'}) ===\n{body}\n"
         if total + len(chunk) > MAX_CONTEXT_CHARS:
-            kept.pop()
-            break
+            if kept:
+                continue  # this one does not fit; a smaller file further down still may
+            chunk = chunk[:MAX_CONTEXT_CHARS] + "\n... (cut to the context budget)\n"  # never show nothing
+        kept.append(rel)
         chunks.append(chunk)
         total += len(chunk)
     if not kept:
         raise WorkbenchError("No file could be shown to the drafter (none found, or every "
                              "candidate holds what looks like a secret). Name the files to change.")
-    return kept, "".join(chunks)
+    pointers = definitions_in(root, kept, entry)
+    header = ("DEFINITIONS the proposal refers to (edit THESE, do not add lookalikes):\n"
+              + "\n".join(f"- {p}" for p in pointers) + "\n\n") if pointers else ""
+    return kept, header + "".join(chunks)
 
 
 # --------------------------------------------------------------------------- 3. draft

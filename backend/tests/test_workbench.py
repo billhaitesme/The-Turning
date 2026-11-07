@@ -175,6 +175,20 @@ def test_a_dirty_live_file_blocks_promotion(repo):
         workbench.complete_promotion(pid)
 
 
+def test_excerpts_are_bounded_and_centred_on_the_definition(repo):
+    # a big file where the proposal's common words ("name", "time") hit nearly every line
+    body = "\n".join(f"name = time = {i}  # host zone offset" for i in range(1500))
+    big = (repo / "backend" / "services" / "command_console.py")
+    big.write_text(body + "\n\n\ndef _describe_self():\n    return {}\n" + body, encoding="utf-8")
+    entry = propose(files=["backend/services/command_console.py"])
+    entry["title"], entry["what"] = "Add host time zone to describe_self", "Modify describe_self to include the host time zone name"
+    files, context = workbench.gather_context(repo, entry)
+    assert files == ["backend/services/command_console.py"]             # it was NOT dropped (run 5)
+    assert len(context) <= workbench.MAX_CONTEXT_CHARS + 200
+    assert "def _describe_self" in context                                # the window is centred on it
+    assert context.count("... lines ") <= workbench.EXCERPT_BLOCKS
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}
@@ -203,8 +217,14 @@ def test_ranking_prefers_named_paths_and_definitions_over_big_wordy_files(repo):
         "Modify describe_self to include the host's time zone name and UTC offset "
         "(the runtime already has services/host_clock.py with host_clock())",
         "", requested_by="model:agent-seat", session_id="s")
+    # and a file whose PATH carries the common word "host" (run 4: these buried the definition)
+    (repo / "backend" / "services" / "host_status.py").write_text(
+        "# host host time name\ndef status():\n    return 'host'\n", encoding="utf-8")
     files = workbench._find_files(repo, entry)
     assert files[0] == "backend/services/host_clock.py"           # named by path in the text
-    assert "backend/services/command_console.py" in files[:3]      # defines _describe_self
+    assert files[1] == "backend/services/command_console.py"      # DEFINES _describe_self: next
+    _, context = workbench.gather_context(repo, entry)
+    assert "DEFINITIONS the proposal refers to" in context
+    assert "describe_self -> backend/services/command_console.py line 1 (def _describe_self" in context
     decoy_rank = files.index("backend/services/decoy.py") if "backend/services/decoy.py" in files else len(files)
     assert files.index("backend/services/command_console.py") < decoy_rank  # a definition beats word soup
