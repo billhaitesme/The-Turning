@@ -57,9 +57,13 @@ PROTECTED_NAMES = (".env", ".env.", "secrets", "credentials")
 SECRET_LINE = re.compile(r"(?i)(api[_-]?key|secret|token|password|passwd)\s*[:=]\s*['\"]?[A-Za-z0-9_\-./+]{12,}")
 
 MAX_FILES = 6
-MAX_FILE_CHARS = 30_000        # whole file goes to the drafter below this
-MAX_CONTEXT_CHARS = 90_000     # total sent to the drafter
-EXCERPT_LINES = 60             # lines either side of a keyword hit in a big file
+# The frontier's per-request budget is small on the free tier (Groq answered 413 Payload Too
+# Large to a 90k-char context on the first live proposal, 2026-11-06). ~4 chars per token:
+# 24k chars of code plus the instructions stays well inside an 8k-token request.
+MAX_FILE_CHARS = 12_000        # whole file goes to the drafter below this
+MAX_CONTEXT_CHARS = 24_000     # total sent to the drafter
+EXCERPT_LINES = 40             # lines either side of a keyword hit in a big file
+EXCERPT_BLOCKS = 3
 MAX_DRAFT_ATTEMPTS = 3
 MAX_DIFF_CHARS = 60_000
 SUITE_TIMEOUT_SECONDS = 900
@@ -202,20 +206,56 @@ def _candidate_files(root: Path) -> List[str]:
     return [p for p in out if not any(p == q or p.startswith(q) for q in PROTECTED)]
 
 
+_PATH_IN_TEXT = re.compile(r"[\w./-]+\.(?:py|jsx|js|css|md)\b")
+
+
+def _paths_in_text(root: Path, entry: Dict[str, Any]) -> List[str]:
+    """Files the proposal mentions by path ("services/host_clock.py"), resolved against the
+    repo root and backend/; the strongest signal there is."""
+    found: List[str] = []
+    for token in _PATH_IN_TEXT.findall(f"{entry['title']} {entry['what']} {entry.get('why') or ''}"):
+        for candidate in (token, f"backend/{token}", f"backend/services/{token}", f"frontend/src/{token}"):
+            try:
+                rel = _normalise_path(candidate)
+            except WorkbenchError:
+                continue
+            if (root / rel).is_file() and rel not in found:
+                found.append(rel)
+                break
+    return found
+
+
 def _find_files(root: Path, entry: Dict[str, Any]) -> List[str]:
-    """Rank allowlisted files by keyword hits when the proposal names none."""
+    """Rank allowlisted files for the drafter. The first live proposal (2026-11-06) asked for
+    describe_self + host_clock and raw word counts handed the drafter App.jsx and app.py: big
+    files full of "time" and "name". Now: files named by path first; then a score that rewards
+    a keyword in the path, a definition of it (def/assignment), and distinct keywords matched,
+    normalised by file size so a large file cannot win on bulk alone."""
     keys = _keywords(entry)
-    scored: List[Tuple[int, str]] = []
+    ranked: List[str] = _paths_in_text(root, entry)
+    scored: List[Tuple[float, str]] = []
     for rel in _candidate_files(root):
+        if rel in ranked:
+            continue
         try:
-            text = (root / rel).read_text(encoding="utf-8", errors="replace").lower()
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        score = sum(text.count(k) for k in keys)
+        lowered = text.lower()
+        score = 0.0
+        for k in keys:
+            hits = lowered.count(k)
+            if not hits:
+                continue
+            score += 3 + min(hits, 3)          # distinct keywords matter; bulk repetition does not
+            if k in rel.lower():
+                score += 15
+            if re.search(rf"^\s*(?:def|class)\s+_?{re.escape(k)}\b|^{re.escape(k)}\s*=", text, re.MULTILINE | re.IGNORECASE):
+                score += 20                     # the file DEFINES the thing the proposal names
         if score:
-            scored.append((score, rel))
+            scored.append((score / (1 + len(text) / 50_000), rel))
     scored.sort(reverse=True)
-    return [rel for _, rel in scored[:4]]
+    return ranked + [rel for _, rel in scored[: max(0, 4 - len(ranked))]]
 
 
 def _excerpts(text: str, keys: List[str]) -> str:
@@ -231,7 +271,7 @@ def _excerpts(text: str, keys: List[str]) -> str:
         else:
             blocks.append((lo, hi))
     parts = []
-    for lo, hi in blocks[:5]:
+    for lo, hi in blocks[:EXCERPT_BLOCKS]:
         parts.append(f"... lines {lo + 1}-{hi} ...\n" + "\n".join(f"{n + 1}: {lines[n]}" for n in range(lo, hi)))
     return "\n".join(parts)
 
@@ -293,7 +333,12 @@ def _frontier(prompt: str) -> Tuple[str, str]:
     from services.network_breaker import record_fetch, require_breaker_on
 
     require_breaker_on()
-    model, text = _frontier_think(prompt)
+    try:
+        model, text = _frontier_think(prompt)
+    except ValueError as exc:  # the provider refused or is unreachable: a reported failure
+        record_fetch("frontier", "groq", byte_count=0, ok=False,
+                     detail=f"workbench draft: {str(exc)[:160]}")
+        raise WorkbenchError(f"the drafter was refused: {exc}") from exc
     record_fetch("frontier", f"groq:{model}", byte_count=len(text), ok=bool(text),
                  detail=f"workbench draft: prompt {len(prompt)} chars")
     return model, text
@@ -447,7 +492,20 @@ def draft_and_test(proposal_id: str, *, frontier: Optional[Callable[[str], Tuple
     base = _git("rev-parse", "HEAD").strip()
     worktree.parent.mkdir(parents=True, exist_ok=True)
     _git("worktree", "add", "-B", branch, str(worktree), "HEAD")
+    try:
+        return _draft_and_test_in(entry, worktree, base, frontier, suite, health)
+    except Exception as exc:  # noqa: BLE001 — whatever broke, the proposal records it and the
+        # worktree goes; a 500 with a worktree left behind is what happened on the first live run
+        _mark(entry, "failed", f"error during draft/test: {str(exc)[:300]}")
+        _upsert(entry)
+        _remove_worktree(entry["proposal_id"])
+        if isinstance(exc, WorkbenchError):
+            raise
+        raise WorkbenchError(f"Draft/test failed: {exc}") from exc
 
+
+def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontier, suite, health) -> Dict[str, Any]:
+    proposal_id = entry["proposal_id"]
     files, context = gather_context(worktree, entry)
     failures: List[str] = []
     draft: Dict[str, Any] = {}
@@ -459,8 +517,8 @@ def draft_and_test(proposal_id: str, *, frontier: Optional[Callable[[str], Tuple
             context=context,
             failures=("\nEARLIER ATTEMPTS FAILED TO APPLY, fix this:\n" + "\n".join(failures) + "\n")
             if failures else "")
-        model, text = frontier(prompt)
         try:
+            model, text = frontier(prompt)
             draft = _parse_draft(text)
             # undo a half-applied earlier attempt (edited files, and any new file it created)
             _git("checkout", "--", ".", cwd=worktree, check=False)
@@ -470,6 +528,8 @@ def draft_and_test(proposal_id: str, *, frontier: Optional[Callable[[str], Tuple
         except WorkbenchError as exc:
             failures.append(f"attempt {attempt}: {exc}")
             draft, touched = {}, []
+            if "413" in str(exc) or "too large" in str(exc).lower():
+                context = context[: len(context) // 2] + "\n... (context halved: the drafter's request limit)\n"
     if not touched:
         _mark(entry, "failed", "draft could not be applied: " + " | ".join(failures))
         entry["draft"] = {"model": model, "failures": failures}

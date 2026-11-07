@@ -181,3 +181,23 @@ def test_guessed_file_names_fall_back_to_real_files(repo):
     files, context = workbench.gather_context(repo, entry)
     assert "backend/services/hello.py" in files and "backend/greeting.py" not in files
     assert "def greet" in context
+
+
+def test_ranking_prefers_named_paths_and_definitions_over_big_wordy_files(repo):
+    # a big decoy stuffed with the proposal's common words, and the two real targets
+    (repo / "backend" / "services" / "decoy.py").write_text(
+        "# time name host zone offset\n" * 800, encoding="utf-8")
+    (repo / "backend" / "services" / "host_clock.py").write_text(
+        "def host_clock():\n    return {'name': 'Central'}\n", encoding="utf-8")
+    (repo / "backend" / "services" / "command_console.py").write_text(
+        "def _describe_self():\n    return {'voice': 'bm_fable'}\n", encoding="utf-8")
+    entry = workbench.propose(
+        "Add host time zone to describe_self",
+        "Modify describe_self to include the host's time zone name and UTC offset "
+        "(the runtime already has services/host_clock.py with host_clock())",
+        "", requested_by="model:agent-seat", session_id="s")
+    files = workbench._find_files(repo, entry)
+    assert files[0] == "backend/services/host_clock.py"           # named by path in the text
+    assert "backend/services/command_console.py" in files[:3]      # defines _describe_self
+    decoy_rank = files.index("backend/services/decoy.py") if "backend/services/decoy.py" in files else len(files)
+    assert files.index("backend/services/command_console.py") < decoy_rank  # a definition beats word soup

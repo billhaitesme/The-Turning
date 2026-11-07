@@ -1,6 +1,7 @@
 # 0027 — The Workbench: OMEGA Writes (Epoch XIII-E)
 
-**Status:** Accepted (design); slice 1 built 2026-11-06
+**Status:** Accepted; slice 1 built 2026-11-06 (plus 1b, the frontier drafter, and per-item
+output fields); slice 2 built 2026-11-06 (`services/workbench.py`)
 **Date:** 2026-11-06
 **Operator direction (2026-11-06):** *"I need you to be able to write code, so I can allow you to
 make changes to yourself, i.e. find and integrate new tools to improve capabilities."* Changes
@@ -45,9 +46,18 @@ capability request with provenance `authored` (never `catalog`):
 The model never grades its own spec; the fixture call and the operator do. Authoring is not
 having: an authored tool does nothing until inducted.
 
-### Slice 2 — Code proposals (designed, next)
+### Slice 1b — The drafter (built)
 
-For changes that are code, the **Workbench**:
+The 8B authored a dead endpoint from memory and then a paid proxy after reading the right
+docs. Per "drafted by the strongest available rung", `draft_tool` has the frontier planner
+research and write the spec from the need and public search snippets only; the runtime
+test-calls it before filing, retrying with the failure reason, and refuses outright when the
+need is not a read-only lookup. The spec contract gained `output_fields` (keep only the fields
+that matter per item) so long lists fit the output cap.
+
+### Slice 2 — Code proposals (built)
+
+For changes that are code, the **Workbench** (`backend/services/workbench.py`):
 
 1. **Proposal.** OMEGA files a change request (what and why), recorded and visible.
 2. **Draft.** The patch is drafted by the strongest available rung (the frontier planner behind
@@ -62,6 +72,15 @@ For changes that are code, the **Workbench**:
 6. **Review.** The console shows the diff, the test result and the health result.
 7. **Promote or rollback.** The operator's biometric merges the branch into the local main as one
    commit; rollback is a single revert. The runtime never pushes.
+
+As built: worktrees live under `.workbench/<id>` on branch `workbench/<id>`; the allowlist is
+`backend/`, `frontend/src/`, `docs/`; the protected set is the gates (this module,
+`tool_approval`, `network_breaker`, `toolwright`, `tool_contracts`, `command_registry`,
+`model_control`, `routes/system`, `routes/mobile`), `backend/data`, models, launchers and
+`.env*`; a file holding what looks like a secret is never sent to the drafter. OMEGA files
+proposals with `propose_change` and reads them with `check_change_proposals`; every other step
+is an operator press on the console (DRAFT & TEST, PROMOTE twice around the biometric, ROLL
+BACK, REJECT). A promoted change runs only after the operator restarts the backend.
 
 ## Consequences
 
