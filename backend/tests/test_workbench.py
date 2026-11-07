@@ -67,11 +67,15 @@ def propose(files=None):
 
 
 def test_proposals_refuse_gates_secrets_and_traversal(repo):
-    for bad in ("backend/services/tool_approval.py", "backend/data/goals.json", ".env",
-                "backend/../../etc/passwd", "scripts/launch_backend.py"):
+    for bad in ("backend/services/tool_approval.py", "backend/services/workbench.py",
+                "backend/services/network_breaker.py", "backend/routes/system.py",
+                "backend/data/goals.json", ".env", "backend/../../etc/passwd", "scripts/launch_backend.py"):
         with pytest.raises(workbench.WorkbenchError):
             propose(files=[bad])
     assert workbench.list_proposals() == []
+    # the registries are editable: adding a hand is what proposals are for
+    (repo / "backend" / "services" / "command_registry.py").write_text("COMMANDS = []\n", encoding="utf-8")
+    assert propose(files=["backend/services/command_registry.py"])["files"] == ["backend/services/command_registry.py"]
 
 
 def test_draft_test_promote_and_rollback_end_to_end(repo):

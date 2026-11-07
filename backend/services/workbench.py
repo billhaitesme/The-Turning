@@ -45,7 +45,10 @@ PROTECTED = (
     "backend/services/network_breaker.py",
     "backend/services/toolwright.py",
     "backend/services/tool_contracts.py",
-    "backend/services/command_registry.py",
+    # command_registry.py and tool_registry.py are deliberately NOT protected: adding a hand is
+    # the main thing OMEGA proposes, and the registry's own import-time invariants (a direct
+    # command must be low-risk; approval commands map to a bounded tool) plus the operator's
+    # diff review and biometric are the guard (2026-11-06).
     "backend/services/model_control.py",
     "backend/routes/system.py",
     "backend/routes/mobile.py",

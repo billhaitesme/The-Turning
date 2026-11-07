@@ -75,9 +75,10 @@ For changes that are code, the **Workbench** (`backend/services/workbench.py`):
 
 As built: worktrees live under `.workbench/<id>` on branch `workbench/<id>`; the allowlist is
 `backend/`, `frontend/src/`, `docs/`; the protected set is the gates (this module,
-`tool_approval`, `network_breaker`, `toolwright`, `tool_contracts`, `command_registry`,
-`model_control`, `routes/system`, `routes/mobile`), `backend/data`, models, launchers and
-`.env*`; a file holding what looks like a secret is never sent to the drafter. OMEGA files
+`tool_approval`, `network_breaker`, `toolwright`, `tool_contracts`, `model_control`,
+`routes/system`, `routes/mobile`), `backend/data`, models, launchers and `.env*`. The command
+and tool registries are editable on purpose: adding a hand is the main thing OMEGA proposes,
+and the registry's import-time invariants plus the operator's review and biometric guard it; a file holding what looks like a secret is never sent to the drafter. OMEGA files
 proposals with `propose_change` and reads them with `check_change_proposals`; every other step
 is an operator press on the console (DRAFT & TEST, PROMOTE twice around the biometric, ROLL
 BACK, REJECT). A promoted change runs only after the operator restarts the backend.
