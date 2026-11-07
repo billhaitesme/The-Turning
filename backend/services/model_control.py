@@ -79,6 +79,13 @@ class ModelControl:
             raise ValueError(f"Model '{candidate}' is not in the selectable set.")
         return self.set_active_model(candidate, user_selected=True)
 
+    def is_selectable(self, model: str) -> bool:
+        """True when a typed "switch to X" may change the CHAT model: X must be on the same
+        allowlist the console's picker enforces. Found 2026-11-06: "Switch to George." (a voice
+        request) set the chat model to "George.", a model that does not exist, and chat broke."""
+        allowed = settings.selectable_chat_models
+        return not allowed or model in allowed
+
     def parse_explicit_switch(self, message: str) -> Optional[str]:
         match = MODEL_SWITCH_PATTERN.fullmatch(str(message or ""))
         return self._validate_model(match.group("model")) if match else None

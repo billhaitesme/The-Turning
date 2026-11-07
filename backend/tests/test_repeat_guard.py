@@ -191,3 +191,28 @@ def test_different_jokes_in_a_row_never_trip():
              "it was programmed for rhythm and groove, and it never missed a single note."]
     for i, joke in enumerate(jokes):
         assert not streams_as_copy(repeat_guard.RepeatGuard(jokes[:i], "another one"), joke)
+
+
+def test_a_repeat_across_tool_rounds_of_one_reply_is_caught(monkeypatch):
+    """Live 2026-11-06: the seat wrote the voice list, called a tool, then wrote the whole list
+    again in the next round; the reply reached Bill twice."""
+    monkeypatch.setattr(agent_loop, "execute_tool_call",
+                        lambda name, args, session_id: {"status": "executed", "outcome": {"ok": True}})
+    script = iter([
+        (LONG_NEW, [{"function": {"name": "check_capability_requests", "arguments": {}}}]),
+        (LONG_NEW, []),                        # the same text again, next round
+        ("Pick any of those and I'll switch.", []),  # the retry
+    ])
+
+    def seat(conversation, tools, model):
+        text, calls = next(script)
+        for i in range(0, len(text), 9):
+            yield {"type": "delta", "text": text[i:i + 9]}
+        yield {"type": "message", "content": text, "tool_calls": calls}
+
+    events = list(agent_loop.iter_agent_loop(
+        messages=[{"role": "user", "content": "what changed?"}], model="t", session_id="c", seat_turn=seat))
+    final = events[-1]
+    assert final["repeats_caught"] == 1
+    assert final["reply"].count("The backend restarted cleanly") == 1
+    assert final["reply"].endswith("Pick any of those and I'll switch.")

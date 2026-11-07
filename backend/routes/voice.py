@@ -22,6 +22,8 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
+from services import voice_setting
+
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 VOICE_MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "voice"
@@ -102,7 +104,7 @@ def _decode_to_16k_mono(audio: bytes):
 def voice_status() -> Dict[str, Any]:
     return {
         "stt_model": os.getenv("VOICE_STT_MODEL", "base"),
-        "tts_voice": os.getenv("VOICE_TTS_VOICE", "bm_fable"),
+        "tts_voice": voice_setting.current_voice(),
         "tts_files_present": (VOICE_MODEL_DIR / "kokoro-v1.0.onnx").exists()
                              and (VOICE_MODEL_DIR / "voices-v1.0.bin").exists(),
         "local_only": True,
@@ -134,12 +136,37 @@ class SpeakRequest(BaseModel):
     speed: float = Field(default=1.0, ge=0.5, le=1.6)
 
 
+@router.get("/voices")
+def list_voices() -> Dict[str, Any]:
+    """The installed English voices and the current one (read from the voices file itself)."""
+    return voice_setting.state()
+
+
+class VoiceChoice(BaseModel):
+    voice: str = Field(..., max_length=40)
+    changed_by: str = Field(default="operator", max_length=120)
+
+
+@router.post("/voice")
+def choose_voice(req: VoiceChoice) -> Dict[str, Any]:
+    """Change OMEGA's speaking voice from a console (recorded). OMEGA can do the same with its
+    set_voice command."""
+    try:
+        return voice_setting.set_voice(req.voice, changed_by=f"operator:{req.changed_by}",
+                                       channel="desktop")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @router.post("/speak")
 def speak(req: SpeakRequest) -> Response:
     engine = _get_kokoro()
-    voice = req.voice or os.getenv("VOICE_TTS_VOICE", "bm_fable")
+    voice = req.voice or voice_setting.current_voice()
+    # Kokoro's first letter is the accent: a = American (en-us), b = British (en-gb). Every voice
+    # used to be pronounced en-gb, so the American voices spoke with British phonemes.
+    lang = "en-us" if voice.startswith("a") else "en-gb"
     try:
-        samples, sample_rate = engine.create(req.text, voice=voice, speed=req.speed, lang="en-gb")
+        samples, sample_rate = engine.create(req.text, voice=voice, speed=req.speed, lang=lang)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=422, detail=f"Could not speak: {exc}") from exc
     import soundfile as sf

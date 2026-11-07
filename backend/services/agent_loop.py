@@ -56,6 +56,10 @@ Hands (Epoch XIII-A):
   invent or embellish a result. Never state that an approval was received or that a gated action
   ran unless a tool result in THIS conversation says so — when the operator says they approved,
   verify with check_approval_status instead of taking it on faith or guessing.
+- Questions about YOURSELF (your voice, hearing, sight, screens, settings, models, what you
+  can do): call describe_self and answer from it. Never guess about your own body. You cannot
+  see the operator's screen: you only know what the runtime hands you (a console note may say
+  whether read-aloud is on). To change your speaking voice, use list_voices then set_voice.
 - Never repeat your previous reply. If nothing has changed, say so in one short sentence; if you
   can check whether it changed, check.
 - The tool list offered with THIS turn is your complete, current capability list. Before you say
@@ -359,7 +363,7 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                     text = str(event.get("text") or "")
                     if text:
                         round_text += text
-                        if guard.copying(round_text):
+                        if guard.copying(round_text, "".join(reply_parts)):
                             copied = True
                             break
                         yield from release(len(round_text) - repeat_guard.HOLD_CHARS)

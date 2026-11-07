@@ -1954,7 +1954,8 @@ def stream_response_text(*, history: List[Dict[str, str]], user_message: str, us
 def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
                           user_profile: Dict[str, Any], memories: List[Dict[str, Any]],
                           conversation_id: str,
-                          image_ids: Optional[List[str]] = None) -> Generator[Dict[str, Any], None, None]:
+                          image_ids: Optional[List[str]] = None,
+                          client: Optional[Dict[str, Any]] = None) -> Generator[Dict[str, Any], None, None]:
     """XIII-A (ADR 0026): drive the agent loop over the standard runtime context. The seat is the
     Model-Lock-selected conversational model — the loop adds hands, never a different voice. The
     same message builder as the plain path keeps context parity; web results stay out until the
@@ -1964,6 +1965,9 @@ def run_agent_loop_events(*, history: List[Dict[str, str]], user_message: str,
                                      web_results=[], conversation_id=conversation_id)
     if messages and messages[0].get("role") == "system":
         messages[0]["content"] = f"{messages[0]['content']}\n\n{agent_loop.AGENT_SYSTEM_ADDENDUM}"
+    note = console_note(client)
+    if note:
+        messages.append({"role": "system", "content": note})
     if image_ids:
         messages.append({
             "role": "system",
@@ -2118,6 +2122,25 @@ class ChatRequest(BaseModel):
     # Attached images (data URLs or bare base64). The runtime stores them and offers the seat
     # their image_ids; the seat sees them through look_at_image — never raw bytes in context.
     images: Optional[List[str]] = None
+    # What the operator's console is doing right now, so the seat can know instead of guess
+    # (2026-11-06: asked "can't you see I'm trying it?", it claimed it could). Only known keys
+    # are read: voice_out (read-aloud on/off).
+    client: Optional[Dict[str, Any]] = None
+
+
+def console_note(client: Optional[Dict[str, Any]]) -> Optional[str]:
+    """A one-line system note from the console's reported state, or None when nothing was sent
+    (the phones send nothing: the seat must then say it does not know)."""
+    if not isinstance(client, dict) or "voice_out" not in client:
+        return None
+    from services import voice_setting
+    if bool(client.get("voice_out")):
+        voice = voice_setting.state()
+        return (f"Console note (from the operator's console, this message): read-aloud is ON. "
+                f"Your reply will be spoken aloud in the voice {voice['current']} "
+                f"({voice['current_label']}).")
+    return ("Console note (from the operator's console, this message): read-aloud is OFF. "
+            "Your reply will be shown as text only.")
 
 
 class ChatResponse(BaseModel):
@@ -2466,6 +2489,9 @@ def chat(req: ChatRequest) -> ChatResponse:
         elif req.model:
             model_control.set_active_model(req.model)
         explicit_model_switch = None if direct_mode else model_control.parse_explicit_switch(req.message)
+        if explicit_model_switch and not model_control.is_selectable(explicit_model_switch):
+            # not a known chat model ("switch to George" = a voice): the seat answers instead
+            explicit_model_switch = None
         if explicit_model_switch:
             model_control.set_active_model(explicit_model_switch)
             reply = f"Active conversational model set to {explicit_model_switch}. Model Lock remains engaged."
@@ -2574,7 +2600,7 @@ def chat(req: ChatRequest) -> ChatResponse:
                 for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
                                                         user_profile=user_profile, memories=memories,
                                                         conversation_id=conversation_id,
-                                                        image_ids=attached_ids):
+                                                        image_ids=attached_ids, client=req.client):
                     if loop_event.get("event") == "final":
                         loop_final = loop_event
                 reply = str(loop_final.get("reply") or "")
@@ -2803,6 +2829,9 @@ def chat_stream(req: ChatRequest):
         elif req.model:
             model_control.set_active_model(req.model)
         explicit_model_switch = None if direct_mode else model_control.parse_explicit_switch(req.message)
+        if explicit_model_switch and not model_control.is_selectable(explicit_model_switch):
+            # not a known chat model ("switch to George" = a voice): the seat answers instead
+            explicit_model_switch = None
         if explicit_model_switch:
             model_control.set_active_model(explicit_model_switch)
     except ValueError as exc:
@@ -2992,7 +3021,7 @@ def chat_stream(req: ChatRequest):
                 for loop_event in run_agent_loop_events(history=history[:-1], user_message=req.message,
                                                         user_profile=user_profile, memories=memories,
                                                         conversation_id=conversation_id,
-                                                        image_ids=attached_ids):
+                                                        image_ids=attached_ids, client=req.client):
                     kind = loop_event.get("event")
                     if kind == "delta":
                         chunks.append(loop_event.get("text", ""))

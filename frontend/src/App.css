@@ -3074,3 +3074,15 @@ button:hover {
   font-size: 0.6rem;
   letter-spacing: 0.1em;
 }
+
+/* the mouth: speaking-voice picker */
+.voice-pick-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.voice-pick-row select {
+  min-width: 0;
+  background: rgba(10, 16, 24, 0.95);
+  color: #cfe9f5;
+  border: 1px solid rgba(150, 180, 200, 0.4);
+  border-radius: 4px;
+  padding: 5px 6px;
+  font-size: 0.66rem;
+}

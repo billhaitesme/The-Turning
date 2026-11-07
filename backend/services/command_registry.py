@@ -234,6 +234,45 @@ COMMANDS: List[Dict[str, Any]] = [
         "category": "toolwright",
         "surfaces": ["mobile", "desktop"],
     },
+    # -- self-knowledge (2026-11-06): asked about its own voice, the seat guessed ("I don't have
+    #    access to your audio system", then "you can toggle between voices if available"). These
+    #    read and change the body's real state instead.
+    {
+        "name": "describe_self",
+        "title": "Describe yourself",
+        "description": "Read OMEGA's real body and settings: speaking voice (and how to change "
+                       "it), hearing, the screens it runs on, the chat and deep-thinking models, "
+                       "the network breaker, and which tools are installed. Read-only. Use it "
+                       "for ANY question about yourself instead of guessing.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "self",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
+        "name": "list_voices",
+        "title": "List voices",
+        "description": "The installed English speaking voices (British/American, male/female) "
+                       "and which one OMEGA speaks with now. Read-only.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "self",
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
+        "name": "set_voice",
+        "title": "Change voice",
+        "description": "Change the voice OMEGA speaks replies with when read-aloud is on. Pass a "
+                       "voice id from list_voices (e.g. bm_george). Only when the operator asks "
+                       "for a change. Reversible; recorded.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "self",
+        "parameters": [
+            {"name": "voice", "label": "Voice id from list_voices (e.g. bm_george)", "type": "text", "required": True},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
     {
         "name": "change_conversational_routing",
         "title": "Change conversational routing",

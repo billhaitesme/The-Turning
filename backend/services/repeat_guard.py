@@ -73,15 +73,23 @@ class RepeatGuard:
                          if len(words(r)) >= WINDOW_WORDS]
         self.matched: List[str] = []  # the earlier replies the seat copied from
         self.fresh_numbers: Set[str] = set()
+        self.fresh_triples: Set[Triple] = set()
 
     def saw_tool_result(self, result_text: str) -> None:
         """Numbers a tool returned THIS turn are fresh evidence: "what's the forecast again?"
         answered from a new fetch legitimately repeats the earlier reply, so a stretch of text
         carrying those numbers is never judged a copy. A copied block with no fresh reading in
         it (the 15:14 joke after a host-status call) is still judged."""
-        self.fresh_numbers.update(w for w in words(result_text) if any(ch.isdigit() for ch in w))
+        # single digits do not count: nearly every tool result has them (dates), and they would
+        # exempt any numbered list ("1. ... 2. ...") from the guard
+        self.fresh_numbers.update(w for w in words(result_text)
+                                  if any(ch.isdigit() for ch in w) and (len(w) >= 2 or "." in w))
+        # Same for wording: re-listing what a tool returned THIS turn (Bill's chat, 2026-11-06:
+        # a fresh Toolwright status re-listed the same tools as the earlier reply) is reporting,
+        # not copying. Triples found in this turn's tool output are left out of the judgement.
+        self.fresh_triples.update(triples(words(result_text)))
 
-    def copying(self, round_text: str) -> bool:
+    def copying(self, round_text: str, earlier_this_turn: str = "") -> bool:
         """True when the newest WINDOW_WORDS of this round's text are mostly already said:
         in an earlier reply, or earlier in this same text."""
         if self.exempt:
@@ -91,12 +99,16 @@ class RepeatGuard:
             return False
         if any(w in self.fresh_numbers for w in ws[-WINDOW_WORDS:]):
             return False  # this stretch reports readings a tool fetched this turn: not a copy
-        window = triples(ws[-WINDOW_WORDS:])
+        window = [t for t in triples(ws[-WINDOW_WORDS:]) if t not in self.fresh_triples]
+        if len(window) < (WINDOW_WORDS - 2) // 2:
+            return False  # mostly this turn's own tool output: reporting, nothing to judge
         hits = [original for said, original in self._sources if share(window, said) >= COPY_SHARE]
         for original in hits:
             if original not in self.matched:
                 self.matched.append(original)
-        earlier_here = set(triples(ws[:-WINDOW_WORDS]))
+        # earlier in THIS reply too, across tool rounds (live 2026-11-06: the seat wrote the voice
+        # list, called a tool, then wrote the whole list again in the next round)
+        earlier_here = set(triples(words(earlier_this_turn))) | set(triples(ws[:-WINDOW_WORDS]))
         return bool(hits) or share(window, earlier_here) >= COPY_SHARE
 
     def withhold(self, conversation: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

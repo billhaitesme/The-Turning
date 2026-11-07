@@ -258,6 +258,8 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
           message: userMsg,
           mode: conversationMode,
           images: imagesToSend.length ? imagesToSend : undefined,
+          // tell OMEGA what this console is doing, so it knows rather than guesses
+          client: { voice_out: voiceOutRef.current },
         }),
       });
 
@@ -360,6 +362,7 @@ export function useChatChannel({ playCue = () => {}, onPhase = () => {} } = {}) 
           user_id: "demo",
           message: userMsg,
           mode: conversationMode,
+          client: { voice_out: voiceOutRef.current },
         }),
       });
       if (!res.ok) throw new Error(await res.text());

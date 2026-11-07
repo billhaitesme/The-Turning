@@ -220,6 +220,42 @@ def initiate_command(name: str, *, requested_by: str, channel: str, session_id: 
     return _upsert(entry)
 
 
+def _describe_self() -> Dict[str, Any]:
+    """OMEGA's real body and settings, read live — the answer to "examine yourself". Every value
+    comes from the running system; nothing here is a claim the runtime cannot back."""
+    from services import deep_seat, network_breaker, voice_setting
+    from services.model_control import model_control
+    from services.toolwright import inducted_specs
+
+    voice = voice_setting.state()
+    english = voice["voices"]
+    return {
+        "voice": {
+            "engine": voice["engine"],
+            "speaking_voice_now": f"{voice['current']} ({voice['current_label']})",
+            "installed_english_voices": len(english),
+            "how_to_change": "list_voices shows the options; set_voice changes it when the "
+                             "operator asks. You CAN change it yourself.",
+            "when_it_speaks": "Only when the operator turns on read-aloud ('Voice ON') in the "
+                              "desktop console. You cannot see that switch; a console note in "
+                              "the conversation tells you its state when the console sends it.",
+        },
+        "hearing": "The desktop console's hold-to-talk mic: speech is transcribed locally "
+                   "(faster-whisper) and arrives as text. The phone apps have no mic yet.",
+        "sight": "Only images the operator attaches (look_at_image) and enrolled faces "
+                 "(recognize_faces). You cannot see the operator's screen or room.",
+        "screens": "Desktop web console (Bridge Zero) on the host PC; iPhone and Android apps "
+                   "over Tailscale. All talk to the same backend.",
+        "chat_model": (model_control.status() or {}).get("active_model"),
+        "deep_thinking_model": deep_seat.local_model(),
+        "network_breaker": "ON (web reads allowed)" if network_breaker.breaker_is_on()
+                           else "OFF (no web reads)",
+        "installed_toolwright_tools": [s.get("name") for s in inducted_specs()],
+        "limits": "You run on the operator's PC. You cannot change your own code, install "
+                  "software, or see anything the runtime does not hand you.",
+    }
+
+
 def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: Dict[str, Any]) -> Dict[str, Any]:
     if command["name"] == "new_conversation":
         if _create_conversation is None:
@@ -252,13 +288,37 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
             "filed_at": r.get("filed_at"),
             "last_event": ((r.get("history") or [{}])[-1]).get("event"),
         } for r in list_requests()[:20]]
+        # Installed and shelf are SEPARATE lists with self-describing names: the 8B seat listed
+        # shelf entries (world_time, define_word) as "available" when they sat in one list
+        # beside the installed ones (2026-11-06).
+        installed = [s.get("name") for s in inducted_specs()]
         return {
             "requests": requests,
-            "inducted_tools": [s.get("name") for s in inducted_specs()],
-            "shelf": shelf_summary(),
-            "note": "Only 'inducted' tools are usable. 'verified' and 'awaiting_induction' wait on "
-                    "the operator's biometric induction; say so, never claim the tool exists.",
+            "installed_tools_usable_now": installed,
+            "shelf_NOT_installed": [
+                {**entry, "status": "NOT INSTALLED: on the shelf only; usable only after a "
+                                    "request is filed, prepared, and inducted by the operator's "
+                                    "fingerprint"}
+                for entry in shelf_summary() if entry.get("name") not in installed],
+            "note": "Only installed_tools_usable_now can be used. Never call a shelf tool "
+                    "available. 'verified' and 'awaiting_induction' requests wait on the "
+                    "operator's biometric induction; say so, never claim the tool exists.",
         }
+    if command["name"] == "describe_self":
+        return _describe_self()
+    if command["name"] == "list_voices":
+        from services import voice_setting
+        return voice_setting.state()
+    if command["name"] == "set_voice":
+        from services import voice_setting
+        try:
+            changed = voice_setting.set_voice(str(arguments.get("voice") or ""),
+                                              changed_by=entry.get("requested_by") or "unknown",
+                                              channel=entry.get("channel") or "unknown")
+        except ValueError as exc:
+            raise CommandError(422, str(exc)) from exc
+        return {"voice_now": changed["current"], "label": changed["current_label"],
+                "note": "Takes effect on the next spoken reply (read-aloud must be on)."}
     if command.get("tool_name"):
         return _execute_direct_tool(command, {**(command.get("arguments") or {}), **(arguments or {})})
     raise CommandError(500, f"No direct handler for {command['name']}")

@@ -24,6 +24,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
   const [error, setError] = useState("");
   const [breaker, setBreaker] = useState({ on: false, changed_at: null });
   const [deepSeat, setDeepSeat] = useState({ model: "", choices: [], changed_at: null });
+  const [voices, setVoices] = useState({ current: "", current_label: "", voices: [] });
   const [fetchLog, setFetchLog] = useState([]);
   const [capRequests, setCapRequests] = useState([]);
   const [capNeed, setCapNeed] = useState("");
@@ -46,12 +47,13 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
 
   async function refreshSenses() {
     try {
-      const [b, f, t, fc, ds] = await Promise.all([
+      const [b, f, t, fc, ds, vc] = await Promise.all([
         fetch(`${API_BASE}/system/breaker`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/fetch-log?limit=6`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/toolwright`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/faces`).then((r) => (r.ok ? r.json() : null)),
         fetch(`${API_BASE}/system/deep-seat`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`${API_BASE}/voice/voices`).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (!aliveRef.current) return;
       if (b) setBreaker(b);
@@ -59,6 +61,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
       if (t) setCapRequests(t.requests || []);
       if (fc) setFaces(fc);
       if (ds) setDeepSeat(ds);
+      if (vc) setVoices(vc);
     } catch { /* same */ }
   }
 
@@ -114,6 +117,34 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
         playCue(breaker.on ? "ack" : "verified");
       }
     } catch { /* surfaces on next poll */ }
+  }
+
+  async function chooseVoice(voice) {
+    playCue("navigation");
+    try {
+      const res = await fetch(`${API_BASE}/voice/voice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice, changed_by: "desktop-console" }),
+      });
+      if (res.ok) {
+        setVoices(await res.json());
+        playCue("verified");
+      }
+    } catch { /* surfaces on next poll */ }
+  }
+
+  async function previewVoice() {
+    try {
+      const res = await fetch(`${API_BASE}/voice/speak`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "This is how I sound. Keep this voice, or pick another.", voice: voices.current }),
+      });
+      if (!res.ok) return;
+      const audio = new Audio(URL.createObjectURL(await res.blob()));
+      audio.play().catch(() => {});
+    } catch { /* the mouth failing is never fatal */ }
   }
 
   async function chooseDeepSeat(model) {
@@ -346,6 +377,24 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
           OMEGA decides WHEN to think deep; you choose WHICH model does it.
           {deepSeat.changed_at ? ` Last switched ${fmtTime(deepSeat.changed_at)}.` : ""}
         </small>
+      </div>
+
+      <div className="command-deck-section">
+        <small className="command-deck-label"
+               data-tip="The voice OMEGA speaks with when read-aloud (Voice ON) is on. OMEGA can also change it when you ask.">
+          THE MOUTH // SPEAKING VOICE
+        </small>
+        <div className="voice-pick-row">
+          <select
+            value={voices.current}
+            onChange={(e) => chooseVoice(e.target.value)}
+            data-tip="Pick a voice. It applies to the next spoken reply."
+          >
+            {voices.voices.map((v) => <option key={v.id} value={v.id}>{v.label} — {v.id}</option>)}
+          </select>
+          <button type="button" onClick={previewVoice} disabled={!voices.current}
+                  data-tip="Hear the selected voice say one line.">HEAR IT</button>
+        </div>
       </div>
 
       <div className="command-deck-section">

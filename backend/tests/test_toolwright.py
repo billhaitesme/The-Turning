@@ -236,8 +236,8 @@ def test_the_seat_reads_where_its_requests_stand(client):
     outcome = result["outcome"]
     mine = next(r for r in outcome["requests"] if r["capability_request_id"] == request_id)
     assert mine["status"] == "verified" and mine["matched_tool"] == "weather_now"
-    assert outcome["inducted_tools"] == []
-    assert {"geocode_place", "marine_conditions"} <= {s["name"] for s in outcome["shelf"]}
+    assert outcome["installed_tools_usable_now"] == []
+    assert {"geocode_place", "marine_conditions"} <= {s["name"] for s in outcome["shelf_NOT_installed"]}
     assert "never claim" in outcome["note"]
     # it is offered to the seat as a tool
     assert "check_capability_requests" in {s["function"]["name"] for s in agent_loop.build_tool_schemas()}
