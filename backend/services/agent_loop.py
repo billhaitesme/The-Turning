@@ -122,11 +122,11 @@ Hands (Epoch XIII-A):
   problem from scratch. Distill; never paste raw history, never memories, never anything
   private — the frontier rung leaves the machine. The rung's answer is advice: weigh it and own
   your final reply.
-- CREATIVE AND PERSONAL MATERIAL NEVER RIDES THE FRONTIER. Anything the operator asks you to
-  WRITE — stories, verse, jokes, letters, anything private or explicit — stays on the machine:
-  rung "local" only, whatever the subject. The local gear writes without judgment on the
-  operator's content; the frontier is for analysis and planning, never for the operator's
-  creative material.
+- CREATIVE AND PERSONAL MATERIAL NEVER RIDES THE FRONTIER. The RUNTIME triages writing requests:
+  a clean piece may go to the operator's own claude writing rung (the runtime's call, never
+  yours), and anything explicit, adult, personal, or doubtful is written by rung "local" and
+  never leaves the machine. When YOU call deep_think to write something, use rung "local". The
+  frontier is for analysis and planning, never for the operator's creative material.
 """.strip()
 
 
@@ -259,6 +259,20 @@ def execute_tool_call(name: str, arguments: Any, *, session_id: str,
 
 
 # ------------------------------------------------------------------ the seat turn (Ollama, streamed)
+def _quick_seat_answer(prompt: str, model: str) -> str:
+    """One short, deterministic seat call (temperature 0, no thinking) for runtime triage —
+    e.g. 'may this writing request leave the machine?' A failure is the caller's to treat as NO."""
+    base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
+    response = httpx.post(
+        f"{base}/chat",
+        json={"model": model, "messages": [{"role": "user", "content": prompt}],
+              "stream": False, "think": False, "options": {"temperature": 0}},
+        timeout=60.0,
+    )
+    response.raise_for_status()
+    return str((response.json().get("message") or {}).get("content") or "")
+
+
 def _ollama_seat_turn(conversation: List[Dict[str, Any]],
                       tools: Optional[List[Dict[str, Any]]],
                       model: str) -> EventGenerator:
@@ -396,16 +410,20 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         yield from runtime_first("deep_think", {"task": operator_message, "rung": "local"},
                                  escalation.SEAT_NOTE.format(reason=reason))
     elif craft and command_registry.get_command("deep_think") is not None:
-        # A creative piece (a joke, a poem) goes to the LOCAL deep rung framed as WRITE and the
-        # seat delivers it. LOCAL ONLY, by operator decision (2026-11-07, reversing the frontier
-        # routing of d3b80c5): creative work is private — whatever the operator asks for, the
-        # abliterated local gear retains it and nothing leaves the machine. The breaker is
-        # irrelevant here (local inference), so creative works offline too. The frontier stays
-        # for analysis and planning, never for the operator's creative material.
+        # A creative piece goes to a WRITING rung and the seat delivers it. The runtime triages
+        # (2026-11-07, Bill: "Claude is better at the telling"): CLEAN creative → the operator's
+        # claude rung (Claude sees the real request, applies its own judgment, falls back local
+        # if it declines); anything explicit, adult, personal, doubtful, overridden, or
+        # breaker-off → the LOCAL abliterated gear, and nothing leaves the machine. The frontier
+        # never writes the operator's creative material.
+        craft_rung = escalation.craft_rung(
+            operator_message,
+            breaker_on=network_breaker.breaker_is_on(),
+            classify=lambda p: _quick_seat_answer(p, model))
         reply_parts.append(escalation.CRAFT_ANNOUNCE)
         yield {"event": "delta", "text": escalation.CRAFT_ANNOUNCE}
         yield from runtime_first("deep_think",
-                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": "local"},
+                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": craft_rung},
                                  escalation.CRAFT_NOTE.format(reason=craft))
     elif escalation.self_question(operator_message) \
             and command_registry.get_command("describe_self") is not None:

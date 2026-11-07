@@ -65,6 +65,37 @@ def test_frontier_rung_is_breaker_gated_and_logged(client):
     assert entry["kind"] == "frontier" and entry["target"] == "groq:groq-test-model"
 
 
+def test_claude_rung_writes_and_is_logged(client):
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    TOOL_REGISTRY["deep_think"]["adapter"]._claude_fn = lambda prompt: ("sonnet", "A tight joke.")
+    r = client.post("/system/commands/deep_think",
+                    json={"arguments": {"task": "WRITE one joke about lighthouses", "rung": "claude"}})
+    assert r.status_code == 200, r.text
+    output = r.json()["command"]["outcome"]["output"]
+    assert output["rung"] == "claude" and output["answer"] == "A tight joke."
+    entry = network_breaker.list_fetch_log()[0]
+    assert entry["kind"] == "claude" and entry["ok"]
+
+
+def test_claude_rung_decline_falls_back_to_the_local_gear(client):
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    adapter = TOOL_REGISTRY["deep_think"]["adapter"]
+    adapter._claude_fn = lambda prompt: (_ for _ in ()).throw(ValueError("declined"))
+    adapter._local_fn = lambda prompt: ("local-30b", "The local gear wrote it.")
+    r = client.post("/system/commands/deep_think",
+                    json={"arguments": {"task": "WRITE one joke", "rung": "claude"}})
+    assert r.status_code == 200, r.text
+    output = r.json()["command"]["outcome"]["output"]
+    assert output["rung"] == "local" and output["answer"] == "The local gear wrote it."
+    assert "LOCAL gear wrote this instead" in output["note"]
+
+
+def test_claude_rung_is_breaker_gated(client):
+    r = client.post("/system/commands/deep_think",
+                    json={"arguments": {"task": "WRITE one joke", "rung": "claude"}})
+    assert r.status_code == 422 and "breaker is OFF" in r.json()["detail"]
+
+
 def test_frontier_without_a_key_refuses_plainly(client, monkeypatch):
     network_breaker.set_breaker(True, changed_by="test", channel="test")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)

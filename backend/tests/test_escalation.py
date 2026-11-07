@@ -168,3 +168,45 @@ def test_the_loop_has_the_local_rung_write_the_piece_and_the_seat_delivers_it(mo
     list(agent_loop.iter_agent_loop(messages=[{"role": "user", "content": CRAFT[2]}],
                                     model="t", session_id="c", seat_turn=seat))
     assert calls and all(args["rung"] == "local" for _, args, _ in calls)
+
+
+def test_craft_triage_is_conservative_doubt_stays_home():
+    """Explicit material is stopped at the front door BY THE LOCAL TRIAGE — Claude never sees
+    it (Bill, 2026-11-07). Only a clear local YES sends a clean piece to the claude rung."""
+    yes = lambda prompt: "YES"  # noqa: E731
+    no = lambda prompt: "No, better not."  # noqa: E731
+    boom = lambda prompt: (_ for _ in ()).throw(RuntimeError("ollama down"))  # noqa: E731
+    # clean + breaker on + clear YES -> claude
+    assert escalation.craft_rung("tell me a joke about lighthouses", breaker_on=True, classify=yes) == "claude"
+    # everything conservative stays local: breaker off, explicit lexicon (classifier never even
+    # runs - it would say yes here), operator override, a non-YES verdict, a dead classifier
+    assert escalation.craft_rung("tell me a joke", breaker_on=False, classify=yes) == "local"
+    assert escalation.craft_rung("write me a dirty limerick", breaker_on=True,
+                                 classify=yes) == "local"
+    assert escalation.craft_rung("tell me a joke, but keep this local", breaker_on=True,
+                                 classify=yes) == "local"
+    assert escalation.craft_rung("tell me a joke", breaker_on=True, classify=no) == "local"
+    assert escalation.craft_rung("tell me a joke", breaker_on=True, classify=boom) == "local"
+
+
+def test_craft_loop_routes_clean_pieces_to_the_claude_rung(monkeypatch):
+    from services import network_breaker
+    calls = []
+
+    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY):
+        calls.append(args)
+        return {"status": "executed", "outcome": {"rung": args["rung"], "answer": "a joke"}}
+
+    monkeypatch.setattr(agent_loop, "execute_tool_call", fake_execute)
+    monkeypatch.setattr(agent_loop, "_quick_seat_answer", lambda prompt, model: "YES")
+
+    def seat(conversation, tools, model):
+        yield {"type": "message", "content": "a joke", "tool_calls": []}
+
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    try:
+        list(agent_loop.iter_agent_loop(messages=[{"role": "user", "content": CRAFT[0]}],
+                                        model="t", session_id="c", seat_turn=seat))
+    finally:
+        network_breaker.set_breaker(False, changed_by="test", channel="test")
+    assert calls and calls[0]["rung"] == "claude"

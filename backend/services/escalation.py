@@ -113,6 +113,40 @@ def craft_reason(message: str, previous_reply: str = "") -> Optional[str]:
     return None
 
 
+# ---------------------------------------------------------------- craft routing (2026-11-07)
+# Bill: "Claude is better at the telling" (jokes). CLEAN creative goes to the operator's Claude
+# Code CLI — Claude sees the real request and applies its own judgment. Anything explicit, adult,
+# or personal is written by the LOCAL gear and never leaves the machine. The triage is
+# CONSERVATIVE by construction: the operator's override, an explicit-lexicon hit, the breaker
+# being OFF, a classifier answer that is not a clear YES, or any classifier failure — all stay
+# local. Doubt stays home.
+_KEEP_LOCAL = re.compile(
+    r"\b(?:keep (?:this|it) local|local(?:ly)? only|privately|in private|incognito|"
+    r"just between us|don'?t send (?:this|it)|off(?:-| )machine|no cloud)\b", re.IGNORECASE)
+_EXPLICIT = re.compile(
+    r"\b(?:explicit|nsfw|erotic|erotica|sexual|sexy|sext\w*|nude|naked|porn\w*|smut\w*|kink\w*|"
+    r"fetish|x-?rated|adults? only|dirty (?:joke|story|limerick|poem)|filthy|raunchy|lewd|"
+    r"obscene|hardcore)\b", re.IGNORECASE)
+
+CLEAN_QUESTION = (
+    "Answer with exactly one word, YES or NO. May this writing request be sent to a public "
+    "cloud writing assistant? Answer NO if it involves or implies explicit or sexual content, "
+    "adult themes, real private people, or the operator's personal information. Otherwise YES."
+    "\n\nREQUEST: {request}")
+
+
+def craft_rung(message: str, *, breaker_on: bool, classify) -> str:
+    """'claude' for clean creative via the operator's CLI, 'local' for everything else."""
+    text = str(message or "")
+    if not breaker_on or _KEEP_LOCAL.search(text) or _EXPLICIT.search(text):
+        return "local"
+    try:
+        verdict = str(classify(CLEAN_QUESTION.format(request=text)) or "").strip().upper()
+    except Exception:  # noqa: BLE001 — a failed triage stays home
+        return "local"
+    return "claude" if verdict.startswith("YES") else "local"
+
+
 CRAFT_ANNOUNCE = "Let me work on that one properly — a moment."
 CRAFT_TASK = (
     "WRITE the piece the operator asked for: the finished text itself and nothing else. No "
