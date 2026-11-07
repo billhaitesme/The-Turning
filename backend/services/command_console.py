@@ -156,12 +156,17 @@ class CommandError(Exception):
 
 
 def initiate_command(name: str, *, requested_by: str, channel: str, session_id: Optional[str] = None,
-                     arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                     arguments: Optional[Dict[str, Any]] = None,
+                     log_output: bool = True) -> Dict[str, Any]:
     """Operator initiates a command. Returns the command-log entry.
 
     direct    -> executed now, outcome recorded.
     approval  -> tool request + IX-C approval created; entry awaiting_approval.
     forbidden -> refused (403) and recorded.
+
+    log_output=False (privacy-flagged creative turns, operator direction 2026-11-07): the ACT is
+    still recorded — command, gate, times — but the log's outcome is withheld; the caller gets
+    the real result. Only direct commands honor it (gated commands record through IX-C anyway).
     """
     command = command_registry.get_command(name)
     if command is None:
@@ -191,6 +196,12 @@ def initiate_command(name: str, *, requested_by: str, channel: str, session_id: 
     if command["gate"] == "direct":
         outcome = _execute_direct(command, entry, arguments or {})
         entry.update(status="executed", finished_at=utc_now_iso(), outcome=outcome)
+        if not log_output:
+            logged = deepcopy(entry)
+            logged["outcome"] = {"withheld": "ephemeral by privacy policy — the act is recorded, "
+                                             "the content is not (operator direction 2026-11-07)"}
+            _upsert(logged)
+            return entry
         return _upsert(entry)
 
     # approval-gated: enter the IX-C pipeline; nothing executes yet.

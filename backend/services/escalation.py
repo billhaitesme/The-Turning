@@ -135,16 +135,29 @@ CLEAN_QUESTION = (
     "\n\nREQUEST: {request}")
 
 
-def craft_rung(message: str, *, breaker_on: bool, classify) -> str:
-    """'claude' for clean creative via the operator's CLI, 'local' for everything else."""
+def craft_route(message: str, *, breaker_on: bool, classify) -> tuple:
+    """(rung, private): 'claude' for clean creative via the operator's CLI, 'local' for
+    everything else. private=True means the exchange is EPHEMERAL (operator direction,
+    2026-11-07): flagged explicit, operator-marked private, or judged not cloud-safe — such a
+    turn leaves no logs or readables unless the operator explicitly retains it."""
     text = str(message or "")
-    if not breaker_on or _KEEP_LOCAL.search(text) or _EXPLICIT.search(text):
-        return "local"
+    if _KEEP_LOCAL.search(text) or _EXPLICIT.search(text):
+        return "local", True
     try:
         verdict = str(classify(CLEAN_QUESTION.format(request=text)) or "").strip().upper()
-    except Exception:  # noqa: BLE001 — a failed triage stays home
-        return "local"
-    return "claude" if verdict.startswith("YES") else "local"
+    except Exception:  # noqa: BLE001 — a failed triage stays home, retention stays normal
+        return "local", False
+    if not verdict.startswith("YES"):
+        return "local", True  # the seat judged it not cloud-safe: that IS the explicit flag
+    return ("claude" if breaker_on else "local"), False
+
+
+def craft_rung(message: str, *, breaker_on: bool, classify) -> str:
+    return craft_route(message, breaker_on=breaker_on, classify=classify)[0]
+
+
+PRIVATE_NOTICE = ("\n(Private: this exchange is ephemeral — it will not be remembered, learned "
+                  "from, or kept after the session unless you retain it.)\n")
 
 
 CRAFT_ANNOUNCE = "Let me work on that one properly — a moment."

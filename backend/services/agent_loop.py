@@ -218,7 +218,8 @@ def _coerce_arguments(command: Dict[str, Any], raw: Any) -> Dict[str, Any]:
 
 # ------------------------------------------------------------------ one tool call, resolved
 def execute_tool_call(name: str, arguments: Any, *, session_id: str,
-                      requested_by: str = AGENT_REQUESTED_BY) -> Dict[str, Any]:
+                      requested_by: str = AGENT_REQUESTED_BY,
+                      log_output: bool = True) -> Dict[str, Any]:
     """Resolve one model-emitted tool call through the command console. Never raises: the model
     gets a structured result either way, and every path is recorded."""
     command = command_registry.get_command(name)
@@ -238,6 +239,7 @@ def execute_tool_call(name: str, arguments: Any, *, session_id: str,
             requested_by=requested_by,
             channel="chat",
             session_id=session_id,
+            log_output=log_output,
             arguments=_coerce_arguments(command, arguments),
         )
     except command_console.CommandError as exc:
@@ -371,6 +373,7 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
     budget = max_hops()
     cap = result_max_chars()
     rounds = 0
+    turn_ephemeral = False  # a privacy-flagged creative turn: no memories, no logs, purged at close
     # every runtime answer this turn, uncapped: the evidence the number check grounds against
     tool_results: List[tuple] = []
     operator_message = next((str(m.get("content") or "") for m in reversed(messages)
@@ -381,11 +384,12 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         operator_message)
     repeats_caught = 0
 
-    def runtime_first(name: str, args: Dict[str, Any], note: str) -> EventGenerator:
+    def runtime_first(name: str, args: Dict[str, Any], note: str, *, log_output: bool = True) -> EventGenerator:
         """The runtime calls a tool BEFORE the seat speaks, through the console like any call,
         and the seat sees the call, the result and a note saying why."""
         yield {"event": "tool_call", "name": name, "arguments": args}
-        result = execute_tool_call(name, args, session_id=session_id, requested_by=RUNTIME_REQUESTED_BY)
+        result = execute_tool_call(name, args, session_id=session_id, requested_by=RUNTIME_REQUESTED_BY,
+                                   log_output=log_output)
         hops.append({"tool": name, "status": result.get("status")})
         tool_results.append((name, result))
         if result.get("status") == "executed":
@@ -416,15 +420,21 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         # if it declines); anything explicit, adult, personal, doubtful, overridden, or
         # breaker-off → the LOCAL abliterated gear, and nothing leaves the machine. The frontier
         # never writes the operator's creative material.
-        craft_rung = escalation.craft_rung(
+        craft_rung, turn_ephemeral = escalation.craft_route(
             operator_message,
             breaker_on=network_breaker.breaker_is_on(),
             classify=lambda p: _quick_seat_answer(p, model))
         reply_parts.append(escalation.CRAFT_ANNOUNCE)
         yield {"event": "delta", "text": escalation.CRAFT_ANNOUNCE}
+        if turn_ephemeral:
+            # Flagged private (operator direction 2026-11-07): the operator is told, the command
+            # log withholds the piece, and the chat layer stores the turn ephemeral.
+            reply_parts.append(escalation.PRIVATE_NOTICE)
+            yield {"event": "delta", "text": escalation.PRIVATE_NOTICE}
         yield from runtime_first("deep_think",
                                  {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": craft_rung},
-                                 escalation.CRAFT_NOTE.format(reason=craft))
+                                 escalation.CRAFT_NOTE.format(reason=craft),
+                                 log_output=not turn_ephemeral)
     elif escalation.self_question(operator_message) \
             and command_registry.get_command("describe_self") is not None:
         # Ground BEFORE speaking: the seat claimed "I can write and execute code" and only then
@@ -510,7 +520,8 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             yield {"event": "delta", "text": seam + note}
             yield {"event": "final", "reply": "".join(reply_parts), "hops": hops,
                    "seat_supports_tools": supports_tools, "eval_count": None,
-                   "unverified_numbers": [], "repeats_caught": repeats_caught}
+                   "unverified_numbers": [], "repeats_caught": repeats_caught,
+                   "ephemeral": turn_ephemeral}
             return
         yield from release(len(round_text))  # the round ended clean: flush what was held
 
@@ -553,7 +564,8 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                    "seat_supports_tools": supports_tools,
                    "eval_count": (final_message or {}).get("eval_count"),
                    "unverified_numbers": unverified, "repeats_caught": repeats_caught,
-                   "unverified_claims": [name for name, _ in claims]}
+                   "unverified_claims": [name for name, _ in claims],
+                   "ephemeral": turn_ephemeral}
             return
 
         conversation.append({"role": "assistant",

@@ -246,9 +246,14 @@ def init_db() -> None:
         conversation_id TEXT NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        ephemeral INTEGER NOT NULL DEFAULT 0
     )
     """)
+    try:  # existing databases gain the column in place
+        cur.execute("ALTER TABLE messages ADD COLUMN ephemeral INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # already there
     cur.execute("""
     CREATE TABLE IF NOT EXISTS user_profiles (
         user_id TEXT PRIMARY KEY,
@@ -367,15 +372,55 @@ def get_conversation_meta(conversation_id: str) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def add_message(conversation_id: str, role: str, content: str) -> None:
+def add_message(conversation_id: str, role: str, content: str, *, ephemeral: bool = False) -> None:
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO messages (conversation_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-        (conversation_id, role, content, utc_now()),
+        "INSERT INTO messages (conversation_id, role, content, created_at, ephemeral) VALUES (?, ?, ?, ?, ?)",
+        (conversation_id, role, content, utc_now(), 1 if ephemeral else 0),
     )
     conn.commit()
     conn.close()
+
+
+# ----------------------------------------------------------------- ephemeral turns (2026-11-07)
+# Operator direction: a creative exchange OMEGA flags explicit (or the operator marks local/
+# private) must leave no readable trace unless retention is explicitly granted. Such turns are
+# stored ephemeral=1 — alive for the session's continuity, excluded from memories/learning and
+# from Recents previews, withheld from the command log — and PURGED at every backend startup.
+def mark_last_user_message_ephemeral(conversation_id: str) -> None:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE messages SET ephemeral = 1 WHERE id = (SELECT id FROM messages "
+        "WHERE conversation_id = ? AND role = 'user' ORDER BY id DESC LIMIT 1)",
+        (conversation_id,),
+    )
+    conn.commit()
+    conn.close()
+
+
+def retain_ephemeral(conversation_id: str) -> int:
+    """The operator's explicit permission to keep a conversation's ephemeral turns."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE messages SET ephemeral = 0 WHERE conversation_id = ? AND ephemeral = 1",
+                (conversation_id,))
+    kept = cur.rowcount
+    conn.commit()
+    conn.close()
+    return kept
+
+
+def purge_ephemeral() -> int:
+    """Startup sweep: every un-retained ephemeral turn is gone. No logs, no readables."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM messages WHERE ephemeral = 1")
+    purged = cur.rowcount
+    conn.commit()
+    conn.close()
+    return purged
     touch_conversation(conversation_id)
 
 
@@ -2179,6 +2224,9 @@ app.include_router(system_router)
 @app.on_event("startup")
 def startup_event() -> None:
     init_db()
+    purged = purge_ephemeral()
+    if purged:
+        print(f"privacy sweep: purged {purged} ephemeral message(s) from closed sessions")
 
 
 @app.get("/")
@@ -2438,9 +2486,10 @@ def list_recent_conversations(limit: int = 20) -> Dict[str, Any]:
     cur.execute(
         """
         SELECT c.id, c.title, c.scope, c.created_at, c.updated_at,
-               (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS message_count,
+               (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id
+                AND m.ephemeral = 0) AS message_count,
                (SELECT m.content FROM messages m WHERE m.conversation_id = c.id AND m.role = 'user'
-                ORDER BY m.id DESC LIMIT 1) AS last_user_message
+                AND m.ephemeral = 0 ORDER BY m.id DESC LIMIT 1) AS last_user_message
         FROM conversations c
         ORDER BY COALESCE(c.updated_at, c.created_at) DESC
         LIMIT ?
@@ -2453,6 +2502,16 @@ def list_recent_conversations(limit: int = 20) -> Dict[str, Any]:
         snippet = str(row.pop("last_user_message") or "")
         row["preview"] = snippet[:80]
     return {"conversations": rows}
+
+
+@app.post("/conversations/{conversation_id}/retain")
+def retain_conversation(conversation_id: str) -> Dict[str, Any]:
+    """The operator's explicit permission to keep this conversation's ephemeral turns — the one
+    way a privacy-flagged exchange survives the startup purge (operator direction 2026-11-07)."""
+    if not conversation_exists(conversation_id):
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    kept = retain_ephemeral(conversation_id)
+    return {"conversation_id": conversation_id, "retained": kept}
 
 
 @app.get("/conversations/{conversation_id}", response_model=ConversationHistoryResponse)
@@ -2566,6 +2625,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         or (ENABLE_TOOL_FRAMEWORK and not ENABLE_TOOL_EXECUTION and not agent_loop.agent_loop_enabled()
             and tool_request_pattern.search(req.message))
     )
+    ephemeral_turn = False  # set by a privacy-flagged creative turn (operator direction 2026-11-07)
     try:
         reasoning_output = None
         if summary_intent in {"state_summary", "uncertainty_summary"}:
@@ -2605,6 +2665,7 @@ def chat(req: ChatRequest) -> ChatResponse:
                     if loop_event.get("event") == "final":
                         loop_final = loop_event
                 reply = str(loop_final.get("reply") or "")
+                ephemeral_turn = bool(loop_final.get("ephemeral"))
             else:
                 reply = generate_response_text(history=history[:-1], user_message=req.message, user_profile=user_profile, memories=memories, conversation_id=conversation_id)
     except ModelUnavailableError as exc:
@@ -2614,7 +2675,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     if summary_intent in {"state_summary", "uncertainty_summary"} and reasoning_output is not None:
         latest_reasoning_result = reasoning_output
         _persist_reasoning_snapshot(latest_reasoning_result)
-    elif ENABLE_REASONING_PIPELINE:
+    elif ENABLE_REASONING_PIPELINE and not ephemeral_turn:
         try:
             previous_evidence_store = _load_scoped_evidence_store(conversation_id)
             evidence_store = _build_runtime_evidence_store(
@@ -2788,7 +2849,8 @@ def chat(req: ChatRequest) -> ChatResponse:
         ):
             reply = "Tool execution remains disabled by runtime policy. Use the bounded tool request endpoints for inspection and approval."
 
-    if reply and ENABLE_COGNITION_PIPELINE and summary_intent not in {"state_summary", "uncertainty_summary"}:
+    if reply and ENABLE_COGNITION_PIPELINE and not ephemeral_turn \
+            and summary_intent not in {"state_summary", "uncertainty_summary"}:
         try:
             process_completed_turn(
                 user_message=req.message,
@@ -2799,8 +2861,15 @@ def chat(req: ChatRequest) -> ChatResponse:
         except Exception as exc:
             print("Cognition pipeline warning:", repr(exc))
 
-    add_message(conversation_id, "assistant", reply)
-    learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)
+    if ephemeral_turn:
+        # Privacy-flagged turn: stored only for the session's continuity, marked for the startup
+        # purge; nothing is remembered or learned from it (operator direction 2026-11-07).
+        mark_last_user_message_ephemeral(conversation_id)
+        add_message(conversation_id, "assistant", reply, ephemeral=True)
+        learning: Dict[str, Any] = {}
+    else:
+        add_message(conversation_id, "assistant", reply)
+        learning = persist_learning(conversation_id=conversation_id, user_id=effective_user_id, user_message=req.message, assistant_message=reply)
 
     return ChatResponse(
         conversation_id=conversation_id,
@@ -2999,6 +3068,7 @@ def chat_stream(req: ChatRequest):
             return
 
         chunks: List[str] = []
+        ephemeral_turn = False  # set by a privacy-flagged creative turn (operator direction 2026-11-07)
         deterministic_ack = build_declarative_acknowledgement(req.message)
 
         if deterministic_ack:
@@ -3032,6 +3102,7 @@ def chat_stream(req: ChatRequest):
                     elif kind == "tool_result":
                         yield f"data: {json.dumps({'type': 'tool_result', 'name': loop_event.get('name'), 'status': loop_event.get('status')})}\n\n"
                     elif kind == "final":
+                        ephemeral_turn = bool(loop_event.get("ephemeral"))
                         yield f"data: {json.dumps({'type': 'phase', 'name': 'silence'})}\n\n"
                         yield f"data: {json.dumps({'type': 'done', 'text': loop_event.get('reply') or ''})}\n\n"
             except Exception as exc:
@@ -3061,7 +3132,7 @@ def chat_stream(req: ChatRequest):
         full_text = deterministic_ack if deterministic_ack is not None else "".join(chunks)
 
         if full_text:
-            if ENABLE_COGNITION_PIPELINE:
+            if ENABLE_COGNITION_PIPELINE and not ephemeral_turn:
                 try:
                     cognition_output = process_completed_turn(
                         user_message=req.message,
@@ -3073,7 +3144,7 @@ def chat_stream(req: ChatRequest):
                     print("Cognition pipeline warning:", repr(exc))
                     cognition_output = None
 
-            if ENABLE_REASONING_PIPELINE:
+            if ENABLE_REASONING_PIPELINE and not ephemeral_turn:
                 try:
                     previous_evidence_store = _load_scoped_evidence_store(conversation_id)
                     evidence_store = _build_runtime_evidence_store(
@@ -3096,14 +3167,20 @@ def chat_stream(req: ChatRequest):
                     print("Reasoning pipeline warning:", repr(exc))
                     reasoning_output = None
 
-            add_message(conversation_id, "assistant", full_text)
-
-            learning = persist_learning(
-                conversation_id=conversation_id,
-                user_id=effective_user_id,
-                user_message=req.message,
-                assistant_message=full_text,
-            )
+            if ephemeral_turn:
+                # Privacy-flagged turn: session continuity only; purged at the next startup;
+                # never remembered, never learned from (operator direction 2026-11-07).
+                mark_last_user_message_ephemeral(conversation_id)
+                add_message(conversation_id, "assistant", full_text, ephemeral=True)
+                learning = {}
+            else:
+                add_message(conversation_id, "assistant", full_text)
+                learning = persist_learning(
+                    conversation_id=conversation_id,
+                    user_id=effective_user_id,
+                    user_message=req.message,
+                    assistant_message=full_text,
+                )
 
             yield f"data: {json.dumps({'type': 'learning', 'data': learning})}\n\n"
 
