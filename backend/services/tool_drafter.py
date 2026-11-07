@@ -183,5 +183,5 @@ def draft_tool(need: str, why: str, *, requested_by: str, session_id: str,
                 "tool_name": spec["name"], "url_template": spec["url_template"],
                 "drafted_by": f"groq:{model}", "attempts": attempt,
                 "note": "Drafted, and its live test call PASSED. Not usable yet: the operator "
-                        "must PREPARE it and INDUCT it with a fingerprint. Say exactly that."}
+                        "must PREPARE it and INDUCT it with a fingerprint."}
     raise ValueError(f"No working tool after {MAX_ATTEMPTS} drafts. " + " | ".join(failures))

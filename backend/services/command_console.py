@@ -359,7 +359,7 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"capability_request_id": filed["request_id"], "status": filed["status"],
                 "tool_name": filed["candidate"]["name"],
                 "note": "Authored and filed. Not usable yet: the operator must PREPARE it (a live "
-                        "test call) and INDUCT it with a fingerprint. Say exactly that."}
+                        "test call) and INDUCT it with a fingerprint."}
     if command["name"] == "check_capability_requests":
         # Read-only view of the Toolwright, so the seat reports where a request stands from the
         # store instead of from memory (added 2026-11-06 in the first Toolwright workshop).
@@ -401,7 +401,7 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"proposal_id": filed["proposal_id"], "status": filed["status"],
                 "note": "Proposed. Nothing has changed: the operator must press DRAFT & TEST "
                         "(the draft runs in an isolated copy with the full test suite), review "
-                        "the diff, and promote it with a fingerprint. Say exactly that."}
+                        "the diff, and promote it with a fingerprint."}
     if command["name"] == "check_change_proposals":
         from services import workbench
         return {"proposals": [{

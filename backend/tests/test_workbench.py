@@ -173,3 +173,11 @@ def test_pytest_summary_parsing():
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}
     red = workbench.summarize_pytest(1, "F..\n1 failed, 2 passed in 1.0s")
     assert red["ok"] is False and red["failed"] == 1 and red["passed"] == 2
+
+
+def test_guessed_file_names_fall_back_to_real_files(repo):
+    # the 8B named files that do not exist; the drafter must still see real code
+    entry = propose(files=["backend/greeting.py", "backend/services/hello.py"])
+    files, context = workbench.gather_context(repo, entry)
+    assert "backend/services/hello.py" in files and "backend/greeting.py" not in files
+    assert "def greet" in context

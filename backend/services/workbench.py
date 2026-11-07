@@ -237,15 +237,21 @@ def _excerpts(text: str, keys: List[str]) -> str:
 
 
 def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
-    files = list(entry.get("files") or []) or _find_files(root, entry)
+    """The files the drafter sees. Named files that exist come first; names that do not exist
+    are dropped (the 8B guessed backend/describe_self.py, 2026-11-06) and a keyword search
+    fills in, so the drafter always works from real code."""
+    named = [f for f in (entry.get("files") or []) if (root / f).is_file()]
+    files = named[:]
+    if not named or len(named) < len(entry.get("files") or []):
+        for rel in _find_files(root, entry):
+            if rel not in files:
+                files.append(rel)
+    files = files[:MAX_FILES]
     keys = _keywords(entry)
     chunks, total = [], 0
     for rel in files:
         _assert_editable(rel)
         path = root / rel
-        if not path.is_file():
-            chunks.append(f"=== {rel} (does not exist yet) ===\n")
-            continue
         text = path.read_text(encoding="utf-8", errors="replace")
         if SECRET_LINE.search(text):
             raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
