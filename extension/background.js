@@ -114,11 +114,21 @@ async function inTab(tabId, func, args) {
 }
 
 async function readPage(tabId, maxChars) {
-  const out = await inTab(tabId, (max) => {
-    const text = (document.body && document.body.innerText) || "";
-    return { title: document.title, url: location.href, text: text.replace(/\n{3,}/g, "\n\n").slice(0, max) };
-  }, [Number(maxChars) || 6000]);
-  return { tab_id: Number(tabId), ...out };
+  // A page opened a moment ago may still be loading (or redirecting): wait for "complete",
+  // then read; if the read comes back empty, give it two more chances before reporting so.
+  const id = Number(tabId);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const tab = await chrome.tabs.get(id);
+    if (tab.status !== "complete") await waitForLoad(id, 10000);
+    const out = await inTab(id, (max) => {
+      const text = (document.body && document.body.innerText) || "";
+      return { title: document.title, url: location.href, text: text.replace(/\n{3,}/g, "\n\n").slice(0, max) };
+    }, [Number(maxChars) || 6000]);
+    if (out && out.text && out.text.trim()) return { tab_id: id, ...out };
+    await sleep(1500);
+  }
+  const final = await chrome.tabs.get(id);
+  return { tab_id: id, title: final.title || "", url: final.url || "", text: "" };
 }
 
 function waitForLoad(tabId, timeoutMs) {

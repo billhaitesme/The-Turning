@@ -191,6 +191,15 @@ def test_open_requires_http_and_picks_a_browser(monkeypatch):
         adapter.validate_arguments({"url": "https://yr.no", "browser": "safari"})
 
 
+def test_an_empty_read_is_an_error_not_a_blank(monkeypatch):
+    # the seat summarised Tromsø from memory after a 0-char read (2026-11-06)
+    monkeypatch.setattr(browser_hands, "bridge", type("B", (), {
+        "call": staticmethod(lambda action, params=None, **kw: {"tab_id": 9, "title": "", "url": "", "text": ""}),
+        "connected_names": staticmethod(lambda: ["chrome"])})())
+    with pytest.raises(ValueError, match="no readable text"):
+        browser_hands.BrowserReadAdapter().execute({"tab": "chrome:9"})
+
+
 def test_screenshot_lands_in_the_image_store(monkeypatch):
     tiny = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
     monkeypatch.setattr(browser_hands, "bridge", type("B", (), {

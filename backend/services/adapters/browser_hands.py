@@ -101,6 +101,12 @@ class BrowserReadAdapter(_Hand):
     def render(self, result: Any, browser: Optional[str]) -> Dict[str, Any]:
         result = result if isinstance(result, dict) else {}
         text = str(result.get("text") or "")
+        if not text.strip():
+            # An empty read must be an ERROR, not a quiet empty string: the seat summarised
+            # Tromsø from memory after a 0-char read (2026-11-06). With an error it must say so.
+            raise ValueError(f"The tab {browser}:{result.get('tab_id')} returned no readable text "
+                             f"(url {result.get('url') or 'unknown'}): still loading, a browser-internal "
+                             "page, or empty. Nothing was read; say so, do not summarise from memory.")
         return {"tool": self.name, "tab": f"{browser}:{result.get('tab_id')}", "title": str(result.get("title") or "")[:200],
                 "url": str(result.get("url") or "")[:300], "text": text[:MAX_TEXT_CHARS],
                 "truncated": len(text) > MAX_TEXT_CHARS, "note": UNTRUSTED}

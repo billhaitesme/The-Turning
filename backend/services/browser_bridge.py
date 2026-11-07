@@ -287,7 +287,7 @@ def split_tab(value: Any) -> tuple:
 def _summarise(action: str, result: Any) -> str:
     if isinstance(result, dict):
         if action == "read_page":
-            return f"{result.get('url', '')} ({len(str(result.get('text') or ''))} chars)"
+            return f"tab {result.get('tab_id')} {result.get('url', '')} ({len(str(result.get('text') or ''))} chars)"
         if action == "open_url":
             return str(result.get("url") or "")
         if action == "screenshot":
