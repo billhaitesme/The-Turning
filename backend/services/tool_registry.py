@@ -14,6 +14,7 @@ from services.adapters.comfyui_free_vram import COMFYUI_FREE_VRAM_DESCRIPTOR, Co
 from services.adapters.host_status import HOST_STATUS_DESCRIPTOR, HostStatusAdapter
 from services.adapters.spec_tool import TOOLWRIGHT_INDUCTION_DESCRIPTOR
 from services.adapters.tutelage_consolidation import TUTELAGE_CONSOLIDATION_DESCRIPTOR
+from services.adapters.own_browser import OWN_BROWSER_READ_DESCRIPTOR, OwnBrowserReadAdapter
 from services.adapters.web_fetch import WEB_FETCH_DESCRIPTOR, WebFetchAdapter
 from services.adapters.web_search import WEB_SEARCH_DESCRIPTOR, WebSearchAdapter
 from services.tool_contracts import ToolAdapter, validate_tool_definition
@@ -105,6 +106,8 @@ def register_default_tools() -> None:
         register_tool(WEB_SEARCH_DESCRIPTOR, WebSearchAdapter())
     if "web_fetch" not in TOOL_REGISTRY:
         register_tool(WEB_FETCH_DESCRIPTOR, WebFetchAdapter())
+    if "own_browser_read" not in TOOL_REGISTRY:
+        register_tool(OWN_BROWSER_READ_DESCRIPTOR, OwnBrowserReadAdapter())
     if "tutelage_consolidation" not in TOOL_REGISTRY:
         # No adapter on purpose: the tool executor cannot run consolidation directly;
         # the approval it gates is consumed by /system/tutelage/consolidations (ADR 0024).
