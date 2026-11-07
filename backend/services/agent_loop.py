@@ -30,8 +30,8 @@ from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import httpx
 
-from services import (claim_check, command_console, command_registry, escalation, number_check,
-                      repeat_guard)
+from services import (claim_check, command_console, command_registry, escalation, network_breaker,
+                      number_check, repeat_guard)
 
 EventGenerator = Generator[Dict[str, Any], None, None]
 # A seat turn: (conversation, tools-or-None, model) -> events ({"type": "delta"|"message", ...}).
@@ -385,15 +385,15 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         yield {"event": "delta", "text": escalation.ANNOUNCE}
         yield from runtime_first("deep_think", {"task": operator_message, "rung": "local"},
                                  escalation.SEAT_NOTE.format(reason=reason))
-    elif craft and command_registry.get_command("deep_think") is not None:
-        # A creative piece (a joke, a poem) goes to the frontier rung framed as WRITE; the seat
-        # delivers it (the joke conversation, 2026-11-07). Breaker OFF: the local deep rung.
-        from services import network_breaker
-        rung = "frontier" if network_breaker.breaker_is_on() else "local"
+    elif craft and command_registry.get_command("deep_think") is not None and network_breaker.breaker_is_on():
+        # A creative piece (a joke, a poem) goes to the FRONTIER rung framed as WRITE and the seat
+        # delivers it (the joke conversation, 2026-11-07). Frontier only, by decision: the
+        # frontier applies its own judgement to what it will write; the runtime does not hand
+        # creative requests to the local deep rung. Breaker OFF: no hand-off, the seat answers.
         reply_parts.append(escalation.CRAFT_ANNOUNCE)
         yield {"event": "delta", "text": escalation.CRAFT_ANNOUNCE}
         yield from runtime_first("deep_think",
-                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": rung},
+                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": "frontier"},
                                  escalation.CRAFT_NOTE.format(reason=craft))
     elif escalation.self_question(operator_message) \
             and command_registry.get_command("describe_self") is not None:

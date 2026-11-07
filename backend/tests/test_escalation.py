@@ -162,8 +162,9 @@ def test_the_loop_has_the_frontier_write_the_piece_and_the_seat_delivers_it(monk
     assert seen["conversation"][-1]["role"] == "system" and "Deliver that text" in seen["conversation"][-1]["content"]
     assert "Learning check" not in final["reply"]
 
-    # breaker OFF: the piece still gets written, by the local deep rung
+    # breaker OFF: no hand-off at all. The frontier is the only rung creative requests go to (it
+    # applies its own judgement to what it writes); the local deep rung is never asked.
     calls.clear()
     list(agent_loop.iter_agent_loop(messages=[{"role": "user", "content": CRAFT[2]}],
                                     model="t", session_id="c", seat_turn=seat))
-    assert calls[0][1]["rung"] == "local"
+    assert calls == []

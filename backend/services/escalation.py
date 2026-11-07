@@ -76,7 +76,9 @@ SEAT_NOTE = (
 # worst, and it cannot tell that it is failing. The runtime sends a clearly creative request to
 # the frontier rung framed as WRITE (not analyse: the 30B, asked by the seat, returned a lecture
 # on setup/punchline structure) and the seat delivers the piece. Identity stays local; the craft
-# is borrowed (ADR 0026). Falls back to the local deep rung when the breaker is OFF.
+# is borrowed (ADR 0026). Frontier only: the frontier applies its own judgement to what it will
+# write, and the runtime never hands a creative request to the local deep rung. Breaker OFF: no
+# hand-off; the seat answers as before.
 _CRAFT_VERB = (r"\b(?:tell|write|give|make up|come up with|compose|create|do|try|craft|invent|pen|"
                r"draft|recite|improvise|perform|hit me with|lay|say)\b")
 _CRAFT_NOUN = (r"\b(?:jokes?|puns?|limericks?|poems?|poetry|haikus?|sonnets?|songs?|lyrics|verses?|"

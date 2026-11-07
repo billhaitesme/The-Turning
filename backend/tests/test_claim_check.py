@@ -66,7 +66,9 @@ def test_study_after_a_real_read_is_not_noted():
 def test_a_promise_to_learn_is_always_noted():
     note = claim_check.learning_note(PROMISE, [])
     assert "cannot learn or change within a conversation" in note
-    assert "I'll keep that in mind." in "I'll keep that in mind." and claim_check.learning_note("I'll keep that in mind.", [])
+    assert claim_check.learning_note("I'll keep that in mind.", [])
+    # the live miss (2026-11-07), right after describe_self had told it it cannot learn
+    assert claim_check.learning_note("I'll make sure to avoid repeating the same joke style in future interactions.", [])
     assert claim_check.learning_note("You're right, that wasn't funny.", []) == ""
 
 

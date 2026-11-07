@@ -65,9 +65,12 @@ _STUDY_CLAIM = re.compile(
     r"gone through|looked into|looked at|familiari[sz]ed myself with)\b", re.IGNORECASE)
 _LEARNING_PROMISE = re.compile(
     r"\bI(?:'ll| will|'m going to| am going to)\s+(?:definitely\s+|certainly\s+)?(?:learn|remember|"
-    r"improve|do better|get better|not (?:do|repeat|make) (?:that|this|it|the same))\b|"
-    r"\bI(?:'ve| have) learn(?:ed|t)\b|\blesson learned\b|\bI(?:'ll| will) (?:keep|bear) (?:that|this) in mind\b",
+    r"improve|do better|get better|not (?:do|repeat|make) (?:that|this|it|the same)|"
+    r"(?:make sure|ensure|try|strive|aim)\s+(?:to\s+|that\s+I\s+)?(?:avoid|not|never|remember|improve|learn))\b|"
+    r"\blesson learned\b|\bI(?:'ll| will) (?:keep|bear) (?:that|this) in mind\b",
     re.IGNORECASE)
+# ("I've learned" is deliberately not matched: measured over 1,944 stored replies the only hit
+# was "I am a synthesis of everything I've learned", a self-description, not a promise.)
 READING_TOOLS = ("web_fetch", "browser_read", "own_browser_read", "deep_think")
 
 
