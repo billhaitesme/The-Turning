@@ -110,6 +110,38 @@ COMMANDS: List[Dict[str, Any]] = [
         "surfaces": ["mobile", "desktop"],
     },
     {
+        "name": "list_folder",
+        "title": "List a folder",
+        "description": "List one folder inside the operator's whitelisted roots (FILE_SENSE_ROOTS): "
+                       "names, sizes, modified times. Read-only; max 200 entries; outside the "
+                       "roots does not exist.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "files",
+        "tool_name": "list_folder",
+        "parameters": [
+            {"name": "path", "label": "Folder path", "type": "text", "required": True},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
+        "name": "read_file",
+        "title": "Read a file",
+        "description": "Read one text file inside the operator's whitelisted roots, size-capped "
+                       "with a 'start' offset for paging. Read-only; binary is reported, never "
+                       "dumped; credential-shaped names are refused — the senses never read the "
+                       "house's keys.",
+        "risk": "low",
+        "gate": "direct",
+        "category": "files",
+        "tool_name": "read_file",
+        "parameters": [
+            {"name": "path", "label": "File path", "type": "text", "required": True},
+            {"name": "start", "label": "Start offset (chars)", "type": "integer", "min": 0, "required": False, "default": 0},
+        ],
+        "surfaces": ["mobile", "desktop"],
+    },
+    {
         "name": "deep_think",
         "title": "Deep think",
         "description": "Escalate one composed task up the Mind Ladder (XIII-C): rung 'local' = "

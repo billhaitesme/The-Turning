@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional
 
 from services.adapters.approval_status import APPROVAL_STATUS_DESCRIPTOR, ApprovalStatusAdapter
 from services.adapters.deep_think import DEEP_THINK_DESCRIPTOR, DeepThinkAdapter
+from services.adapters.file_sense import (LIST_FOLDER_DESCRIPTOR, READ_FILE_DESCRIPTOR,
+                                          ListFolderAdapter, ReadFileAdapter)
 from services.adapters.look_at_image import LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter
 from services.adapters.recognize_faces import RECOGNIZE_FACES_DESCRIPTOR, RecognizeFacesAdapter
 from services.adapters.backend_health_check import BACKEND_HEALTH_CHECK_DESCRIPTOR, BackendHealthCheckAdapter
@@ -92,6 +94,12 @@ def register_default_tools() -> None:
         # The eyes: vision is a sense, not a seat swap — the agent seat consults the local
         # vision seat through this bounded tool; no network, no breaker.
         register_tool(LOOK_AT_IMAGE_DESCRIPTOR, LookAtImageAdapter())
+    if "list_folder" not in TOOL_REGISTRY:
+        # Eyes on the operator's own files: read-only, whitelisted roots only (FILE_SENSE_ROOTS),
+        # credential-shaped names refused — the senses never read the house's keys.
+        register_tool(LIST_FOLDER_DESCRIPTOR, ListFolderAdapter())
+    if "read_file" not in TOOL_REGISTRY:
+        register_tool(READ_FILE_DESCRIPTOR, ReadFileAdapter())
     if "recognize_faces" not in TOOL_REGISTRY:
         # Identification: faces match ONLY against the operator-enrolled local gallery;
         # unknown stays unknown. Built on the PC first so Ø2-02 onboards a known quantity.
