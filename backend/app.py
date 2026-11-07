@@ -381,6 +381,7 @@ def add_message(conversation_id: str, role: str, content: str, *, ephemeral: boo
     )
     conn.commit()
     conn.close()
+    touch_conversation(conversation_id)
 
 
 # ----------------------------------------------------------------- ephemeral turns (2026-11-07)

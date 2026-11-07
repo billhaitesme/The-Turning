@@ -1,4 +1,4 @@
-"""Self-questions are grounded before the seat speaks (2026-11-06: it claimed "I can write and
+﻿"""Self-questions are grounded before the seat speaks (2026-11-06: it claimed "I can write and
 execute code" and only then called describe_self)."""
 from __future__ import annotations
 
@@ -39,7 +39,8 @@ def test_tasks_and_chat_are_not(message):
 def test_describe_self_is_read_before_the_seat_speaks(monkeypatch):
     calls = []
     monkeypatch.setattr(agent_loop, "execute_tool_call",
-                        lambda name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY:
+                        lambda name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY,
+                        log_output=True:
                         calls.append((name, requested_by)) or
                         {"status": "executed", "outcome": {"limits": "You cannot change your own code."}})
     seen = []

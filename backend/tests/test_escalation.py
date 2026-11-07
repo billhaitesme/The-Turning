@@ -1,4 +1,4 @@
-"""Runtime escalation (2026-11-06): the seat answered a probability puzzle inline and
+﻿"""Runtime escalation (2026-11-06): the seat answered a probability puzzle inline and
 contradicted itself; the runtime now sends clear multi-step problems up the ladder itself."""
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def test_the_loop_runs_deep_think_first_and_the_seat_answers_with_it(monkeypatch
     calls = []
     deep_answer = {"status": "executed", "outcome": {"rung": "local", "answer": "…long reasoning… = 13/27"}}
 
-    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY):
+    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY, log_output=True):
         calls.append((name, args))
         assert requested_by == "runtime:escalation"  # the audit log says who really asked
         return deep_answer
@@ -138,7 +138,7 @@ def test_the_loop_has_the_local_rung_write_the_piece_and_the_seat_delivers_it(mo
     calls = []
     joke = "I used to think the brain was the most important organ. Then I thought, look what's telling me that."
 
-    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY):
+    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY, log_output=True):
         calls.append((name, args, requested_by))
         return {"status": "executed", "outcome": {"rung": args["rung"], "answer": joke}}
 
@@ -193,7 +193,7 @@ def test_craft_loop_routes_clean_pieces_to_the_claude_rung(monkeypatch):
     from services import network_breaker
     calls = []
 
-    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY):
+    def fake_execute(name, args, session_id, requested_by=agent_loop.AGENT_REQUESTED_BY, log_output=True):
         calls.append(args)
         return {"status": "executed", "outcome": {"rung": args["rung"], "answer": "a joke"}}
 
