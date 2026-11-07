@@ -551,6 +551,11 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
                     {p.requested_by ? ` // by ${p.requested_by}` : ""}
                     {p.result ? ` // tests ${tests.passed ?? 0} pass / ${tests.failed ?? 0} fail // health ${r.health?.ok ? "OK" : "FAIL"}` : ""}
                   </span>
+                  {p.needs_from_operator ? (
+                    <span className="wb-needs" data-tip="What OMEGA says only you can provide for this change. Provide it before DRAFT & TEST, or REJECT.">
+                      NEEDS FROM YOU: {p.needs_from_operator}
+                    </span>
+                  ) : null}
                   {p.draft?.summary ? <span>{p.draft.summary}</span> : null}
                   {p.draft?.diff ? (
                     <details className="wb-diff" data-tip="The exact change, as git shows it. Read it before promoting.">
@@ -566,7 +571,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
                   ) : null}
                 </div>
                 <div className="cap-actions">
-                  {["proposed", "failed", "tested"].includes(p.status) ? (
+                  {["proposed", "failed", "tested", "blocked"].includes(p.status) ? (
                     <button type="button" disabled={Boolean(wbBusy)} onClick={() => wbAction(p.proposal_id, "test")}
                             data-tip="DRAFT & TEST: a stronger model drafts the change in an isolated worktree, then syntax check, the full test suite and a health check run. A few minutes; the live backend is untouched.">
                       {busy ? "WORKING…" : "DRAFT & TEST"}

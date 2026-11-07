@@ -100,6 +100,9 @@ _SELF_QUESTION = re.compile(
     r"what (?:can|can't|cannot) you(?: actually)? do|what are you capable of|"
     r"your (?:voice|voices|capabilities|abilities|limits|limitations|body|settings|tools|setup|senses)|"
     r"(?:other|more|new|different|additional) voices?|download(?:ed|ing)? (?:a |more |new |other )?voices?|"
+    r"(?:what|which) (?:time ?zone|timezone|model|version|build|machine|computer|pc) are you|"
+    r"your (?:time ?zone|timezone|utc offset|clock|location|host|machine|model|version)|"
+    r"where are you(?: located| running| based)?\b|"
     r"can you (?:hear|see|speak|talk|code|remember|access)|"
     r"can you (?:write|change|edit|modify) (?:code|yourself|your own)|are you able to|"
     r"what(?:'s| is) missing)\b", re.IGNORECASE)

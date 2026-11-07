@@ -302,7 +302,9 @@ def _describe_self() -> Dict[str, Any]:
                                "why. The operator drafts and tests it in an isolated copy "
                                "(DRAFT & TEST), reviews the diff, and promotes it with a "
                                "fingerprint. You never edit code directly, and a proposal "
-                               "changes nothing until promoted.",
+                               "changes nothing until promoted. If the change needs something "
+                               "only the operator can provide (a package installed, a device, "
+                               "an account), name it exactly in needs_from_operator.",
             "new_tools": "YES, within limits: draft_tool (preferred) has a stronger model "
                          "research and draft a new read-only tool (a keyless public JSON API, GET "
                          "over https), test-called before filing; author_tool if you already "
@@ -397,7 +399,8 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         try:
             filed = workbench.propose(str(arguments.get("title") or ""), str(arguments.get("what") or ""),
                                       str(arguments.get("why") or ""), requested_by=entry["requested_by"],
-                                      session_id=entry["session_id"], files=files)
+                                      session_id=entry["session_id"], files=files,
+                                      needs=str(arguments.get("needs_from_operator") or ""))
         except workbench.WorkbenchError as exc:
             raise CommandError(422, str(exc)) from exc
         return {"proposal_id": filed["proposal_id"], "status": filed["status"],
@@ -409,6 +412,7 @@ def _execute_direct(command: Dict[str, Any], entry: Dict[str, Any], arguments: D
         return {"proposals": [{
             "proposal_id": p.get("proposal_id"), "title": p.get("title"), "status": p.get("status"),
             "requested_by": p.get("requested_by"), "filed_at": p.get("filed_at"),
+            "needs_from_operator": p.get("needs_from_operator") or None,
             "summary": (p.get("draft") or {}).get("summary"),
             "files": (p.get("draft") or {}).get("files") or p.get("files"),
             "promotable": (p.get("result") or {}).get("promotable"),

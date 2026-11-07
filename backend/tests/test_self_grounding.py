@@ -14,6 +14,10 @@ SELF = [
     "who are you?",
     # Bill's voice chat: dodged instead of answering "no path" because this did not register
     "are there any other voices that we could download from somewhere that we could add?",
+    # live 2026-11-06 20:05: answered "UTC+0" from its priors after the time-zone change was promoted
+    "What time zone are you in, and what is your UTC offset?",
+    "where are you running?",
+    "what model are you?",
 ]
 NOT_SELF = [
     "can you write me a prompt that will deliver that style of writing in a response?",

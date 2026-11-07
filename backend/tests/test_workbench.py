@@ -189,6 +189,34 @@ def test_excerpts_are_bounded_and_centred_on_the_definition(repo):
     assert context.count("... lines ") <= workbench.EXCERPT_BLOCKS
 
 
+def test_a_proposal_can_say_what_it_needs_from_the_operator(repo):
+    entry = workbench.propose("Browser control", "drive a browser from greet()", "operator asked",
+                              requested_by="model:agent-seat", session_id="s",
+                              files=["backend/services/hello.py"],
+                              needs="pip install playwright; playwright install chromium")
+    assert entry["needs_from_operator"].startswith("pip install playwright")
+    frontier = frontier_with(GOOD_EDIT)
+    workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
+    assert "THE OPERATOR HAS AGREED TO PROVIDE: pip install playwright" in frontier.prompts[0]
+
+
+def test_the_drafter_can_say_what_the_operator_must_provide_first(repo):
+    blocked = {"summary": "Needs a browser driver.", "edits": [],
+               "needs_from_operator": "in backend/.venv: pip install playwright; playwright install chromium"}
+    frontier = frontier_with(blocked, GOOD_EDIT)
+    entry = workbench.propose("Browser control", "drive a browser from greet()", "", requested_by="m",
+                              session_id="s", files=["backend/services/hello.py"])
+    out = workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
+    assert out["status"] == "blocked" and out["needs_from_operator"].startswith("in backend/.venv: pip install")
+    assert not workbench._worktree_dir(entry["proposal_id"]).exists()
+    with pytest.raises(workbench.WorkbenchError):
+        workbench.request_promotion(entry["proposal_id"], requested_by="o")   # nothing to promote
+    # the operator provides it, presses DRAFT & TEST again: the drafter now sees it as agreed
+    again = workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
+    assert "THE OPERATOR HAS AGREED TO PROVIDE: in backend/.venv: pip install playwright" in frontier.prompts[1]
+    assert again["status"] == "tested"
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}

@@ -284,6 +284,7 @@ COMMANDS: List[Dict[str, Any]] = [
             {"name": "what", "label": "What should change, concretely", "type": "text", "required": True},
             {"name": "why", "label": "Why", "type": "text", "required": False},
             {"name": "files", "label": "Repo-relative files it touches, comma-separated (optional)", "type": "text", "required": False},
+            {"name": "needs_from_operator", "label": "What only the operator can provide: packages to install, devices, accounts (optional, be exact)", "type": "text", "required": False},
         ],
         "surfaces": ["mobile", "desktop"],
     },

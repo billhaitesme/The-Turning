@@ -159,7 +159,11 @@ def _assert_editable(rel: str) -> None:
 
 # --------------------------------------------------------------------------- 1. propose
 def propose(title: str, what: str, why: str, *, requested_by: str, session_id: str,
-            files: Optional[List[str]] = None) -> Dict[str, Any]:
+            files: Optional[List[str]] = None, needs: str = "") -> Dict[str, Any]:
+    """`needs` is what only the operator can provide for this change (a package installed, a
+    device, an account): it is shown on the console as NEEDS FROM YOU and relaxes the drafter's
+    no-new-dependencies rule for exactly those items (Bill, 2026-11-06: "it should be able to
+    tell me what it needs")."""
     title, what = str(title or "").strip(), str(what or "").strip()
     if not title or not what:
         raise WorkbenchError("A proposal needs a title and a description of the change.")
@@ -173,6 +177,7 @@ def propose(title: str, what: str, why: str, *, requested_by: str, session_id: s
         "title": title[:160],
         "what": what[:4000],
         "why": str(why or "").strip()[:2000],
+        "needs_from_operator": str(needs or "").strip()[:1000],
         "files": named[:MAX_FILES],
         "requested_by": requested_by,
         "session_id": session_id,
@@ -370,10 +375,11 @@ runtime with a React console). An operator will read the diff; a full test suite
 PROPOSAL: {title}
 WHAT: {what}
 WHY: {why}
-
+{needs}
 Rules:
 - The smallest change that does the job. Never delete working code to tidy it.
-- Match the repository's style. No new dependencies. No network calls added.
+- Match the repository's style. No new dependencies beyond what the operator has agreed to
+  provide (listed above, if anything). No network calls added.
 - Add or adjust a test under backend/tests/ when behaviour changes.
 - Only edit files shown below, or create a new file under backend/tests/ or docs/.
 - Change the EXISTING code that implements the behaviour. Never add a parallel function or
@@ -389,6 +395,11 @@ FILES:
 
 Reply with ONLY a JSON object:
 {{"summary": "<one or two sentences>", "edits": [{{"file": "<repo-relative path>", "old": "<exact text>", "new": "<replacement>"}}]}}
+
+If the change CANNOT be made without something only the operator can provide (a package not
+installed, a program, a device, an account or key) that is not listed as agreed above, do not
+draft. Reply instead with ONLY:
+{{"summary": "<why>", "needs_from_operator": "<exact commands or items, e.g. 'in backend/.venv: pip install playwright; playwright install chromium'>", "edits": []}}
 """
 
 
@@ -416,7 +427,12 @@ def _parse_draft(text: str) -> Dict[str, Any]:
         data = json.loads(match.group(0))
     except json.JSONDecodeError as exc:
         raise WorkbenchError(f"the drafter's JSON did not parse ({exc.msg})") from exc
+    needs = str(data.get("needs_from_operator") or "").strip()
     edits = data.get("edits")
+    if needs and not edits:
+        # The drafter's verdict: this cannot be done until the operator provides something.
+        # Not a failure; the proposal shows it as NEEDS FROM YOU (Bill, 2026-11-06).
+        return {"summary": str(data.get("summary") or "").strip()[:600], "edits": [], "needs": needs}
     if not isinstance(edits, list) or not edits:
         raise WorkbenchError("the draft has no edits")
     clean = []
@@ -544,8 +560,8 @@ def draft_and_test(proposal_id: str, *, frontier: Optional[Callable[[str], Tuple
     entry = get_proposal(proposal_id)
     if entry is None:
         raise WorkbenchError(f"Unknown proposal {proposal_id}.")
-    if entry["status"] not in ("proposed", "failed", "tested"):
-        raise WorkbenchError(f"Proposal is {entry['status']}; DRAFT & TEST runs from proposed, failed or tested.")
+    if entry["status"] not in ("proposed", "failed", "tested", "blocked"):
+        raise WorkbenchError(f"Proposal is {entry['status']}; DRAFT & TEST runs from proposed, failed, tested or blocked.")
     frontier = frontier or _frontier
     suite = suite or run_suite
     health = health or health_check
@@ -578,12 +594,20 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     for attempt in range(1, MAX_DRAFT_ATTEMPTS + 1):
         prompt = DRAFT_PROMPT.format(
             title=entry["title"], what=entry["what"], why=entry["why"] or "(not given)",
+            needs=(f"THE OPERATOR HAS AGREED TO PROVIDE: {entry['needs_from_operator']}\n"
+                   if entry.get("needs_from_operator") else ""),
             context=context,
             failures=("\nEARLIER ATTEMPTS FAILED TO APPLY, fix this:\n" + "\n".join(failures) + "\n")
             if failures else "")
         try:
             model, text = frontier(prompt)
             draft = _parse_draft(text)
+            if draft.get("needs"):
+                entry["needs_from_operator"] = draft["needs"]
+                entry["draft"] = {"model": model, "summary": draft["summary"], "files": [], "attempts": attempt}
+                _mark(entry, "blocked", f"the drafter needs something from the operator: {draft['needs'][:200]}")
+                _remove_worktree(proposal_id)
+                return _upsert(entry)
             # undo a half-applied earlier attempt (edited files, and any new file it created)
             _git("checkout", "--", ".", cwd=worktree, check=False)
             _git("clean", "-fdq", cwd=worktree, check=False)
