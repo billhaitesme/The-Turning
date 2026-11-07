@@ -71,6 +71,15 @@ MAX_FILE_CHARS = 10_000        # whole file goes to the drafter below this
 # mid-JSON and the retries were throttled, 2026-11-06.)
 MAX_CONTEXT_CHARS = 16_000     # total sent to the drafter
 RATE_LIMIT_WAIT_SECONDS = 61.0 # a 429 means the minute's budget is spent: wait it out once
+# The drafter is chosen by WORKBENCH_DRAFTER. "groq" = the Mind Ladder's frontier planner on
+# the operator's Groq key (the small budgets above). "claude-code" = the operator's Claude Code
+# CLI on his subscription (`claude -p`, tools off: it only WRITES the draft; the Workbench
+# applies and tests it), whose budget is an order of magnitude larger, so a four-file draft
+# arrives in one reply and the context may show whole files. Either falls down the ladder when
+# it fails: claude-code -> groq -> the local deep rung.
+LARGE_FILE_CHARS = 40_000
+LARGE_CONTEXT_CHARS = 60_000
+CLAUDE_CODE_TIMEOUT_SECONDS = 600.0
 EXCERPT_LINES = 40             # lines either side of a keyword hit in a big file
 EXCERPT_BLOCKS = 3
 MAX_DRAFT_ATTEMPTS = 3
@@ -337,19 +346,76 @@ def _excerpts(text: str, keys: List[str]) -> str:
     return "\n".join(parts)
 
 
-def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
+class DraftContext:
+    """What the drafter may see and must touch.
+
+    targets   files to edit or create, in the proposal's order (named files that exist, then
+              the NEW files it names); one per reply when the drafter's budget is small
+    new_files the subset of targets that do not exist yet
+    reference files the keyword search added for reading (never asked for on their own)
+    header    definition pointers, shown with every reply
+    chunks    one bounded chunk of code per existing file
+    """
+
+    def __init__(self, targets: List[str], new_files: List[str], reference: List[str],
+                 header: str, chunks: Dict[str, str]) -> None:
+        self.targets, self.new_files, self.reference = targets, new_files, reference
+        self.header, self.chunks = header, chunks
+
+    @property
+    def files(self) -> List[str]:
+        return [f for f in self.targets if f not in self.new_files] + self.reference
+
+    def new_file_note(self, only: Optional[str] = None) -> str:
+        names = [f for f in self.new_files if only is None or f == only]
+        if not names:
+            return ""
+        return ("NEW FILES the proposal names (they do not exist yet: create each with ONE edit whose "
+                "OLD part is empty; import the helpers above by the paths shown):\n"
+                + "\n".join(f"- {f}" for f in names) + "\n\n")
+
+    def text(self, only: Optional[str] = None) -> str:
+        """The whole context, or (paced) the pointers plus ONE target's code or new-file note."""
+        if only is None:
+            return self.header + self.new_file_note() + "".join(self.chunks[f] for f in self.files)
+        return self.header + self.new_file_note(only) + self.chunks.get(only, "")
+
+
+def _new_files_named(root: Path, entry: Dict[str, Any]) -> List[str]:
+    """Named files that do not exist are NEW only when the proposal's text names them by path
+    (the own-browser proposal did, 2026-11-06); a bare guess in the files list is dropped as
+    before (the 8B guessed backend/describe_self.py), so the drafter never invents lookalikes."""
+    text = f"{entry.get('title', '')} {entry.get('what', '')}"
+    out: List[str] = []
+    for rel in entry.get("files") or []:
+        if (root / rel).exists() or rel not in text:
+            continue
+        _assert_editable(rel)
+        if (root / rel).parent.is_dir():
+            out.append(rel)
+    return out
+
+
+def gather_plan(root: Path, entry: Dict[str, Any], *, large_budget: bool = False) -> DraftContext:
     """The files the drafter sees. Named files that exist come first; names that do not exist
-    are dropped (the 8B guessed backend/describe_self.py, 2026-11-06) and a keyword search
-    fills in, so the drafter always works from real code."""
+    are dropped (the 8B guessed backend/describe_self.py, 2026-11-06) unless the proposal's text
+    names them as new files, and a keyword search fills in, so the drafter always works from
+    real code. A large-budget drafter (Claude Code) is shown whole files up to a bigger cap."""
+    file_cap = LARGE_FILE_CHARS if large_budget else MAX_FILE_CHARS
+    context_cap = LARGE_CONTEXT_CHARS if large_budget else MAX_CONTEXT_CHARS
     named = [f for f in (entry.get("files") or []) if (root / f).is_file()]
+    new_files = _new_files_named(root, entry)
     files = named[:]
-    if not named or len(named) < len(entry.get("files") or []):
+    # the search adds files to READ when names are missing or guessed, and whenever a new file
+    # is to be written (its helpers live in files the proposal did not name)
+    if not named or new_files or len(named) + len(new_files) < len(entry.get("files") or []):
         for rel in _find_files(root, entry):
             if rel not in files:
                 files.append(rel)
     files = files[:MAX_FILES]
     keys = _keywords(entry)
-    chunks, total = [], 0
+    chunks: Dict[str, str] = {}
+    total = 0
     kept: List[str] = []
     for rel in files:
         _assert_editable(rel)
@@ -361,22 +427,31 @@ def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
             if rel in named:
                 raise WorkbenchError(f"Refused {rel}: it contains what looks like a secret.")
             continue
-        body = text if len(text) <= MAX_FILE_CHARS else _excerpts(text, keys)
-        chunk = f"=== {rel} ({'whole file' if len(text) <= MAX_FILE_CHARS else 'excerpts, numbered lines'}) ===\n{body}\n"
-        if total + len(chunk) > MAX_CONTEXT_CHARS:
+        body = text if len(text) <= file_cap else _excerpts(text, keys)
+        chunk = f"=== {rel} ({'whole file' if len(text) <= file_cap else 'excerpts, numbered lines'}) ===\n{body}\n"
+        if total + len(chunk) > context_cap:
             if kept:
                 continue  # this one does not fit; a smaller file further down still may
-            chunk = chunk[:MAX_CONTEXT_CHARS] + "\n... (cut to the context budget)\n"  # never show nothing
+            chunk = chunk[:context_cap] + "\n... (cut to the context budget)\n"  # never show nothing
         kept.append(rel)
-        chunks.append(chunk)
+        chunks[rel] = chunk
         total += len(chunk)
-    if not kept:
+    if not kept and not new_files:
         raise WorkbenchError("No file could be shown to the drafter (none found, or every "
                              "candidate holds what looks like a secret). Name the files to change.")
     pointers = definitions_in(root, kept, entry)
     header = ("DEFINITIONS the proposal refers to (edit THESE, do not add lookalikes):\n"
               + "\n".join(f"- {p}" for p in pointers) + "\n\n") if pointers else ""
-    return kept, header + "".join(chunks)
+    # the proposal's own order, new files included; files the search added come after, to read
+    targets = [f for f in (entry.get("files") or []) if f in kept or f in new_files]
+    reference = [f for f in kept if f not in targets]
+    return DraftContext(targets, new_files, reference, header, chunks)
+
+
+def gather_context(root: Path, entry: Dict[str, Any]) -> Tuple[List[str], str]:
+    """(files shown, context text): the one-reply view of gather_plan."""
+    plan = gather_plan(root, entry)
+    return plan.files, plan.text()
 
 
 # --------------------------------------------------------------------------- 3. draft
@@ -392,7 +467,8 @@ Rules:
 - Match the repository's style. No new dependencies beyond what the operator has agreed to
   provide (listed above, if anything). No network calls added.
 - Add or adjust a test under backend/tests/ when behaviour changes.
-- Only edit files shown below, or create a new file under backend/tests/ or docs/.
+- Only edit files shown below, or create the NEW files the proposal names (anywhere under
+  backend/, frontend/src/ or docs/).
 - Change the EXISTING code that implements the behaviour. Never add a parallel function or
   file with a similar name when the real one is shown below: edit the real one.
 - Each edit is an exact search/replace: "old" must appear EXACTLY ONCE in the file (copy it
@@ -405,7 +481,7 @@ FILES:
 {context}
 
 Reply in EXACTLY this block format and nothing else (no JSON, no code fences, no commentary;
-keep the whole reply under 2500 tokens: lean code, no decorative comments):
+{budget_line}):
 
 === SUMMARY
 one or two sentences
@@ -459,32 +535,104 @@ Reply in the same block format (=== SUMMARY / === EDIT <path> / <<<OLD / >>>NEW 
 """
 
 
+def drafter_name() -> str:
+    return (os.getenv("WORKBENCH_DRAFTER") or "groq").strip().lower()
+
+
+def small_budget() -> bool:
+    """Groq's free tier is the small budget (8k tokens, prompt and completion together); Claude
+    Code answers in tens of thousands, so nothing need be paced or excerpted for it."""
+    return drafter_name() != "claude-code"
+
+
+def _claude_binary() -> str:
+    return os.getenv("WORKBENCH_CLAUDE_BIN") or shutil.which("claude") or ""
+
+
+def drafter_status() -> Dict[str, Any]:
+    """For the console: which drafter is configured and whether it can run."""
+    name = drafter_name()
+    if name == "claude-code":
+        binary = _claude_binary()
+        return {"name": name, "model": os.getenv("WORKBENCH_CLAUDE_MODEL", "sonnet"), "budget": "large",
+                "available": bool(binary), "fallback": "groq, then the local deep rung",
+                "note": "" if binary else "no `claude` on PATH: drafts fall back to Groq"}
+    return {"name": "groq", "model": os.getenv("GROQ_PLANNER_MODEL", "openai/gpt-oss-120b"), "budget": "small",
+            "available": bool(os.getenv("GROQ_API_KEY", "").strip()), "fallback": "the local deep rung",
+            "note": "" if os.getenv("GROQ_API_KEY", "").strip() else "GROQ_API_KEY not set: drafts fall back to the local rung"}
+
+
+def _clean_env() -> Dict[str, str]:
+    """The backend is often started from inside a Claude Code session (the operator develops
+    it there); a nested `claude` inheriting that session's CLAUDE_*/ANTHROPIC_* variables
+    answers "Not logged in" (measured 2026-11-06). The CLI gets a plain environment."""
+    return {k: v for k, v in os.environ.items() if not k.upper().startswith(("CLAUDE", "ANTHROPIC"))}
+
+
+def _claude_code_think(prompt: str) -> Tuple[str, str]:
+    """One headless Claude Code call on the operator's subscription: prompt on stdin, text out,
+    every tool off (it writes the draft; the Workbench applies and tests), no MCP servers, no
+    settings, no saved session, run from a scratch folder rather than the repo."""
+    binary = _claude_binary()
+    if not binary:
+        raise ValueError("drafter 'claude-code' is not installed: no `claude` on PATH "
+                         "(npm install -g @anthropic-ai/claude-code, then `claude` once to sign in).")
+    model = os.getenv("WORKBENCH_CLAUDE_MODEL", "sonnet")
+    argv = [binary, "-p", "--output-format", "text", "--no-session-persistence", "--tools", "",
+            "--strict-mcp-config", "--setting-sources", "", "--model", model]
+    scratch = Path(tempfile.gettempdir()) / "omega-arc-workbench-drafter"
+    scratch.mkdir(parents=True, exist_ok=True)
+    try:
+        run = subprocess.run(argv, input=prompt, capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", cwd=str(scratch), env=_clean_env(),
+                             timeout=CLAUDE_CODE_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired as exc:
+        raise ValueError(f"drafter 'claude-code' timed out after {int(CLAUDE_CODE_TIMEOUT_SECONDS)} s") from exc
+    except OSError as exc:
+        raise ValueError(f"drafter 'claude-code' could not start: {exc}") from exc
+    if run.returncode != 0:
+        detail = (run.stderr or run.stdout or "").strip().replace("\n", " ")[:200]
+        raise ValueError(f"drafter 'claude-code' failed (exit {run.returncode}): {detail}")
+    return f"claude-code:{model}", run.stdout
+
+
 def _frontier(prompt: str) -> Tuple[str, str]:
-    """The frontier planner drafts. A 429 (the minute's token budget is spent) is waited out
-    once and retried; if the provider still refuses, the LOCAL deep rung drafts instead (ADR
-    0027: "the local deep rung as fallback"), recorded as such."""
+    """The strongest configured rung drafts. Claude Code first when configured; then the
+    frontier planner, whose 429 (the minute's token budget is spent) is waited out once and
+    retried; if every provider refuses, the LOCAL deep rung drafts instead (ADR 0027: "the
+    local deep rung as fallback"), recorded as such."""
     from services.adapters.deep_think import _frontier_think, _local_think
     from services.network_breaker import record_fetch, require_breaker_on
 
     require_breaker_on()
-    last_error = ""
+    errors: List[str] = []
+    if drafter_name() == "claude-code":
+        try:
+            model, text = _claude_code_think(prompt)
+            record_fetch("frontier", model, byte_count=len(text), ok=bool(text),
+                         detail=f"workbench draft: prompt {len(prompt)} chars")
+            return model, text
+        except ValueError as exc:
+            errors.append(str(exc))
+            record_fetch("frontier", "claude-code", byte_count=0, ok=False, detail=f"workbench draft: {str(exc)[:160]}")
     for attempt in (1, 2):
         try:
             model, text = _frontier_think(prompt)
             record_fetch("frontier", f"groq:{model}", byte_count=len(text), ok=bool(text),
                          detail=f"workbench draft: prompt {len(prompt)} chars")
-            return model, text
+            return (f"{model} (groq fallback)" if errors else model), text
         except ValueError as exc:
-            last_error = str(exc)
-            record_fetch("frontier", "groq", byte_count=0, ok=False, detail=f"workbench draft: {last_error[:160]}")
-            if "429" in last_error and attempt == 1:
+            errors.append(str(exc))
+            record_fetch("frontier", "groq", byte_count=0, ok=False, detail=f"workbench draft: {str(exc)[:160]}")
+            if "429" in str(exc) and attempt == 1:
                 _sleep(RATE_LIMIT_WAIT_SECONDS)
                 continue
             break
+    refused = " | ".join(e[:200] for e in errors)
     try:
         model, text = _local_think(prompt)
     except ValueError as exc:
-        raise WorkbenchError(f"the drafter was refused: {last_error[:200]}; local fallback failed: {exc}") from exc
+        raise WorkbenchError(f"the drafter was refused: {refused}; local fallback failed: {exc}") from exc
     record_fetch("frontier", f"local-fallback:{model}", byte_count=len(text), ok=bool(text),
                  detail=f"workbench draft after frontier refusal: prompt {len(prompt)} chars")
     return f"{model} (local fallback)", text
@@ -677,7 +825,13 @@ def draft_and_test(proposal_id: str, *, frontier: Optional[Callable[[str], Tuple
 
 def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontier, suite, health) -> Dict[str, Any]:
     proposal_id = entry["proposal_id"]
-    files, context = gather_context(worktree, entry)
+    small = getattr(frontier, "small_budget", None)
+    if small is None:
+        small = small_budget() if frontier is _frontier else True
+    plan = gather_plan(worktree, entry, large_budget=not small)
+    context = plan.text()
+    budget_line = ("keep the whole reply under 2500 tokens: lean code, no decorative comments" if small
+                   else "lean code, no decorative comments")
     failures: List[str] = []
     draft: Dict[str, Any] = {}
     touched: List[str] = []
@@ -687,21 +841,30 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     continuation = ""
     summary = ""
     last_text = ""
-    # Three or more files: the RUNTIME drives the parts, one file per reply, because a model
-    # does not foresee running out of room (three cut-offs in a row on a four-file draft,
-    # 2026-11-06) and each one-file reply fits the frontier's budget with room to spare.
-    one_per_reply = len(files) >= 3
-    pacing = ("\nDELIVER IN PARTS: this change spans several files. In THIS reply give the edits for "
-              "ONE file only, then end with === CONTINUE (not === END). You will be asked for the "
-              "next file each time; end with === END only after the last file.\n") if one_per_reply else ""
+    # Small budget and three or more files to touch: the RUNTIME drives the parts, one file per
+    # reply, because a model does not foresee running out of room (three cut-offs in a row on a
+    # four-file draft, 2026-11-06), and each reply is shown ONLY that file's code: the four-file
+    # context itself was what left no room to answer (three more cut-offs, same night).
+    one_per_reply = small and len(plan.targets) >= 3
+    max_parts = max(MAX_DRAFT_PARTS, len(plan.targets) + 1)
     while attempt < MAX_DRAFT_ATTEMPTS:
         if not continuation:
             attempt += 1
+        pacing = ""
+        if one_per_reply:
+            remaining = [t for t in plan.targets if t not in touched]
+            target, last = remaining[0], len(remaining) == 1
+            context = plan.text(only=target)
+            pacing = (f"\nTHIS REPLY: {target} ONLY. The change spans {len(plan.targets)} files and is "
+                      "drafted one file per reply so each fits your budget: give === SUMMARY and the "
+                      f"EDIT block(s) for this one file, then end with {'=== END' if last else '=== CONTINUE'}.\n"
+                      + (f"ALREADY DONE: {', '.join(touched)}\n" if touched else "")
+                      + (f"STILL TO COME (not now): {', '.join(remaining[1:])}\n" if not last else ""))
         prompt = DRAFT_PROMPT.format(
             title=entry["title"], what=entry["what"], why=entry["why"] or "(not given)",
             needs=(f"THE OPERATOR HAS AGREED TO PROVIDE: {entry['needs_from_operator']}\n"
                    if entry.get("needs_from_operator") else ""),
-            context=context,
+            context=context, budget_line=budget_line,
             failures=("\nEARLIER ATTEMPTS FAILED TO APPLY, fix this:\n" + "\n".join(failures) + "\n")
             if failures else "") + pacing + continuation
         try:
@@ -723,16 +886,21 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
                 if rel not in touched:
                     touched.append(rel)
             parts += 1
+            if one_per_reply:
+                # the runtime decides when the draft is complete: every target touched (a reply
+                # that ends with === END early, or runs ahead, changes nothing about that)
+                if any(t not in touched for t in plan.targets) and parts < max_parts:
+                    continue
+                break
             if draft.get("more") and parts < MAX_DRAFT_PARTS:
                 continuation = ("\nALREADY APPLIED in earlier parts (do not repeat them; continue with the "
-                                f"remaining edits, {'one file per reply, ' if one_per_reply else ''}"
-                                f"then === END after the last): {', '.join(touched)}\n")
+                                f"remaining edits, then === END after the last): {', '.join(touched)}\n")
                 continue
             break
         except WorkbenchError as exc:
             failures.append(f"attempt {attempt}: {exc}")
             draft, touched, parts, continuation = {}, [], 0, ""
-            if "413" in str(exc) or "too large" in str(exc).lower():
+            if not one_per_reply and ("413" in str(exc) or "too large" in str(exc).lower()):
                 context = context[: len(context) // 2] + "\n... (context halved: the drafter's request limit)\n"
     if not touched:
         _mark(entry, "failed", "draft could not be applied: " + " | ".join(failures))
@@ -758,7 +926,7 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     # never registered the tool, 2026-11-06). Syntax errors are repaired the same way.
     while not tests["ok"] and repairs < MAX_REPAIR_ROUNDS:
         repairs += 1
-        _, current = gather_context(worktree, {**entry, "files": touched})
+        current = gather_plan(worktree, {**entry, "files": touched}, large_budget=not small).text()
         prompt = REPAIR_PROMPT.format(
             title=entry["title"], what=entry["what"],
             failure="\n".join(syntax) if syntax else tests.get("tail", ""),

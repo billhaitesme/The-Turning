@@ -29,6 +29,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
   const [hands, setHands] = useState({ switch: { on: false }, browsers: [], connected: false, log: [] });
   const [pairing, setPairing] = useState({ token: "", shown: false });
   const [wbNote, setWbNote] = useState("");
+  const [wbDrafter, setWbDrafter] = useState(null);
   const [wbBusy, setWbBusy] = useState("");
   const [fetchLog, setFetchLog] = useState([]);
   const [capRequests, setCapRequests] = useState([]);
@@ -69,7 +70,7 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
       if (fc) setFaces(fc);
       if (ds) setDeepSeat(ds);
       if (vc) setVoices(vc);
-      if (wb) setProposals(wb.proposals || []);
+      if (wb) { setProposals(wb.proposals || []); setWbDrafter(wb.drafter || null); }
       if (bh) setHands(bh);
     } catch { /* same */ }
   }
@@ -606,6 +607,13 @@ export default function CommandDeck({ playCue = () => {}, deckMs = 8000, refresh
                data-tip="How OMEGA changes its own code (ADR 0027): it proposes; DRAFT & TEST drafts the change in an isolated copy and runs the full test suite; you review the diff; your fingerprint promotes it as one commit; ROLL BACK is one revert.">
           THE WORKBENCH // CODE PROPOSALS (XIII-E)
         </small>
+        {wbDrafter ? (
+          <div className="cap-note"
+               data-tip="Who writes the code for DRAFT & TEST (WORKBENCH_DRAFTER in .env). claude-code = your Claude Code subscription via `claude -p`, tools off. groq = the Mind Ladder's frontier planner (small free-tier budget). Either falls back down the ladder when it fails.">
+            DRAFTER: {String(wbDrafter.name).toUpperCase()} ({wbDrafter.model}) · {wbDrafter.available ? "READY" : "UNAVAILABLE"}
+            {" "}· FALLBACK: {wbDrafter.fallback}{wbDrafter.note ? ` · ${wbDrafter.note}` : ""}
+          </div>
+        ) : null}
         {wbNote ? <div className="cap-note">{wbNote}</div> : null}
         <div className="cap-list">
           {proposals.slice(0, 6).map((p) => {

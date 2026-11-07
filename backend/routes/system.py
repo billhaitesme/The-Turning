@@ -87,7 +87,7 @@ def _workbench_errors(fn):
 
 @router.get("/workbench")
 def get_workbench() -> Dict[str, Any]:
-    return {"proposals": workbench.list_proposals()}
+    return {"proposals": workbench.list_proposals(), "drafter": workbench.drafter_status()}
 
 
 @router.post("/workbench")

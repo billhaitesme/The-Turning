@@ -83,6 +83,16 @@ proposals with `propose_change` and reads them with `check_change_proposals`; ev
 is an operator press on the console (DRAFT & TEST, PROMOTE twice around the biometric, ROLL
 BACK, REJECT). A promoted change runs only after the operator restarts the backend.
 
+**The drafter** is chosen by `WORKBENCH_DRAFTER` (2026-11-06). `groq` is the Mind Ladder's
+frontier planner: fast and free, but its 8k-token request budget cut off a four-file draft six
+times, so under it the runtime paces a change of three or more files one file per reply, showing
+each reply only that file. `claude-code` is the operator's Claude Code subscription, run headless
+(`claude -p`, every tool off: it writes the draft, the Workbench applies and tests it): a large
+budget, whole files, one reply. Either falls down the ladder when it fails (claude-code → groq →
+the local deep rung), and the console shows which is configured. Groq keeps rung 3 of the Mind
+Ladder (deep_think, draft_tool): short one-shot answers are what it is best at. New files the
+proposal names by path are planned as targets; a bare guess in the files list is still dropped.
+
 ### Slice 3 — Multi-file builds (next)
 
 The operator's direction (2026-11-06): *"it would be really nice if OMEGA could figure out how

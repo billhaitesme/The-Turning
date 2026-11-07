@@ -43,6 +43,7 @@ def repo(tmp_path, monkeypatch):
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "base")
     monkeypatch.setattr(workbench, "REPO_ROOT", root)
+    monkeypatch.setenv("WORKBENCH_DRAFTER", "groq")   # the operator's .env must not pick the drafter here
     monkeypatch.setattr(workbench, "run_suite", lambda worktree: GREEN)
     monkeypatch.setattr(workbench, "health_check", lambda worktree: HEALTHY)
     workbench._store_path().unlink(missing_ok=True)
@@ -372,9 +373,100 @@ def test_three_or_more_files_are_drafted_one_per_reply(repo):
                               files=["backend/services/a.py", "backend/services/b.py", "backend/services/c.py"])
     tested = workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
     assert tested["status"] == "tested" and tested["draft"]["parts"] == 3
-    assert "ONE file only" in prompts[0]                                  # the runtime paces it
-    assert "one file per reply" in prompts[1] and "backend/services/a.py" in prompts[1]
+    # each reply is asked for ONE named file and shown ONLY that file (the prompt stays small:
+    # the four-file context was what left the free tier no room to answer, 2026-11-06)
+    assert "THIS REPLY: backend/services/a.py" in prompts[0] and "B = 1" not in prompts[0]
+    assert "THIS REPLY: backend/services/b.py" in prompts[1] and "ALREADY DONE: backend/services/a.py" in prompts[1]
+    assert "THIS REPLY: backend/services/c.py" in prompts[2] and "=== END" in prompts[2]
     assert sorted(tested["draft"]["files"]) == ["backend/services/a.py", "backend/services/b.py", "backend/services/c.py"]
+
+
+def test_a_large_budget_drafter_gets_the_whole_change_in_one_reply(repo):
+    """Claude Code is not paced: one prompt, every file shown, no token cap in the instructions."""
+    for name in "abc":
+        (repo / "backend" / "services" / f"{name}.py").write_text(f"{name.upper()} = 1\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "three files")
+    prompts = []
+
+    def frontier(prompt):
+        prompts.append(prompt)
+        return "claude-code:sonnet", render_draft({"summary": "bump", "edits": [
+            {"file": f"backend/services/{n}.py", "old": f"{n.upper()} = 1", "new": f"{n.upper()} = 2"} for n in "abc"]})
+    frontier.small_budget = False
+
+    entry = workbench.propose("Bump three", "set A, B and C to 2", "", requested_by="m", session_id="s",
+                              files=[f"backend/services/{n}.py" for n in "abc"])
+    tested = workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
+    assert tested["status"] == "tested" and tested["draft"]["parts"] == 1 and len(prompts) == 1
+    assert "A = 1" in prompts[0] and "C = 1" in prompts[0]
+    assert "THIS REPLY" not in prompts[0] and "under 2500 tokens" not in prompts[0]
+
+
+def test_new_files_the_proposal_names_by_path_are_planned_not_dropped(repo):
+    """The own-browser proposal named a new adapter file (2026-11-06); a NEW file is a target
+    with an explicit note, while a bare guess in the files list is still dropped."""
+    entry = workbench.propose(
+        "Add a hello adapter",
+        "Create backend/services/adapters/hello_adapter.py exposing greet from services/hello.py. "
+        "Files: backend/services/adapters/hello_adapter.py, backend/services/hello.py.",
+        "", requested_by="m", session_id="s",
+        files=["backend/services/adapters/hello_adapter.py", "backend/services/hello.py", "backend/guess.py"])
+    (repo / "backend" / "services" / "adapters").mkdir()
+    plan = workbench.gather_plan(repo, entry)
+    assert plan.new_files == ["backend/services/adapters/hello_adapter.py"]
+    assert plan.targets[:2] == ["backend/services/adapters/hello_adapter.py", "backend/services/hello.py"]
+    assert "backend/guess.py" not in plan.targets
+    assert "NEW FILES the proposal names" in plan.text() and "hello_adapter.py" in plan.text()
+    # paced view of the new file: its note, no other file's code
+    only = plan.text(only="backend/services/adapters/hello_adapter.py")
+    assert "hello_adapter.py" in only and "def greet" not in only
+
+
+def test_claude_code_drafts_headless_with_tools_off(monkeypatch, tmp_path):
+    """`claude -p` on the operator's subscription: prompt on stdin, text out, no tools, no MCP,
+    no settings, a plain environment (a nested `claude` inheriting the parent session's
+    CLAUDE_* variables answered "Not logged in", 2026-11-06)."""
+    seen = {}
+
+    def fake_run(argv, **kw):
+        seen.update(argv=argv, **kw)
+        return subprocess.CompletedProcess(argv, 0, stdout="=== SUMMARY\nok\n=== END\n", stderr="")
+
+    monkeypatch.setenv("WORKBENCH_DRAFTER", "claude-code")
+    monkeypatch.setenv("WORKBENCH_CLAUDE_BIN", str(tmp_path / "claude.cmd"))
+    monkeypatch.setenv("WORKBENCH_CLAUDE_MODEL", "sonnet")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "parent-session")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://parent")
+    monkeypatch.setattr(workbench.subprocess, "run", fake_run)
+    model, text = workbench._claude_code_think("draft please")
+    assert model == "claude-code:sonnet" and text.startswith("=== SUMMARY")
+    assert seen["argv"][1:] == ["-p", "--output-format", "text", "--no-session-persistence", "--tools", "",
+                                "--strict-mcp-config", "--setting-sources", "", "--model", "sonnet"]
+    assert seen["input"] == "draft please"
+    assert "CLAUDE_CODE_SESSION_ID" not in seen["env"] and "ANTHROPIC_BASE_URL" not in seen["env"]
+    assert "PATH" in seen["env"] or "Path" in seen["env"]
+    assert not str(seen["cwd"]).startswith(str(workbench.REPO_ROOT))   # never run inside the repo
+    assert workbench.small_budget() is False
+    assert workbench.drafter_status()["name"] == "claude-code" and workbench.drafter_status()["available"]
+
+
+def test_a_failing_claude_code_falls_back_to_groq(monkeypatch):
+    from services.adapters import deep_think
+    monkeypatch.setenv("WORKBENCH_DRAFTER", "claude-code")
+    monkeypatch.setenv("WORKBENCH_CLAUDE_BIN", "claude")
+    monkeypatch.setattr(workbench.subprocess, "run", lambda argv, **kw: subprocess.CompletedProcess(
+        argv, 1, stdout="", stderr="Not logged in · Please run /login"))
+    monkeypatch.setattr(deep_think, "_frontier_think", lambda prompt: ("openai/gpt-oss-120b", render_draft(GOOD_EDIT)))
+    monkeypatch.setattr(deep_think, "_local_think", lambda prompt: pytest.fail("groq answered; local must not run"))
+    from services import network_breaker
+    network_breaker.set_breaker(True, changed_by="test", channel="test")
+    try:
+        model, text = workbench._frontier("draft please")
+    finally:
+        network_breaker.set_breaker(False, changed_by="test", channel="test")
+    assert model == "openai/gpt-oss-120b (groq fallback)"
+    assert workbench._parse_draft(text)["summary"] == GOOD_EDIT["summary"]
 
 
 def test_a_failed_draft_keeps_the_end_of_the_raw_reply(repo):
