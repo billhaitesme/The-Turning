@@ -90,8 +90,9 @@ def check_reply(reply: str, tool_results: Sequence[Tuple[str, Dict[str, Any]]],
 
     tool_results: (tool_name, result) for every tool call the runtime answered this turn. Only
     executed results count as evidence; with none, there is nothing to check against."""
-    executed = [(name, result) for name, result in tool_results
-                if isinstance(result, dict) and result.get("status") == "executed"]
+    # Every runtime answer is evidence, whatever its status: an awaiting_approval result carries
+    # the approval id and expiry the seat rightly quotes (flagged as unverified, 2026-11-06).
+    executed = [(name, result) for name, result in tool_results if isinstance(result, dict)]
     if not executed:
         # Found live the same morning: asked "use your tools now ... forecast for Bergen", the
         # seat called nothing and re-served the earlier Oslo numbers from chat history as Bergen.

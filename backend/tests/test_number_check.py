@@ -40,6 +40,14 @@ def test_rounding_and_truncation_are_grounded():
     assert number_check.check_reply("About 9.44 NOK.", [("exchange_rate", FX_RESULT)])[0] == ["9.44"]
 
 
+def test_an_awaiting_approval_result_is_evidence_too():
+    # live 2026-11-06: the seat quoted the approval's expiry and the check flagged its seconds
+    pending = {"status": "awaiting_approval", "approval_id": "approval-toolreq-9385",
+               "expires_at": "2026-11-07T03:41:19.258321+00:00", "detail": "waits for the biometric"}
+    reply = "It is awaiting approval and expires at 2026-11-07T03:41:19.258321+00:00."
+    assert number_check.check_reply(reply, [("browser_type", pending)]) == ([], "")
+
+
 def test_no_tool_this_turn_marks_readings_as_from_memory():
     # the real second failure: "use your tools now ... Bergen" -> no call, Oslo numbers re-served
     unverified, note = number_check.check_reply(
@@ -47,8 +55,9 @@ def test_no_tool_this_turn_marks_readings_as_from_memory():
         operator_message="Use your tools now: what is 1 USD in NOK right now?")
     assert unverified == ["9.2984", "3.2"]
     assert "no tool ran this turn" in note and "not a live lookup" in note
+    # a pending result is evidence like any other: a figure it does not contain is a mismatch
     pending = {"status": "awaiting_approval", "detail": "biometric"}
-    assert "no tool ran" in number_check.check_reply("Rate 9.2984.", [("exchange_rate", pending)])[1]
+    assert "does not match" in number_check.check_reply("Rate 9.2984.", [("exchange_rate", pending)])[1]
 
 
 def test_plain_chat_without_decimals_gets_no_note():
