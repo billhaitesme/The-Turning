@@ -120,6 +120,11 @@ Hands (Epoch XIII-A):
 """.strip()
 
 
+import re as _re
+
+_TOOL_CALL_TEXT = _re.compile(r"<tool_call>\s*\{.*?\"name\"\s*:\s*\"([\w.-]+)\".*?(?:</tool_call>|$)", _re.DOTALL)
+
+
 class ToolsUnsupportedError(RuntimeError):
     """The selected seat cannot accept tool schemas (Ollama 400). The loop degrades honestly:
     the turn is retried without tools, and the trail records seat_supports_tools=false."""
@@ -132,9 +137,11 @@ def agent_loop_enabled() -> bool:
 
 def max_hops() -> int:
     try:
-        return max(1, int(os.getenv("AGENT_LOOP_MAX_HOPS", "4")))
+        # 6, not 4: browser work is tabs -> read -> open, plus a retry or two (2026-11-06 the
+        # seat ran out of hops and printed its next call as text)
+        return max(1, int(os.getenv("AGENT_LOOP_MAX_HOPS", "6")))
     except ValueError:
-        return 4
+        return 6
 
 
 def result_max_chars() -> int:
@@ -483,6 +490,15 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
             conversation.append({"role": "system", "content": escalation.PROMISE_NUDGE})
             continue
         if not tool_calls or offered is None:
+            leaked = _TOOL_CALL_TEXT.search("".join(reply_parts))
+            if leaked:
+                # The seat wrote a tool call as TEXT (after the hop budget, or a tokenizer slip).
+                # The operator must not see raw JSON; the runtime says what happened instead.
+                tried = leaked.group(1) or "a tool"
+                leak_note = (f"---\n⚠ Runtime: the seat tried to call {tried} after its tool budget "
+                             "for this turn was spent, so nothing ran. Ask again to continue.")
+                reply_parts.append(("\n\n" if reply_parts else "") + leak_note)
+                yield {"event": "delta", "text": ("\n\n" if reply_parts else "") + leak_note}
             # The reply has streamed; numbers the tools never returned are flagged, not edited.
             unverified, note = number_check.check_reply("".join(reply_parts), tool_results,
                                                         operator_message)

@@ -134,18 +134,31 @@ class BrowserBridge:
                 "last_seen": time.time(),
             }
 
+    def _mine(self, browser_id: str, info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """The first queued job this browser may take: targeted at its name, or untargeted."""
+        name = str(info.get("browser") or "unknown")
+        for job in self._queue:
+            if not job.get("browser") or job["browser"] == name:
+                return job
+        return None
+
     def next_job(self, browser_id: str, info: Dict[str, Any], *, wait: float) -> Optional[Dict[str, Any]]:
-        """Long-poll: hand the next queued job to this browser, or None after `wait` seconds."""
+        """Long-poll: hand this browser its next job, or None after `wait` seconds. Jobs carry
+        the browser they are for: with Chrome and Firefox both paired, Firefox answered
+        list_tabs and Chrome then took the read_page jobs for Firefox's tab ids (first live run,
+        2026-11-06)."""
         wait = max(0.0, min(POLL_WAIT_MAX_SECONDS, float(wait)))
         deadline = time.time() + wait
         with self._cond:
             self.heartbeat(browser_id, info)
-            while not self._queue:
+            job = self._mine(browser_id, info)
+            while job is None:
                 remaining = deadline - time.time()
                 if remaining <= 0:
                     return None
                 self._cond.wait(remaining)
-            job = self._queue.pop(0)
+                job = self._mine(browser_id, info)
+            self._queue.remove(job)
             job["claimed_by"] = browser_id
             job["claimed_at"] = time.time()
             self._inflight[job["job_id"]] = job
@@ -178,22 +191,34 @@ class BrowserBridge:
     def connected(self) -> bool:
         return any(b["connected"] for b in self.browsers())
 
-    def call(self, action: str, params: Optional[Dict[str, Any]] = None, *,
+    def connected_names(self) -> List[str]:
+        """Connected browser names in preference order (chrome, edge, firefox, then others)."""
+        order = {"chrome": 0, "edge": 1, "firefox": 2}
+        names = sorted({b["browser"] for b in self.browsers() if b["connected"]},
+                       key=lambda n: (order.get(n, 9), n))
+        return names
+
+    def call(self, action: str, params: Optional[Dict[str, Any]] = None, *, browser: Optional[str] = None,
              timeout: float = JOB_TIMEOUT_SECONDS) -> Any:
-        """Run one action in the operator's browser and return its result. Raises BridgeOff,
+        """Run one action in the operator's browser and return its result. `browser` names the
+        browser that must run it (chrome / firefox / edge); None = any. Raises BridgeOff,
         NoBrowser, or ValueError with the extension's own error text."""
         if action not in ACTIONS:
             raise ValueError(f"Unknown browser action {action!r}.")
         if not switch_is_on():
             record(action, ok=False, detail="refused: switch OFF")
             raise BridgeOff()
-        if not self.connected():
+        names = self.connected_names()
+        if not names:
             record(action, ok=False, detail="no paired browser connected")
             raise NoBrowser("No paired browser is connected: the OMEGA extension is not running, "
                             "not paired, or the browser is closed. The operator loads the extension "
                             "and pastes the pairing token from the console.")
+        if browser and browser not in names:
+            record(action, ok=False, detail=f"browser {browser} not connected", browser=browser)
+            raise NoBrowser(f"The {browser} browser is not paired or not running; connected: {', '.join(names)}.")
         job = {"job_id": f"bj-{uuid.uuid4().hex[:12]}", "action": action, "params": dict(params or {}),
-               "created_at": time.time(), "done": False}
+               "browser": browser or "", "created_at": time.time(), "done": False}
         with self._cond:
             self._queue.append(job)
             self._cond.notify_all()
@@ -213,6 +238,50 @@ class BrowserBridge:
             raise ValueError(f"The browser reported: {job['error'] or 'failure'}")
         record(action, ok=True, detail=_summarise(action, job["result"]), browser=browser)
         return deepcopy(job["result"])
+
+
+def list_all_tabs() -> List[Dict[str, Any]]:
+    """list_tabs in EVERY connected browser, each tab tagged with its browser and given the
+    composite id the other hands take ("firefox:16"). Tab ids collide across browsers."""
+    if not switch_is_on():
+        record("list_tabs", ok=False, detail="refused: switch OFF")
+        raise BridgeOff()
+    names = bridge.connected_names()
+    if not names:
+        record("list_tabs", ok=False, detail="no paired browser connected")
+        raise NoBrowser("No paired browser is connected: the OMEGA extension is not running, "
+                        "not paired, or the browser is closed.")
+    tabs: List[Dict[str, Any]] = []
+    errors: List[str] = []
+    for name in names:
+        try:
+            for t in bridge.call("list_tabs", {}, browser=name) or []:
+                if isinstance(t, dict):
+                    tabs.append({**t, "browser": name, "tab": f"{name}:{t.get('id')}"})
+        except ValueError as exc:
+            errors.append(f"{name}: {exc}")
+    if not tabs and errors:
+        raise ValueError("; ".join(errors))
+    return tabs
+
+
+def split_tab(value: Any) -> tuple:
+    """'firefox:16' -> ('firefox', 16). A bare integer is accepted only when one browser is
+    connected (then it is that browser's)."""
+    text = str(value or "").strip()
+    if ":" in text:
+        name, _, num = text.partition(":")
+        name = name.strip().lower()
+        if not num.strip().isdigit():
+            raise ValueError(f"tab must look like 'chrome:12' (from browser_tabs); got {text!r}.")
+        return name, int(num)
+    if text.isdigit():
+        names = bridge.connected_names()
+        if len(names) == 1:
+            return names[0], int(text)
+        raise ValueError(f"tab must name its browser ('chrome:{text}' or 'firefox:{text}'): "
+                         f"{len(names)} browsers are connected. Use the 'tab' value from browser_tabs.")
+    raise ValueError("tab is required: call browser_tabs and use its 'tab' value (e.g. 'chrome:12').")
 
 
 def _summarise(action: str, result: Any) -> str:
