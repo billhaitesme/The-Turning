@@ -352,6 +352,54 @@ def _defines(text: str, keyword: str) -> bool:
                           text, re.MULTILINE | re.IGNORECASE))
 
 
+def _resolve_needed_files(root: Path, needs: str, shown: List[str]) -> List[str]:
+    """Files the drafter asked the OPERATOR for, resolved by the runtime instead. Both drafters
+    asked the operator to hand-paste app.py (2026-11-07) when a prose-only proposal gave the
+    keyword search nothing — but repo code is the runtime's to show, not the operator's to type.
+    Paths and module names resolve directly; `identifiers` and snake_case function names resolve
+    to the files that define them. Protected and secret-bearing files are never attached (naming
+    them would be refused downstream); files already shown don't count — re-attaching what the
+    drafter has seen would loop."""
+    found: List[str] = []
+
+    def keep(rel: str) -> None:
+        if rel in found or _is_protected(rel):
+            return
+        try:
+            if SECRET_LINE.search((root / rel).read_text(encoding="utf-8", errors="replace")):
+                return
+        except OSError:
+            return
+        found.append(rel)
+
+    tokens = _PATH_IN_TEXT.findall(needs)
+    tokens += [m.replace(".", "/") + ".py" for m in _MODULE_IN_TEXT.findall(needs)]
+    for token in tokens:
+        for candidate in (token, f"backend/{token}", f"backend/services/{token}", f"frontend/src/{token}"):
+            try:
+                rel = _normalise_path(candidate)
+            except WorkbenchError:
+                continue
+            if (root / rel).is_file():
+                keep(rel)
+                break
+    names = {m.split(".")[-1] for m in re.findall(r"`([A-Za-z_][\w.]*)`", needs)}
+    names |= set(re.findall(r"\b[a-z_][a-z0-9_]*_[a-z0-9_]+\b", needs))
+    names = {n for n in names if len(n) >= 6}
+    if names:
+        for rel in _candidate_files(root):
+            if len(found) >= 6:
+                break
+            try:
+                text = (root / rel).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if any(_defines(text, n) for n in names):
+                keep(rel)
+    shown_set = set(shown)
+    return [f for f in found if f not in shown_set][:4]
+
+
 def definitions_in(root: Path, files: List[str], entry: Dict[str, Any]) -> List[str]:
     """'describe_self -> backend/services/command_console.py line 270 (def _describe_self)':
     deterministic pointers to where the proposal's own identifiers are defined, so the drafter
@@ -946,6 +994,22 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
             last_text = text
             draft = _parse_draft(text)
             if draft.get("needs"):
+                # If the "need" is repo code, the RUNTIME is the clipboard, not the operator:
+                # attach the files the drafter named and re-draft (both drafters asked the
+                # operator to hand-paste app.py, 2026-11-07). Only a need nothing resolves —
+                # a package, a device, a key — blocks on the operator as before.
+                served = _resolve_needed_files(worktree, draft["needs"], plan.files)
+                if served and attempt < MAX_DRAFT_ATTEMPTS:
+                    entry["files"] = list(dict.fromkeys((entry.get("files") or []) + served))
+                    _mark(entry, entry["status"],
+                          f"drafter asked for code; runtime attached {', '.join(served)} and re-drafted")
+                    _upsert(entry)
+                    plan = gather_plan(worktree, entry, large_budget=not small)
+                    context = plan.text()
+                    one_per_reply = small and len(plan.targets) >= 3
+                    max_parts = max(MAX_DRAFT_PARTS, len(plan.targets) + 1)
+                    continuation = ""
+                    continue
                 entry["needs_from_operator"] = draft["needs"]
                 entry["draft"] = {"model": model, "summary": draft["summary"], "files": [], "attempts": attempt}
                 _mark(entry, "blocked", f"the drafter needs something from the operator: {draft['needs'][:200]}")

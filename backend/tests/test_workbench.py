@@ -208,6 +208,24 @@ def test_excerpts_are_bounded_and_centred_on_the_definition(repo):
     assert context.count("... lines ") <= workbench.EXCERPT_BLOCKS
 
 
+def test_a_code_need_is_served_by_the_runtime_not_the_operator(repo):
+    """Both drafters asked the operator to hand-paste app.py (2026-11-07). Repo code is the
+    runtime's to show: a NEEDS that names code resolves to files, attaches, and re-drafts;
+    only package/device/key needs still block on the operator."""
+    (repo / "backend" / "services" / "extra_helper.py").write_text(
+        "def polish_text(t):\n    return t\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "helper")
+    entry = propose()  # no files named: the search won't find extra_helper on its own
+    asks = {"summary": "I need the source first.",
+            "needs_from_operator": "Show `polish_text` (probably backend/services/extra_helper.py) verbatim."}
+    out = workbench.draft_and_test(entry["proposal_id"], frontier=frontier_with(asks, GOOD_EDIT))
+    assert out["status"] == "tested" and out["result"]["promotable"] is True
+    assert "backend/services/extra_helper.py" in out["files"]
+    assert any("runtime attached" in h["event"] for h in out["history"])
+    assert not out.get("needs_from_operator")
+
+
 def test_a_proposal_can_say_what_it_needs_from_the_operator(repo):
     entry = workbench.propose("Browser control", "drive a browser from greet()", "operator asked",
                               requested_by="model:agent-seat", session_id="s",
