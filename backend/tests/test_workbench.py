@@ -308,6 +308,25 @@ def test_a_big_draft_arrives_in_parts_with_continue(repo):
     assert tested["draft"]["parts"] == 2
 
 
+def test_stray_terminators_and_control_tokens_do_not_swallow_later_edits():
+    """The live own-browser draft (2026-11-06): one reply, three files, but with "=== END" and
+    "=== CONTINUE<|message|>=== EDIT" in the middle; the first edit absorbed the other two."""
+    text = ("=== SUMMARY\nAdds own_browser_read.\n"
+            "=== EDIT backend/services/tool_registry.py\n<<<OLD\nfrom x import y\n>>>NEW\nfrom x import y\nfrom z import w\n"
+            "=== END\n\n=== CONTINUE<|message|>=== EDIT backend/services/adapters/own_browser.py\n<<<OLD\n\n>>>NEW\n"
+            "class OwnBrowserReadAdapter:\n    pass\n"
+            "=== END\n\n=== CONTINUE<|message|>=== EDIT backend/tests/test_own_browser_read.py\n<<<OLD\n\n>>>NEW\n"
+            "def test_x():\n    assert True\n=== END\n")
+    draft = workbench._parse_draft(text)
+    assert [e["file"] for e in draft["edits"]] == ["backend/services/tool_registry.py",
+                                                   "backend/services/adapters/own_browser.py",
+                                                   "backend/tests/test_own_browser_read.py"]
+    assert draft["edits"][0]["new"] == "from x import y\nfrom z import w"       # nothing swallowed
+    assert draft["edits"][1]["old"] == "" and draft["edits"][1]["new"] == "class OwnBrowserReadAdapter:\n    pass\n"
+    assert draft["more"] is False                                             # the LAST terminator is END
+    assert workbench._parse_draft(text.replace("=== END\n", "=== CONTINUE\n", 3))["more"] is True
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}

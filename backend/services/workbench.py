@@ -471,24 +471,30 @@ def _frontier(prompt: str) -> Tuple[str, str]:
     return f"{model} (local fallback)", text
 
 
-_SUMMARY_RE = re.compile(r"=== SUMMARY[ \t]*\n(.*?)(?=\n=== |\Z)", re.DOTALL)
-_NEEDS_RE = re.compile(r"=== NEEDS[ \t]*\n(.*?)(?=\n=== |\Z)", re.DOTALL)
-_EDIT_RE = re.compile(r"=== EDIT[ \t]+(\S+)[ \t]*\n<<<OLD[ \t]*\n(.*?)\n?>>>NEW[ \t]*\n(.*?)(?=\n=== EDIT |\Z)", re.DOTALL)
+_MARKER = r"=== (?:EDIT |END\b|CONTINUE\b|SUMMARY\b|NEEDS\b)"
+_SUMMARY_RE = re.compile(rf"=== SUMMARY[ \t]*\n(.*?)(?=\n{_MARKER}|\Z)", re.DOTALL)
+_NEEDS_RE = re.compile(rf"=== NEEDS[ \t]*\n(.*?)(?=\n{_MARKER}|\Z)", re.DOTALL)
+_EDIT_RE = re.compile(rf"=== EDIT[ \t]+(\S+)[ \t]*\n<<<OLD[ \t]*\n(.*?)\n?>>>NEW[ \t]*\n(.*?)(?=\n{_MARKER}|\Z)", re.DOTALL)
+_CONTROL_TOKEN = re.compile(r"<\|[^|>]{1,40}\|>")   # leaked model control tokens such as <|message|>
+_TERMINATOR_RE = re.compile(r"^=== (END|CONTINUE)\b", re.MULTILINE)
 
 
 def _parse_draft(text: str) -> Dict[str, Any]:
     """The block format: code travels as plain text between markers, never inside JSON strings.
-    Three JSON drafts in a row broke on escaping or ran out of room (2026-11-06)."""
-    text = (text or "").replace("\r\n", "\n")
-    more = "=== CONTINUE" in text and "=== END" not in text
-    terminator = "=== CONTINUE" if more else "=== END"
-    if terminator not in text:
+    Three JSON drafts in a row broke on escaping or ran out of room (2026-11-06). Every marker
+    line is a boundary, control tokens are stripped, and the LAST terminator decides whether
+    more is coming: a live reply carried "=== END\\n\\n=== CONTINUE<|message|>=== EDIT ..." in the
+    middle and the registry edit swallowed two files as text."""
+    text = _CONTROL_TOKEN.sub("\n", (text or "").replace("\r\n", "\n"))
+    terminators = _TERMINATOR_RE.findall(text)
+    if not terminators:
         if "=== " in text:
             raise WorkbenchError("the draft was cut off before its === END line (answer more "
                                  "compactly, or stop at a file boundary with === CONTINUE and "
                                  "deliver the rest when asked)")
         raise WorkbenchError("the drafter did not answer in the block format (=== SUMMARY / === EDIT / === END)")
-    body = text[: text.rindex(terminator)]
+    more = terminators[-1] == "CONTINUE"
+    body = text
     summary = (_SUMMARY_RE.search(body).group(1).strip() if _SUMMARY_RE.search(body) else "")[:600]
     needs_match = _NEEDS_RE.search(body)
     edits = _EDIT_RE.findall(body)
