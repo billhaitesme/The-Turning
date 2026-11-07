@@ -122,6 +122,11 @@ Hands (Epoch XIII-A):
   problem from scratch. Distill; never paste raw history, never memories, never anything
   private — the frontier rung leaves the machine. The rung's answer is advice: weigh it and own
   your final reply.
+- CREATIVE AND PERSONAL MATERIAL NEVER RIDES THE FRONTIER. Anything the operator asks you to
+  WRITE — stories, verse, jokes, letters, anything private or explicit — stays on the machine:
+  rung "local" only, whatever the subject. The local gear writes without judgment on the
+  operator's content; the frontier is for analysis and planning, never for the operator's
+  creative material.
 """.strip()
 
 
@@ -390,15 +395,17 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         yield {"event": "delta", "text": escalation.ANNOUNCE}
         yield from runtime_first("deep_think", {"task": operator_message, "rung": "local"},
                                  escalation.SEAT_NOTE.format(reason=reason))
-    elif craft and command_registry.get_command("deep_think") is not None and network_breaker.breaker_is_on():
-        # A creative piece (a joke, a poem) goes to the FRONTIER rung framed as WRITE and the seat
-        # delivers it (the joke conversation, 2026-11-07). Frontier only, by decision: the
-        # frontier applies its own judgement to what it will write; the runtime does not hand
-        # creative requests to the local deep rung. Breaker OFF: no hand-off, the seat answers.
+    elif craft and command_registry.get_command("deep_think") is not None:
+        # A creative piece (a joke, a poem) goes to the LOCAL deep rung framed as WRITE and the
+        # seat delivers it. LOCAL ONLY, by operator decision (2026-11-07, reversing the frontier
+        # routing of d3b80c5): creative work is private — whatever the operator asks for, the
+        # abliterated local gear retains it and nothing leaves the machine. The breaker is
+        # irrelevant here (local inference), so creative works offline too. The frontier stays
+        # for analysis and planning, never for the operator's creative material.
         reply_parts.append(escalation.CRAFT_ANNOUNCE)
         yield {"event": "delta", "text": escalation.CRAFT_ANNOUNCE}
         yield from runtime_first("deep_think",
-                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": "frontier"},
+                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": "local"},
                                  escalation.CRAFT_NOTE.format(reason=craft))
     elif escalation.self_question(operator_message) \
             and command_registry.get_command("describe_self") is not None:

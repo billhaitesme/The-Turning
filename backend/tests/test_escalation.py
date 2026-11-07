@@ -129,9 +129,11 @@ def test_a_retry_is_craft_only_after_a_craft_hand_off():
     assert escalation.craft_reason("what time is it?", handed_off) is None
 
 
-def test_the_loop_has_the_frontier_write_the_piece_and_the_seat_delivers_it(monkeypatch):
+def test_the_loop_has_the_local_rung_write_the_piece_and_the_seat_delivers_it(monkeypatch):
     """The joke conversation: the seat wrote jokes it could not write and lectures it was not
-    asked for. Now the runtime asks the frontier rung to WRITE, and tells the seat to deliver."""
+    asked for. The runtime asks a stronger rung to WRITE and the seat delivers — and by operator
+    decision (2026-11-07) that rung is LOCAL ONLY: creative material is private and never rides
+    the frontier, breaker state irrelevant."""
     from services import network_breaker
     calls = []
     joke = "I used to think the brain was the most important organ. Then I thought, look what's telling me that."
@@ -148,23 +150,21 @@ def test_the_loop_has_the_frontier_write_the_piece_and_the_seat_delivers_it(monk
         yield {"type": "delta", "text": joke}
         yield {"type": "message", "content": joke, "tool_calls": []}
 
-    network_breaker.set_breaker(True, changed_by="test", channel="test")
-    try:
-        events = list(agent_loop.iter_agent_loop(
-            messages=[{"role": "user", "content": CRAFT[0]}], model="t", session_id="c", seat_turn=seat))
-    finally:
-        network_breaker.set_breaker(False, changed_by="test", channel="test")
+    # breaker deliberately OFF: the local rung needs no network, creative works offline
+    network_breaker.set_breaker(False, changed_by="test", channel="test")
+    events = list(agent_loop.iter_agent_loop(
+        messages=[{"role": "user", "content": CRAFT[0]}], model="t", session_id="c", seat_turn=seat))
     name, args, who = calls[0]
-    assert name == "deep_think" and who == "runtime:escalation" and args["rung"] == "frontier"
+    assert name == "deep_think" and who == "runtime:escalation" and args["rung"] == "local"
     assert args["task"].startswith("WRITE the piece") and CRAFT[0] in args["task"]
     final = events[-1]
     assert final["reply"].startswith(escalation.CRAFT_ANNOUNCE) and final["reply"].endswith(joke)
     assert seen["conversation"][-1]["role"] == "system" and "Deliver that text" in seen["conversation"][-1]["content"]
     assert "Learning check" not in final["reply"]
 
-    # breaker OFF: no hand-off at all. The frontier is the only rung creative requests go to (it
-    # applies its own judgement to what it writes); the local deep rung is never asked.
+    # a second creative ask also goes LOCAL — the frontier is never asked for creative work,
+    # whatever the breaker says.
     calls.clear()
     list(agent_loop.iter_agent_loop(messages=[{"role": "user", "content": CRAFT[2]}],
                                     model="t", session_id="c", seat_turn=seat))
-    assert calls == []
+    assert calls and all(args["rung"] == "local" for _, args, _ in calls)
