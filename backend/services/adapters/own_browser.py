@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from services.adapters.web_fetch import _refuse_private_host, extract_text
 from services.network_breaker import record_fetch, require_breaker_on
-from services.tool_contracts import validate_tool_definition
+from services.tool_contracts import ToolAdapter, validate_tool_definition
 
 MAX_TEXT_CHARS = 6000
 NAV_TIMEOUT_MS = 30_000
@@ -22,7 +22,7 @@ def _sync_playwright():
     return sync_playwright()
 
 
-class OwnBrowserReadAdapter:
+class OwnBrowserReadAdapter(ToolAdapter):
     def describe(self) -> Dict[str, Any]:
         return {"name": "own_browser_read", "version": 1,
                 "description": "Reads a page in OMEGA's own headless Chromium (behind the network breaker)."}
