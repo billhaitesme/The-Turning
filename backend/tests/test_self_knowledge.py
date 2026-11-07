@@ -54,6 +54,18 @@ def test_describe_self_reports_the_real_body():
     assert me["voice"]["installed_english_voices"] == 28
     assert "set_voice" in me["voice"]["how_to_change"]
     assert "cannot see the operator's screen" in me["sight"]
+    # "I will learn from that" (2026-11-07): the truth about learning is in the self-description
+    assert me["learning"]["within_a_conversation"].startswith("NONE")
+    assert "consolidation" in me["learning"]["over_time"] and "promoted" in me["learning"]["over_time"]
+
+
+def test_questions_about_learning_are_self_questions():
+    from services import escalation
+    for q in ("okay, so you should be able to learn from that, and not do it in the future, correct?",
+              "will you remember this tomorrow?", "do you learn from our conversations?",
+              "can you get smarter?"):
+        assert escalation.self_question(q), q
+    assert not escalation.self_question("learn me something about Norway")
 
 
 def test_the_console_tells_the_seat_whether_read_aloud_is_on():

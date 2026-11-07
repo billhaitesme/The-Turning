@@ -357,45 +357,49 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
         operator_message)
     repeats_caught = 0
 
+    def runtime_first(name: str, args: Dict[str, Any], note: str) -> EventGenerator:
+        """The runtime calls a tool BEFORE the seat speaks, through the console like any call,
+        and the seat sees the call, the result and a note saying why."""
+        yield {"event": "tool_call", "name": name, "arguments": args}
+        result = execute_tool_call(name, args, session_id=session_id, requested_by=RUNTIME_REQUESTED_BY)
+        hops.append({"tool": name, "status": result.get("status")})
+        tool_results.append((name, result))
+        if result.get("status") == "executed":
+            guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
+        yield {"event": "tool_result", "name": name, "status": result.get("status")}
+        conversation.append({"role": "assistant", "content": "",
+                             "tool_calls": [{"function": {"name": name, "arguments": args}}]})
+        conversation.append({"role": "tool", "tool_name": name, "name": name,
+                             "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
+        conversation.append({"role": "system", "content": note})
+
     # The runtime, not the seat, decides when a message is a multi-step problem (the 8B seat
     # answered a probability puzzle inline and contradicted itself): run deep_think first, through
     # the console like any call, and let the seat answer with that reasoning in hand.
     reason = escalation.deep_task_reason(operator_message)
+    previous_reply = next((str(m.get("content") or "") for m in reversed(messages)
+                           if m.get("role") == "assistant"), "")
+    craft = None if reason else escalation.craft_reason(operator_message, previous_reply)
     if reason and command_registry.get_command("deep_think") is not None:
         reply_parts.append(escalation.ANNOUNCE)
         yield {"event": "delta", "text": escalation.ANNOUNCE}
-        args = {"task": operator_message, "rung": "local"}
-        yield {"event": "tool_call", "name": "deep_think", "arguments": args}
-        result = execute_tool_call("deep_think", args, session_id=session_id,
-                                   requested_by=RUNTIME_REQUESTED_BY)
-        hops.append({"tool": "deep_think", "status": result.get("status")})
-        tool_results.append(("deep_think", result))
-        if result.get("status") == "executed":
-            guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
-        yield {"event": "tool_result", "name": "deep_think", "status": result.get("status")}
-        conversation.append({"role": "assistant", "content": "",
-                             "tool_calls": [{"function": {"name": "deep_think", "arguments": args}}]})
-        conversation.append({"role": "tool", "tool_name": "deep_think", "name": "deep_think",
-                             "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
-        conversation.append({"role": "system", "content": escalation.SEAT_NOTE.format(reason=reason)})
+        yield from runtime_first("deep_think", {"task": operator_message, "rung": "local"},
+                                 escalation.SEAT_NOTE.format(reason=reason))
+    elif craft and command_registry.get_command("deep_think") is not None:
+        # A creative piece (a joke, a poem) goes to the frontier rung framed as WRITE; the seat
+        # delivers it (the joke conversation, 2026-11-07). Breaker OFF: the local deep rung.
+        from services import network_breaker
+        rung = "frontier" if network_breaker.breaker_is_on() else "local"
+        reply_parts.append(escalation.CRAFT_ANNOUNCE)
+        yield {"event": "delta", "text": escalation.CRAFT_ANNOUNCE}
+        yield from runtime_first("deep_think",
+                                 {"task": escalation.CRAFT_TASK.format(request=operator_message), "rung": rung},
+                                 escalation.CRAFT_NOTE.format(reason=craft))
     elif escalation.self_question(operator_message) \
             and command_registry.get_command("describe_self") is not None:
         # Ground BEFORE speaking: the seat claimed "I can write and execute code" and only then
         # looked itself up (2026-11-06). A fast local read, recorded as the runtime's own call.
-        args = {}
-        yield {"event": "tool_call", "name": "describe_self", "arguments": args}
-        result = execute_tool_call("describe_self", args, session_id=session_id,
-                                   requested_by=RUNTIME_REQUESTED_BY)
-        hops.append({"tool": "describe_self", "status": result.get("status")})
-        tool_results.append(("describe_self", result))
-        if result.get("status") == "executed":
-            guard.saw_tool_result(json.dumps(result, ensure_ascii=False))
-        yield {"event": "tool_result", "name": "describe_self", "status": result.get("status")}
-        conversation.append({"role": "assistant", "content": "",
-                             "tool_calls": [{"function": {"name": "describe_self", "arguments": args}}]})
-        conversation.append({"role": "tool", "tool_name": "describe_self", "name": "describe_self",
-                             "content": _cap_tool_content(json.dumps(result, ensure_ascii=False), cap)})
-        conversation.append({"role": "system", "content": escalation.SELF_NOTE})
+        yield from runtime_first("describe_self", {}, escalation.SELF_NOTE)
 
     promise_nudged = False
     continue_inline = False  # the next round continues a cut-off sentence: no paragraph seam
@@ -465,7 +469,8 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                     conversation.append({"role": "system", "content": repeat_guard.RETRY_INSTRUCTION})
                 continue
             seam = "\n\n" if reply_parts else ""
-            said = "".join(reply_parts).replace(escalation.ANNOUNCE, "").strip()
+            said = ("".join(reply_parts).replace(escalation.ANNOUNCE, "")
+                    .replace(escalation.CRAFT_ANNOUNCE, "").strip())
             # Nothing visible was said (live 2026-11-06: the seat re-used last turn's status
             # wording, both attempts were stopped, and Bill would have seen only the warning).
             # The runtime states what actually happened this turn instead.
@@ -507,7 +512,9 @@ def iter_agent_loop(*, messages: List[Dict[str, Any]], model: str, session_id: s
                 "".join(reply_parts), [c["name"] for c in command_registry.list_commands()],
                 [h["tool"] for h in hops])
             claim_note = claim_check.note_for(claims, [h["tool"] for h in hops])
-            for extra in (note, claim_note):
+            # ... and study the turn did not do, or learning the seat cannot do (2026-11-07).
+            learning_note = claim_check.learning_note("".join(reply_parts), [h["tool"] for h in hops])
+            for extra in (note, claim_note, learning_note):
                 if extra:
                     seam = "\n\n" if reply_parts else ""
                     reply_parts.append(seam + extra)

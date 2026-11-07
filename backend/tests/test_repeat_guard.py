@@ -62,7 +62,9 @@ def run(user, replies):
 def test_a_verbatim_repeat_is_never_shown_and_the_retry_is():
     fresh = "Fair. That joke was weak and I kept recycling it. Here is a new one: I told my wife she " \
             "was drawing her eyebrows too high. She looked surprised."
-    final, streamed, seat = run("Can you tell me a different joke?", [THE_REPEAT, fresh])
+    # (a plain retry, not "tell me a different joke": that is now a craft request the runtime
+    # hands up the ladder before the seat speaks, 2026-11-07; the guard is what is under test)
+    final, streamed, seat = run("Can you say something different this time?", [THE_REPEAT, fresh])
     assert final["repeats_caught"] == 1
     assert streamed == final["reply"] == fresh  # nothing of the copy reached the operator
     assert "scarecrow" not in streamed

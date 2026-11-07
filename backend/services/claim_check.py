@@ -53,6 +53,49 @@ def claimed_but_not_run(reply: str, registered: Iterable[str],
     return unique
 
 
+# ---------------------------------------------------------------- study and learning claims (2026-11-07)
+# The joke conversation: "I've studied the Director Mel Brooks" after ONE web search returned five
+# titles; "I've analyzed examples of jokes" after two; "I will learn from that" after nothing.
+# Nothing is read in depth by a search, and nothing learns inside a conversation: the seat's
+# weights do not change, and it keeps only this conversation's history. Deterministic: a study
+# claim with no reading tool run this turn, or any promise to learn, gets a runtime note.
+_STUDY_CLAIM = re.compile(
+    r"\bI(?:'ve| have)\s+(?:now\s+|just\s+|thoroughly\s+|carefully\s+|already\s+)?"
+    r"(?:studied|analy[sz]ed|researched|reviewed|read up on|read through|examined|absorbed|"
+    r"gone through|looked into|looked at|familiari[sz]ed myself with)\b", re.IGNORECASE)
+_LEARNING_PROMISE = re.compile(
+    r"\bI(?:'ll| will|'m going to| am going to)\s+(?:definitely\s+|certainly\s+)?(?:learn|remember|"
+    r"improve|do better|get better|not (?:do|repeat|make) (?:that|this|it|the same))\b|"
+    r"\bI(?:'ve| have) learn(?:ed|t)\b|\blesson learned\b|\bI(?:'ll| will) (?:keep|bear) (?:that|this) in mind\b",
+    re.IGNORECASE)
+READING_TOOLS = ("web_fetch", "browser_read", "own_browser_read", "deep_think")
+
+
+def learning_note(reply: str, ran: Sequence[str]) -> str:
+    """A note when the reply claims study the turn did not do, or promises learning the seat
+    cannot do. Empty when neither applies, or when a reading tool really ran this turn."""
+    text = str(reply or "")
+    ran_list = list(dict.fromkeys(ran))
+    lines: List[str] = []
+    if _STUDY_CLAIM.search(text) and not any(r in READING_TOOLS for r in ran_list):
+        searches = sum(1 for r in ran if r == "web_search")
+        if searches:
+            did = f"web_search ran {searches} time{'s' if searches != 1 else ''} and returned titles and snippets only"
+        elif ran_list:
+            did = f"only {', '.join(ran_list)} ran"
+        else:
+            did = "no tool ran"
+        lines.append(f"the reply says it studied or analysed something, but this turn {did}; "
+                     "nothing was read in depth")
+    if _LEARNING_PROMISE.search(text):
+        lines.append("the seat cannot learn or change within a conversation: its weights do not "
+                     "change and it keeps only this conversation's history; lasting change comes "
+                     "from the operator's consolidation training and from promoted proposals")
+    if not lines:
+        return ""
+    return "---\n⚠ Learning check (runtime, not the seat): " + "; ".join(lines) + "."
+
+
 def note_for(hits: List[Tuple[str, str]], ran: Sequence[str]) -> str:
     if not hits:
         return ""

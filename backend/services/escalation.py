@@ -70,6 +70,62 @@ SEAT_NOTE = (
 )
 
 
+# ---------------------------------------------------------------- craft requests (2026-11-07)
+# Live, the joke conversation: twenty minutes, four repeat-guard stops, two web searches dressed
+# up as "I've studied Mel Brooks", and not one joke. Humour and verse are the things an 8B does
+# worst, and it cannot tell that it is failing. The runtime sends a clearly creative request to
+# the frontier rung framed as WRITE (not analyse: the 30B, asked by the seat, returned a lecture
+# on setup/punchline structure) and the seat delivers the piece. Identity stays local; the craft
+# is borrowed (ADR 0026). Falls back to the local deep rung when the breaker is OFF.
+_CRAFT_VERB = (r"\b(?:tell|write|give|make up|come up with|compose|create|do|try|craft|invent|pen|"
+               r"draft|recite|improvise|perform|hit me with|lay|say)\b")
+_CRAFT_NOUN = (r"\b(?:jokes?|puns?|limericks?|poems?|poetry|haikus?|sonnets?|songs?|lyrics|verses?|"
+               r"raps?|toasts?|roasts?|eulogy|speech|(?:short |bedtime |tall )?stor(?:y|ies)|tale|"
+               r"riddles?|one-?liners?|(?:comedy |comic |stand-?up )?(?:bit|routine|set|monologue)|"
+               r"insults?|comebacks?|slogans?|taglines?|parody|satire|fable|epigram)\b")
+_CRAFT = re.compile(_CRAFT_VERB + r"[^.?!]{0,40}?" + _CRAFT_NOUN, re.IGNORECASE)
+_CRAFT_STYLE = re.compile(r"\bin the (?:style|voice|manner|spirit) of\b", re.IGNORECASE)
+_CRAFT_NOUN_ALONE = re.compile(_CRAFT_NOUN, re.IGNORECASE)
+# "another one", "funnier", "try again": a retry stays a craft request only while the previous
+# reply was the runtime's own craft hand-off (the detector sees one message, not the thread)
+_CRAFT_RETRY = re.compile(
+    r"\b(?:another|different|better|funnier|again|one more|next one|go ahead|you may try|try it|"
+    r"do it|hit me|more)\b", re.IGNORECASE)
+_NOT_CRAFT = re.compile(
+    r"\b(?:explain|why (?:is|was|isn'?t|wasn'?t) (?:that|this|it)|what (?:is|was|makes)|how (?:is|was|does)|"
+    r"analy[sz]e|meaning|definition|history of|who (?:is|was|wrote))\b", re.IGNORECASE)
+
+
+def craft_reason(message: str, previous_reply: str = "") -> Optional[str]:
+    """Why this message is a request for a creative piece, or None. A follow-up such as
+    "another one" counts only when the previous reply was itself a craft hand-off."""
+    text = str(message or "").strip()
+    if not text or len(text) > MAX_CHARS or text.lower().startswith(BODY_BRIEF_PREFIX):
+        return None
+    if _NOT_CRAFT.search(text) and not _CRAFT.search(text):
+        return None  # "explain why that's funny" is a question, not a commission
+    if _CRAFT.search(text) or (_CRAFT_STYLE.search(text) and _CRAFT_NOUN_ALONE.search(text)):
+        return "creative piece requested"
+    if CRAFT_ANNOUNCE in str(previous_reply or "") and len(text) <= 80 and _CRAFT_RETRY.search(text):
+        return "retry of a creative piece"
+    return None
+
+
+CRAFT_ANNOUNCE = "Let me work on that one properly — a moment."
+CRAFT_TASK = (
+    "WRITE the piece the operator asked for: the finished text itself and nothing else. No "
+    "analysis, no explanation of why it works, no preamble, no list of options unless asked, no "
+    "headings. Keep any style, voice or subject the operator named. If it is a joke, one joke, "
+    "tight, with an actual punchline.\n\nOPERATOR'S REQUEST: {request}"
+)
+CRAFT_NOTE = (
+    "The runtime had a stronger rung write the piece the operator asked for ({reason}): the tool "
+    "result above holds the finished text in its 'answer'. Deliver that text to the operator as "
+    "written: verbatim, no analysis, no explanation of why it works, no extra attempt of your "
+    "own. If the rung declined or returned nothing usable, say so in one plain sentence."
+)
+
+
 # ---------------------------------------------------------------- the say-do gap (2026-11-06)
 # Live: "Let me examine my current capabilities ... I'll start by checking my available tools."
 # and the reply ended. No tool ran. A reply whose closing words promise an action, from a turn
@@ -104,6 +160,8 @@ _SELF_QUESTION = re.compile(
     r"your (?:time ?zone|timezone|utc offset|clock|location|host|machine|model|version)|"
     r"where are you(?: located| running| based)?\b|"
     r"can you (?:hear|see|speak|talk|code|remember|access)|"
+    r"(?:do|can|will|could) you (?:learn|improve|get smarter|grow|evolve)|learn from (?:this|that|it|your mistakes?)|"
+    r"(?:will|do) you remember (?:this|that|it)|"
     r"can you (?:write|change|edit|modify) (?:code|yourself|your own)|are you able to|"
     r"what(?:'s| is) missing)\b", re.IGNORECASE)
 SELF_NOTE = (

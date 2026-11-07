@@ -331,6 +331,20 @@ def _describe_self() -> Dict[str, Any]:
         },
         "limits": "You run on the operator's PC. You cannot install software, run code, change "
                   "your own code, or see anything the runtime does not hand you.",
+        # "I will learn from that" (the joke conversation, 2026-11-07): nothing learns inside a
+        # conversation, and the seat should say so instead of promising.
+        "learning": {
+            "within_a_conversation": "NONE: your weights do not change while you talk. You keep "
+                                     "this conversation's history and nothing else; reading a "
+                                     "search result or a page teaches you nothing lasting.",
+            "over_time": "The operator's consolidation pipeline distils lessons from past "
+                         "conversations into training candidates that he approves and trains "
+                         "offline; promoted code proposals change what you can do. Those are "
+                         "the only two ways you change. Never promise to learn or remember "
+                         "within a chat; say what actually changes you.",
+            "craft": "Jokes, verse and other creative pieces are handed to a stronger rung by "
+                     "the runtime; you deliver the piece, you do not write it yourself.",
+        },
     }
 
 
