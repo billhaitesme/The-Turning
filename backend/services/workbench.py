@@ -686,6 +686,14 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
     parts = 0           # a big draft may arrive in parts (=== CONTINUE), each within the budget
     continuation = ""
     summary = ""
+    last_text = ""
+    # Three or more files: the RUNTIME drives the parts, one file per reply, because a model
+    # does not foresee running out of room (three cut-offs in a row on a four-file draft,
+    # 2026-11-06) and each one-file reply fits the frontier's budget with room to spare.
+    one_per_reply = len(files) >= 3
+    pacing = ("\nDELIVER IN PARTS: this change spans several files. In THIS reply give the edits for "
+              "ONE file only, then end with === CONTINUE (not === END). You will be asked for the "
+              "next file each time; end with === END only after the last file.\n") if one_per_reply else ""
     while attempt < MAX_DRAFT_ATTEMPTS:
         if not continuation:
             attempt += 1
@@ -695,9 +703,10 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
                    if entry.get("needs_from_operator") else ""),
             context=context,
             failures=("\nEARLIER ATTEMPTS FAILED TO APPLY, fix this:\n" + "\n".join(failures) + "\n")
-            if failures else "") + continuation
+            if failures else "") + pacing + continuation
         try:
             model, text = frontier(prompt)
+            last_text = text
             draft = _parse_draft(text)
             if draft.get("needs"):
                 entry["needs_from_operator"] = draft["needs"]
@@ -716,7 +725,8 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
             parts += 1
             if draft.get("more") and parts < MAX_DRAFT_PARTS:
                 continuation = ("\nALREADY APPLIED in earlier parts (do not repeat them; continue with the "
-                                f"remaining edits, then === END): {', '.join(touched)}\n")
+                                f"remaining edits, {'one file per reply, ' if one_per_reply else ''}"
+                                f"then === END after the last): {', '.join(touched)}\n")
                 continue
             break
         except WorkbenchError as exc:
@@ -726,7 +736,8 @@ def _draft_and_test_in(entry: Dict[str, Any], worktree: Path, base: str, frontie
                 context = context[: len(context) // 2] + "\n... (context halved: the drafter's request limit)\n"
     if not touched:
         _mark(entry, "failed", "draft could not be applied: " + " | ".join(failures))
-        entry["draft"] = {"model": model, "failures": failures}
+        # keep the end of the last raw reply: without it a cut-off cannot be diagnosed
+        entry["draft"] = {"model": model, "failures": failures, "last_reply_tail": last_text[-800:]}
         _remove_worktree(proposal_id)
         return _upsert(entry)
     draft["summary"] = summary or draft.get("summary", "")

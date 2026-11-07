@@ -349,6 +349,40 @@ def test_a_red_suite_gets_a_repair_round_with_the_failure_in_hand(repo, monkeypa
     assert "+    assert greet('Bill') == 'Hello, Bill!'" in tested["draft"]["diff"]          # the diff spans both rounds
 
 
+def test_three_or_more_files_are_drafted_one_per_reply(repo):
+    """Four-file drafts were cut off three times in a row (2026-11-06): the runtime now asks
+    for one file per reply and collects the parts itself."""
+    (repo / "backend" / "services" / "a.py").write_text("A = 1\n", encoding="utf-8")
+    (repo / "backend" / "services" / "b.py").write_text("B = 1\n", encoding="utf-8")
+    (repo / "backend" / "services" / "c.py").write_text("C = 1\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "three files")
+    part = lambda name: render_draft({"summary": "bump", "edits": [
+        {"file": f"backend/services/{name}.py", "old": f"{name.upper()} = 1", "new": f"{name.upper()} = 2"}]})
+    replies = iter([part("a").replace("=== END", "=== CONTINUE"),
+                    part("b").replace("=== END", "=== CONTINUE"),
+                    part("c")])
+    prompts = []
+
+    def frontier(prompt):
+        prompts.append(prompt)
+        return "openai/gpt-oss-120b", next(replies)
+
+    entry = workbench.propose("Bump three", "set A, B and C to 2", "", requested_by="m", session_id="s",
+                              files=["backend/services/a.py", "backend/services/b.py", "backend/services/c.py"])
+    tested = workbench.draft_and_test(entry["proposal_id"], frontier=frontier)
+    assert tested["status"] == "tested" and tested["draft"]["parts"] == 3
+    assert "ONE file only" in prompts[0]                                  # the runtime paces it
+    assert "one file per reply" in prompts[1] and "backend/services/a.py" in prompts[1]
+    assert sorted(tested["draft"]["files"]) == ["backend/services/a.py", "backend/services/b.py", "backend/services/c.py"]
+
+
+def test_a_failed_draft_keeps_the_end_of_the_raw_reply(repo):
+    cut = "=== SUMMARY\nx\n=== EDIT backend/services/hello.py\n<<<OLD\nreturn f'Hello, {name}'\n>>>NEW\nreturn 'cut"
+    failed = workbench.draft_and_test(propose()["proposal_id"], frontier=lambda p: ("m", cut))
+    assert failed["status"] == "failed" and failed["draft"]["last_reply_tail"].endswith("return 'cut")
+
+
 def test_pytest_summary_parsing():
     assert workbench.summarize_pytest(0, "....\n605 passed, 10 subtests passed in 87.84s") == {
         "ok": True, "passed": 605, "failed": 0, "tail": "....\n605 passed, 10 subtests passed in 87.84s"}
